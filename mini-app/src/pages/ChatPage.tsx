@@ -4,6 +4,7 @@ import { MessageSquare, Send, ArrowLeft, AlertCircle, UserCircle } from "lucide-
 import { getUserInfo } from "zmp-sdk/apis";
 import api, { ChatResponse } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import logoImageUrl from "../assets/logo.png";
 
 interface Message {
   id: string;
@@ -210,7 +211,7 @@ export const ChatPage: React.FC = () => {
                 <div key={msg.id} className="welcome-guide-card">
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
                     <img 
-                      src="./logo.png" 
+                      src={logoImageUrl} 
                       alt="Logo" 
                       width={64}
                       height={64}

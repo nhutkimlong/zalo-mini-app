@@ -4,6 +4,8 @@ import { MessageSquare, Compass, Info, FileText, AlertTriangle, Bell, PhoneCall,
 import { getUserInfo } from "zmp-sdk/apis";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import heroImageUrl from "../assets/hero.webp";
+import logoImageUrl from "../assets/logo.png";
 
 export const HomePage: React.FC = () => {
   const [tickerAnns, setTickerAnns] = useState<Announcement[]>([]);
@@ -39,7 +41,7 @@ export const HomePage: React.FC = () => {
       {/* Premium Header */}
       <header className="app-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <img src="./logo.png" alt="Logo" width={36} height={36} style={{ borderRadius: "8px", border: "1px solid var(--accent-gold)", objectFit: "cover" }} />
+          <img src={logoImageUrl} alt="Logo" width={36} height={36} style={{ borderRadius: "8px", border: "1px solid var(--accent-gold)", objectFit: "cover" }} />
           <div style={{ display: "flex", flexDirection: "column" }}>
             <h1 style={{ color: "var(--accent-gold)", margin: 0, fontSize: "16px", fontWeight: 800, letterSpacing: "0.5px" }}>NÚI BÀ ĐEN</h1>
             <span style={{ fontSize: "10px", opacity: 0.85, fontWeight: 600 }}>
@@ -124,7 +126,7 @@ export const HomePage: React.FC = () => {
       </header>
 
       {/* Hero Scenic Banner */}
-      <div className="home-banner" style={{ backgroundImage: 'url("./hero.webp")' }}>
+      <div className="home-banner" style={{ backgroundImage: `url("${heroImageUrl}")` }}>
         <div className="banner-content">
           <div className="banner-title">{language === "vi" ? "KHU DU LỊCH QUỐC GIA NÚI BÀ ĐEN" : "BA DEN MOUNTAIN NATIONAL TOURIST AREA"}</div>
           <div className="banner-sub">{language === "vi" ? "Huyền thoại linh thiêng - Nóc nhà Nam Bộ 986m" : "Sacred Legend - The Roof of Southern Vietnam 986m"}</div>
