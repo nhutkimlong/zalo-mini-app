@@ -57,6 +57,8 @@ export const ChatPage: React.FC = () => {
       }))
       .slice(-8);
 
+  const hasUserMessage = messages.some((msg) => msg.sender === "user");
+
   const SUGGESTED_QUESTIONS = language === "en" 
     ? [
         "How much are cable car tickets?",
@@ -207,6 +209,8 @@ export const ChatPage: React.FC = () => {
             
             // Custom render for Welcome Message
             if (msg.id === "welcome") {
+              if (hasUserMessage) return null;
+
               return (
                 <div key={msg.id} className="welcome-guide-card">
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
@@ -340,7 +344,7 @@ export const ChatPage: React.FC = () => {
 
       {/* Suggested Quick Prompt Chips slider - Kinetic slider sticky above bottom bar */}
       <div style={{ zIndex: 98, backgroundColor: "rgba(6, 21, 42, 0.65)" }}>
-        {messages.length === 1 && (
+        {!hasUserMessage && (
           <div className="chips-slider-container">
             {SUGGESTED_QUESTIONS.map((q, idx) => (
               <button 
