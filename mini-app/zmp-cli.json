@@ -1,0 +1,15 @@
+{
+  "projectId": "truly-du-lich-so-ba-den-986",
+  "name": "Trợ lý du lịch số Núi Bà Đen",
+  "appId": "4300503811252002131",
+  "type": "react",
+  "framework": "vite",
+  "css": "vanilla",
+  "designSystem": "zmp-ui",
+  "configurations": {
+    "title": "Trợ lý du lịch số Núi Bà Đen",
+    "themeColor": "#0b2545",
+    "statusBarColor": "#0b2545",
+    "textColor": "white"
+  }
+}

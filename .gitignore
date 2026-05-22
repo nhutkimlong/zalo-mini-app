@@ -1,0 +1,43 @@
+# Secrets and local env
+.env
+.env.*
+!.env.example
+!.env.production.example
+backend/.env
+mini-app/.env
+mini-app/.env.production
+admin-dashboard/.env
+
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+
+# Build output
+dist/
+build/
+coverage/
+
+# Runtime logs
+*.log
+backend/*.log
+
+# Local tool state
+.claude/
+.agent/
+.agents/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Stray console output files
+Dang
+Hoac
+Quan
+Swagger

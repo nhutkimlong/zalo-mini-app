@@ -1,0 +1,16 @@
+{
+  "app": {
+    "title": "Trợ lý du lịch số Núi Bà Đen",
+    "headerColor": "#0b2545",
+    "textColor": "white",
+    "statusBarColor": "#0b2545",
+    "leftButton": "back"
+  },
+  "listSyncJS": [
+    "assets/index.js"
+  ],
+  "listAsyncJS": [],
+  "listCSS": [
+    "assets/style.css"
+  ]
+}

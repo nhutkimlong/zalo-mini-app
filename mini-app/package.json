@@ -1,0 +1,27 @@
+{
+  "name": "truly-du-lich-so-ba-den",
+  "version": "1.0.0",
+  "description": "Zalo Mini App - Trợ lý du lịch số Khu du lịch quốc gia Núi Bà Đen",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "deploy:zalo": "node scripts/check-zalo-env.mjs && zmp deploy",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
+    "lucide-react": "^0.263.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.2",
+    "zmp-sdk": "^2.31.0",
+    "zmp-ui": "^1.11.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  }
+}
