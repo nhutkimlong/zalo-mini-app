@@ -94,26 +94,26 @@ export const App: React.FC = () => {
   const [visualTickets, setVisualTickets] = useState<any[]>(DEFAULT_VISUAL_TICKETS);
   const DEFAULT_VISUAL_SCHEDULES = [
     {
-      title: "Tuyen dinh Van Son",
+      title: "Tuyến đỉnh Vân Sơn",
       titleEn: "Van Son Peak Route",
       items: [
-        { label: "Thu 2 - Thu 6", labelEn: "Monday - Friday", hours: "07:00 - 18:00", hoursEn: "07:00 - 18:00", note: "", noteEn: "" },
-        { label: "Thu 7 - Chu Nhat", labelEn: "Saturday - Sunday", hours: "06:00 - 21:00", hoursEn: "06:00 - 21:00", note: "(ngam den LED dinh nui ban dem)", noteEn: "(night LED light show)" }
+        { label: "Thứ 2 - Thứ 6", labelEn: "Monday - Friday", hours: "07:00 - 18:00", hoursEn: "07:00 - 18:00", note: "", noteEn: "" },
+        { label: "Thứ 7 - Chủ Nhật", labelEn: "Saturday - Sunday", hours: "06:00 - 21:00", hoursEn: "06:00 - 21:00", note: "(ngắm đèn LED đỉnh núi ban đêm)", noteEn: "(night LED light show)" }
       ]
     },
     {
-      title: "Tuyen Chua Hang",
+      title: "Tuyến Chùa Hang",
       titleEn: "Chua Hang Route",
       items: [
-        { label: "Thu 2 - Thu 6", labelEn: "Monday - Friday", hours: "06:00 - 18:00", hoursEn: "06:00 - 18:00", note: "", noteEn: "" },
-        { label: "Thu 7 - Chu Nhat", labelEn: "Saturday - Sunday", hours: "05:30 - 22:00", hoursEn: "05:30 - 22:00", note: "", noteEn: "" }
+        { label: "Thứ 2 - Thứ 6", labelEn: "Monday - Friday", hours: "06:00 - 18:00", hoursEn: "06:00 - 18:00", note: "", noteEn: "" },
+        { label: "Thứ 7 - Chủ Nhật", labelEn: "Saturday - Sunday", hours: "05:30 - 22:00", hoursEn: "05:30 - 22:00", note: "", noteEn: "" }
       ]
     },
     {
-      title: "Khu vuc den Chua Ba",
+      title: "Khu vực đền Chùa Bà",
       titleEn: "Ba Temple Area",
       items: [
-        { label: "Hang ngay", labelEn: "Daily", hours: "06:00 - 22:00", hoursEn: "06:00 - 22:00", note: "", noteEn: "" }
+        { label: "Hằng ngày", labelEn: "Daily", hours: "06:00 - 22:00", hoursEn: "06:00 - 22:00", note: "", noteEn: "" }
       ]
     }
   ];
