@@ -1799,28 +1799,28 @@ export const App: React.FC = () => {
                       </button>
 
                       <div style={{ background: "rgba(11,37,69,0.06)", borderRadius: "8px", padding: "12px 16px", border: "1px solid rgba(11,37,69,0.12)", fontSize: "12.5px", color: "var(--primary-navy)", fontWeight: 600 }}>
-                        <strong>Lich hoat dong hien thi tren Mini App</strong> - cap nhat tai day, khong can sua code frontend.
+                        <strong>Lịch hoạt động hiển thị trên Mini App</strong> - cập nhật tại đây, không cần sửa code frontend.
                       </div>
 
                       {visualSchedules.map((section, sIdx) => (
                         <div key={sIdx} style={{ border: "1.5px solid var(--border-slate)", borderRadius: "10px", overflow: "hidden" }}>
                           <div style={{ background: "var(--primary-navy)", padding: "10px 14px", display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
-                            <span style={{ color: "var(--accent-gold)", fontWeight: 700, fontSize: "13px" }}>Lich hoat dong #{sIdx + 1}</span>
+                            <span style={{ color: "var(--accent-gold)", fontWeight: 700, fontSize: "13px" }}>Lịch hoạt động #{sIdx + 1}</span>
                             <button type="button" style={{ background: "rgba(220,38,38,0.7)", border: "none", color: "white", borderRadius: "4px", padding: "2px 8px", cursor: "pointer", fontSize: "12px" }}
                               onClick={() => {
                                 if (visualSchedules.length <= 1) return;
                                 updateVisualSchedules(visualSchedules.filter((_, i) => i !== sIdx));
-                              }}>Xoa muc</button>
+                              }}>Xóa mục</button>
                           </div>
                           <div style={{ padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label className="form-label" style={{ fontSize: "11.5px" }}>Ten tuyen/khu vuc (VI)</label>
+                                <label className="form-label" style={{ fontSize: "11.5px" }}>Tên tuyến/khu vực (VI)</label>
                                 <input type="text" className="form-input" value={section.title || ""}
                                   onChange={e => { const u = JSON.parse(JSON.stringify(visualSchedules)); u[sIdx].title = e.target.value; updateVisualSchedules(u); }} />
                               </div>
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label className="form-label" style={{ fontSize: "11.5px" }}>Ten tuyen/khu vuc (EN)</label>
+                                <label className="form-label" style={{ fontSize: "11.5px" }}>Tên tuyến/khu vực (EN)</label>
                                 <input type="text" className="form-input" value={section.titleEn || ""}
                                   onChange={e => { const u = JSON.parse(JSON.stringify(visualSchedules)); u[sIdx].titleEn = e.target.value; updateVisualSchedules(u); }} />
                               </div>
@@ -1829,10 +1829,10 @@ export const App: React.FC = () => {
                               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                                 <thead>
                                   <tr style={{ background: "rgba(11,37,69,0.05)", borderBottom: "1px solid var(--border-slate)" }}>
-                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Ngay/khung (VI)</th>
-                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Ngay/khung (EN)</th>
-                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Gio</th>
-                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Ghi chu (VI)</th>
+                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Ngày/khung (VI)</th>
+                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Ngày/khung (EN)</th>
+                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Giờ</th>
+                                    <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Ghi chú (VI)</th>
                                     <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Note (EN)</th>
                                     <th style={{ padding: "6px 4px", width: "36px" }}></th>
                                   </tr>
@@ -1879,7 +1879,7 @@ export const App: React.FC = () => {
                                 u[sIdx].items.push({ label: "", labelEn: "", hours: "", hoursEn: "", note: "", noteEn: "" });
                                 updateVisualSchedules(u);
                               }}>
-                              + Them khung gio
+                              + Thêm khung giờ
                             </button>
                           </div>
                         </div>
@@ -1891,7 +1891,7 @@ export const App: React.FC = () => {
                           u.push({ title: "", titleEn: "", items: [{ label: "", labelEn: "", hours: "", hoursEn: "", note: "", noteEn: "" }] });
                           updateVisualSchedules(u);
                         }}>
-                        + Them tuyen/khu vuc lich hoat dong
+                        + Thêm tuyến/khu vực lịch hoạt động
                       </button>
                       {/* Collapsible raw JSON for advanced use */}
                       <details style={{ marginTop: "4px" }}>
