@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Send, ArrowLeft, AlertCircle, UserCircle } from "lucide-react";
+import { MessageSquare, Send, ArrowLeft, AlertCircle, UserCircle, Trash2 } from "lucide-react";
 import { getUserInfo } from "zmp-sdk/apis";
 import api, { ChatResponse } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -13,6 +13,8 @@ interface Message {
   sources?: ChatResponse["sources"];
   isLoading?: boolean;
 }
+
+const CHAT_HISTORY_STORAGE_KEY = "zalo_mini_app_chat_history";
 
 export const ChatPage: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -29,13 +31,33 @@ export const ChatPage: React.FC = () => {
     }
   };
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      sender: "assistant",
-      text: getWelcomeText()
+  const createWelcomeMessage = (): Message => ({
+    id: "welcome",
+    sender: "assistant",
+    text: getWelcomeText()
+  });
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+      if (!saved) return [createWelcomeMessage()];
+
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [createWelcomeMessage()];
+
+      const restored = parsed
+        .filter((msg: Partial<Message>) =>
+          typeof msg?.id === "string" &&
+          (msg.sender === "user" || msg.sender === "assistant") &&
+          typeof msg.text === "string"
+        )
+        .map((msg: Message) => ({ ...msg, isLoading: false }));
+
+      return restored.length > 0 ? restored : [createWelcomeMessage()];
+    } catch {
+      return [createWelcomeMessage()];
     }
-  ]);
+  });
   const [inputValue, setInputValue] = useState("");
   const [userProfile, setUserProfile] = useState<any>(null);
 
@@ -59,6 +81,14 @@ export const ChatPage: React.FC = () => {
 
   const hasUserMessage = messages.some((msg) => msg.sender === "user");
 
+  const clearChatHistory = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+    setMessages([createWelcomeMessage()]);
+    setInputValue("");
+  };
+
   const SUGGESTED_QUESTIONS = language === "en" 
     ? [
         "How much are cable car tickets?",
@@ -81,6 +111,13 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    const stableMessages = messages
+      .filter((msg) => !msg.isLoading)
+      .slice(-40);
+    localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(stableMessages));
   }, [messages]);
 
   // Update welcome message if language changes
@@ -184,20 +221,43 @@ export const ChatPage: React.FC = () => {
           </h1>
         </div>
         
-        {/* Bilingual Selector Pill (Zero-Emoji Mandate!) */}
-        <div className="lang-toggle-pill">
-          <button 
-            onClick={() => setLanguage("vi")}
-            className={`lang-toggle-btn ${language === "vi" ? "active" : ""}`}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={clearChatHistory}
+            aria-label={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
+            title={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              border: "1px solid rgba(212, 175, 55, 0.4)",
+              background: "rgba(255, 255, 255, 0.08)",
+              color: "var(--accent-gold)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0
+            }}
           >
-            VI
+            <Trash2 size={15} />
           </button>
-          <button 
-            onClick={() => setLanguage("en")}
-            className={`lang-toggle-btn ${language === "en" ? "active" : ""}`}
-          >
-            EN
-          </button>
+
+          {/* Bilingual Selector Pill (Zero-Emoji Mandate!) */}
+          <div className="lang-toggle-pill">
+            <button 
+              onClick={() => setLanguage("vi")}
+              className={`lang-toggle-btn ${language === "vi" ? "active" : ""}`}
+            >
+              VI
+            </button>
+            <button 
+              onClick={() => setLanguage("en")}
+              className={`lang-toggle-btn ${language === "en" ? "active" : ""}`}
+            >
+              EN
+            </button>
+          </div>
         </div>
       </header>
 
