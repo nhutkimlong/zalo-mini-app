@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { MapPin, Compass, Navigation, Info, Volume2 } from "lucide-react";
 import { getLocation } from "zmp-sdk/apis";
-import api, { TouristPlace, hasAudioGuide, Itinerary } from "../services/api";
+import api, { MapPlace, hasAudioGuide, Itinerary } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
-// Predefined GPS markers matching coordinate database
+// Coordinate database markers interface
 interface MapMarker {
   slug: string;
   name: string;
@@ -16,113 +16,343 @@ interface MapMarker {
   category: "tam_linh" | "phong_canh" | "dich_vu";
 }
 
+const MAP_CENTER: [number, number] = [11.375641, 106.174648];
+const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+const CLUSTER_CSS = "https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css";
+const CLUSTER_DEFAULT_CSS = "https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css";
+const CLUSTER_JS = "https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js";
+
+let leafletResourcesPromise: Promise<void> | null = null;
+
+const ensureStyleSheet = (href: string) => {
+  if (document.querySelector(`link[href="${href}"]`)) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.crossOrigin = "";
+  document.head.appendChild(link);
+};
+
+const ensureScript = (src: string) => new Promise<void>((resolve, reject) => {
+  let existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+  if (existing?.dataset.failed === "true") {
+    existing.remove();
+    existing = null;
+  }
+
+  if (existing) {
+    if (existing.dataset.loaded === "true") {
+      resolve();
+      return;
+    }
+    existing.addEventListener("load", () => resolve(), { once: true });
+    existing.addEventListener("error", () => reject(new Error(`Failed loading ${src}`)), { once: true });
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.src = src;
+  script.crossOrigin = "";
+  script.onload = () => {
+    script.dataset.loaded = "true";
+    resolve();
+  };
+  script.onerror = () => {
+    script.dataset.failed = "true";
+    reject(new Error(`Failed loading ${src}`));
+  };
+  document.body.appendChild(script);
+});
+
+const loadLeafletResources = () => {
+  const L = (window as any).L;
+  if (L?.markerClusterGroup) return Promise.resolve();
+  if (leafletResourcesPromise) return leafletResourcesPromise;
+
+  ensureStyleSheet(LEAFLET_CSS);
+  leafletResourcesPromise = ensureScript(LEAFLET_JS).then(() => {
+    ensureStyleSheet(CLUSTER_CSS);
+    ensureStyleSheet(CLUSTER_DEFAULT_CSS);
+    return ensureScript(CLUSTER_JS);
+  }).catch((error) => {
+    leafletResourcesPromise = null;
+    throw error;
+  });
+
+  return leafletResourcesPromise;
+};
+
 export const MapPage: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
 
-  const [places, setPlaces] = useState<TouristPlace[]>([]);
+  // App state variables mapping Supabase database
+  const [places, setPlaces] = useState<MapPlace[]>([]);
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<TouristPlace | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<MapPlace | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
-  const activeRoute = itineraries.find(r => r.id === activeRouteId);
-
-  // Leaflet Dynamic Loading state
   const [leafletLoaded, setLeafletLoaded] = useState(false);
 
-  // GPS States
+  // GPS Location state variables
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
 
-  // Map DOM reference and Leaflet Instance reference
+  // DOM Container ref & Leaflet refs
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const gpsMarkerRef = useRef<any>(null);
   const routePolylineRef = useRef<any>(null);
   const markersRef = useRef<{ [slug: string]: any }>({});
   const clusterGroupRef = useRef<any>(null);
+  const lastTapRef = useRef<{ slug: string; time: number } | null>(null);
+  const clusterActionLockRef = useRef(false);
 
-  // 1. Dynamic CDN Loading of Leaflet.js and Leaflet.markercluster
+  // Memoized lookups
+  const placeBySlug = useMemo(() => new Map(places.map(place => [place.slug, place])), [places]);
+  const activeRoute = useMemo(
+    () => itineraries.find(route => route.id === activeRouteId),
+    [activeRouteId, itineraries]
+  );
+
+  // Stability refs for asynchronous Leaflet callbacks to avoid React stale closures
+  const placeBySlugRef = useRef<Map<string, MapPlace>>(new Map());
   useEffect(() => {
-    const L = (window as any).L;
-    if (L && L.markerClusterGroup) {
-      setLeafletLoaded(true);
-      return () => {};
-    }
+    placeBySlugRef.current = placeBySlug;
+  }, [placeBySlug]);
 
-    // Append Leaflet CSS
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    link.crossOrigin = "";
-    document.head.appendChild(link);
+  const handleMarkerTapRef = useRef<(marker: MapMarker) => void>(() => {});
 
-    // Append Leaflet JS
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.crossOrigin = "";
-    script.onload = () => {
-      // Append MarkerCluster CSS
-      const clusterLink = document.createElement("link");
-      clusterLink.rel = "stylesheet";
-      clusterLink.href = "https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css";
-      document.head.appendChild(clusterLink);
+  // 1. Dynamic CDN Loading of Leaflet.js
+  useEffect(() => {
+    let mounted = true;
+    void loadLeafletResources()
+      .then(() => {
+        if (mounted) setLeafletLoaded(true);
+      })
+      .catch((error) => {
+        console.error("Load Leaflet resources failed", error);
+      });
 
-      const clusterDefaultLink = document.createElement("link");
-      clusterDefaultLink.rel = "stylesheet";
-      clusterDefaultLink.href = "https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css";
-      document.head.appendChild(clusterDefaultLink);
-
-      // Append MarkerCluster JS
-      const clusterScript = document.createElement("script");
-      clusterScript.src = "https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js";
-      clusterScript.onload = () => {
-        setLeafletLoaded(true);
-      };
-      document.body.appendChild(clusterScript);
+    return () => {
+      mounted = false;
     };
-    document.body.appendChild(script);
-
-    return () => {};
   }, []);
 
-  // 2. Fetch place details and itineraries from Supabase to bind with map interactions
+  // 2. Fetch Places and Itineraries from Supabase
   useEffect(() => {
-    api.getPlaces().then((data) => {
-      setPlaces(data);
+    let mounted = true;
+
+    void api.getMapPlaces().then((data) => {
+      if (mounted) setPlaces(data);
     }).catch((err) => {
       console.error("Load map places failed", err);
     });
 
-    api.getItineraries().then((data) => {
-      setItineraries(data);
+    void api.getItineraries().then((data) => {
+      if (mounted) setItineraries(data);
     }).catch((err) => {
       console.error("Load map itineraries failed", err);
     });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // 3. Initialize Leaflet Map once DOM is ready and Leaflet JS is loaded
+  // 3. Initialize Leaflet map instance
   useEffect(() => {
     if (!leafletLoaded || !mapDivRef.current || mapInstanceRef.current) return () => {};
 
     const L = (window as any).L;
     if (!L) return () => {};
 
-    // Center exact geographic target: Mount Ba Den (11.378345, 106.168924)
+    // Tay Ninh Mount Ba Den Center
     const map = L.map(mapDivRef.current, {
       zoomControl: false,
       attributionControl: false,
-      tap: false // CRITICAL: Fixes click/tap unresponsiveness on mobile/WebViews!
-    }).setView([11.378345, 106.168924], 15);
+      tap: false // Disable Leaflet custom tap handler to avoid conflicts with WebView click emulation
+    }).setView(MAP_CENTER, 15);
 
     mapInstanceRef.current = map;
 
-    // Load modern CartoDB Voyager tiles for a clean, vibrant tourism experience
+    // Load CartoDB Voyager tiles
     L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       maxZoom: 18,
       minZoom: 13,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.basemaps.cartocdn.com/">CARTO</a>'
     }).addTo(map);
+
+    // Track clicks on map background to deselect markers
+    map.on("click", () => {
+      // Prevent ghost clicks from mobile touch interactions from deselecting the POI
+      const lastTapTime = lastTapRef.current?.time ?? 0;
+      const timeSinceLastTap = Date.now() - lastTapTime;
+      if (timeSinceLastTap < 800) {
+        return;
+      }
+
+      setSelectedPlace(null);
+      setSelectedMarker(null);
+      setActiveRouteId(null);
+    });
+
+    // Handle native click/touch/mouse/pointer events for markers, tooltips, and clusters
+    map.on("layeradd", (e: any) => {
+      const layer = e.layer;
+      if (!layer) return;
+
+      setTimeout(() => {
+        const el = typeof layer.getElement === "function" ? layer.getElement() : null;
+        if (!el) return;
+
+        // Helper to bind events and stop propagation across all pointer/mouse/touch types
+        const bindStopPropagationEvents = (element: HTMLElement, handler: (evt: Event) => void) => {
+          // Detach existing handler if any
+          if ((element as any)._nativeTapHandler) {
+            const oldHandler = (element as any)._nativeTapHandler;
+            const events = ["click", "touchstart", "touchend", "mousedown", "mouseup", "pointerdown", "pointerup"];
+            events.forEach((evtName) => {
+              element.removeEventListener(evtName, oldHandler);
+            });
+          }
+
+          (element as any)._nativeTapHandler = handler;
+          const events = ["click", "touchstart", "touchend", "mousedown", "mouseup", "pointerdown", "pointerup"];
+          events.forEach((evtName) => {
+            element.addEventListener(evtName, handler, { passive: true });
+          });
+        };
+
+        // Case 1: Individual POI Marker
+        if (layer.placeSlug) {
+          const slug = layer.placeSlug;
+
+          const handleNativeMarkerTap = (evt: Event) => {
+            evt.stopPropagation();
+            if (L?.DomEvent) {
+              L.DomEvent.stopPropagation(evt);
+            }
+
+            if (evt.type === "click" || evt.type === "touchstart" || evt.type === "pointerdown") {
+              const matchedPlace = placeBySlugRef.current.get(slug);
+              if (matchedPlace && handleMarkerTapRef.current) {
+                handleMarkerTapRef.current({
+                  slug: matchedPlace.slug,
+                  name: matchedPlace.name,
+                  name_en: matchedPlace.name_en || matchedPlace.name,
+                  lat: matchedPlace.latitude,
+                  lng: matchedPlace.longitude,
+                  category: (matchedPlace.category || "tam_linh") as any
+                });
+              }
+            }
+          };
+
+          bindStopPropagationEvents(el, handleNativeMarkerTap);
+        }
+
+        // Case 2: Clickable Tooltip Labels
+        if (layer.options?.className === "leaflet-premium-tooltip") {
+          const marker = layer._source;
+          if (marker && marker.placeSlug) {
+            const slug = marker.placeSlug;
+
+            const handleNativeTooltipTap = (evt: Event) => {
+              evt.stopPropagation();
+              if (L?.DomEvent) {
+                L.DomEvent.stopPropagation(evt);
+              }
+
+              if (evt.type === "click" || evt.type === "touchstart" || evt.type === "pointerdown") {
+                const matchedPlace = placeBySlugRef.current.get(slug);
+                if (matchedPlace && handleMarkerTapRef.current) {
+                  handleMarkerTapRef.current({
+                    slug: matchedPlace.slug,
+                    name: matchedPlace.name,
+                    name_en: matchedPlace.name_en || matchedPlace.name,
+                    lat: matchedPlace.latitude,
+                    lng: matchedPlace.longitude,
+                    category: (matchedPlace.category || "tam_linh") as any
+                  });
+                }
+              }
+            };
+
+            bindStopPropagationEvents(el, handleNativeTooltipTap);
+          }
+        }
+
+        // Case 3: Cluster Marker
+        if (el.classList.contains("marker-cluster")) {
+          const handleNativeClusterTap = (evt: Event) => {
+            evt.stopPropagation();
+            if (L?.DomEvent) {
+              L.DomEvent.stopPropagation(evt);
+            }
+
+            if (evt.type === "click" || evt.type === "touchstart" || evt.type === "pointerdown") {
+              const cluster = layer;
+              if (!cluster || clusterActionLockRef.current) {
+                return;
+              }
+
+              clusterActionLockRef.current = true;
+
+              if (typeof map.stop === "function") {
+                map.stop();
+              }
+
+              const currentGroup = clusterGroupRef.current;
+              if (currentGroup && typeof currentGroup.unspiderfy === "function") {
+                currentGroup.unspiderfy();
+              }
+
+              setSelectedPlace(null);
+              setSelectedMarker(null);
+              setActiveRouteId(null);
+
+              const currentZoom = map.getZoom();
+              const targetMaxZoom = Math.min(17, map.getMaxZoom());
+
+              let unlocked = false;
+              let fallbackTimer: number | undefined;
+
+              const unlock = () => {
+                if (unlocked) return;
+                unlocked = true;
+                clusterActionLockRef.current = false;
+                map.off("moveend", unlock);
+                map.off("zoomend", unlock);
+                if (fallbackTimer !== undefined) {
+                  window.clearTimeout(fallbackTimer);
+                }
+              };
+
+              map.on("moveend", unlock);
+              map.on("zoomend", unlock);
+              fallbackTimer = window.setTimeout(unlock, 700);
+
+              if (currentZoom < targetMaxZoom) {
+                map.fitBounds(cluster.getBounds(), {
+                  padding: [48, 48],
+                  maxZoom: targetMaxZoom,
+                  animate: true
+                });
+              } else {
+                if (typeof cluster.spiderfy === "function") {
+                  cluster.spiderfy();
+                }
+                window.setTimeout(unlock, 250);
+              }
+            }
+          };
+
+          bindStopPropagationEvents(el, handleNativeClusterTap);
+        }
+      }, 0);
+    });
 
     return () => {
       if (mapInstanceRef.current) {
@@ -132,102 +362,105 @@ export const MapPage: React.FC = () => {
     };
   }, [leafletLoaded]);
 
-  // 3.5 Plot and update markers dynamically from Supabase database places with clustering
+  // 4. Plot markers dynamically on map
   useEffect(() => {
     const L = (window as any).L;
     const map = mapInstanceRef.current;
     if (!L || !map || places.length === 0) return;
 
-    // Remove existing cluster group and markers
+    // Clean existing cluster group
     if (clusterGroupRef.current) {
       map.removeLayer(clusterGroupRef.current);
       clusterGroupRef.current = null;
     }
     markersRef.current = {};
 
-    // Create marker cluster group
     const clusterGroup = L.markerClusterGroup({
       showCoverageOnHover: false,
       maxClusterRadius: 40,
-      disableClusteringAtZoom: 17
+      zoomToBoundsOnClick: false,
+      spiderfyOnMaxZoom: false,
+      animate: true,
+      animateAddingMarkers: false,
+      removeOutsideVisibleBounds: true
     });
     clusterGroupRef.current = clusterGroup;
 
-    // Custom pulsing marker icons
-    const createCustomIcon = (isSelected: boolean, color: string) => {
+    // Stable Custom DivIcon DOM (large 32x32 size for easy touch targets, centered inner dot)
+    const createCustomIcon = () => {
       return L.divIcon({
-        className: "custom-div-icon",
-        html: `<div style="
-          width: ${isSelected ? "18px" : "14px"};
-          height: ${isSelected ? "18px" : "14px"};
-          background-color: ${color};
-          border: 2.5px solid #ffffff;
-          border-radius: 50%;
-          box-shadow: 0 0 12px ${color};
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          transform: translate(-2px, -2px);
-        "></div>`,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        className: "custom-leaflet-poi-icon",
+        html: `<div class="marker-inner-dot"></div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
       });
     };
 
-    // Plot markers dynamically from Supabase database
     places.forEach((place) => {
       const leafletMarker = L.marker([place.latitude, place.longitude], {
-        icon: createCustomIcon(false, "var(--accent-gold)"),
+        icon: createCustomIcon(),
         interactive: true
-      });
+      }) as any;
 
-      // Label Tooltip (native premium display)
-      const label = language === "en" ? (place.name_en || place.name) : place.name;
-      leafletMarker.bindTooltip(label, {
+      leafletMarker.placeSlug = place.slug;
+
+      leafletMarker.bindTooltip(place.name, {
         permanent: true,
         direction: "top",
-        offset: [0, -10],
+        offset: [0, -14],
         className: "leaflet-premium-tooltip"
-      });
-
-      // Selection logic on marker click
-      leafletMarker.on("click", (e: any) => {
-        if (e.originalEvent) e.originalEvent.stopPropagation();
-        handleMarkerTap({
-          slug: place.slug,
-          name: place.name,
-          name_en: place.name_en || place.name,
-          lat: place.latitude,
-          lng: place.longitude,
-          category: (place.category || "tam_linh") as any
-        });
       });
 
       clusterGroup.addLayer(leafletMarker);
       markersRef.current[place.slug] = leafletMarker;
     });
 
-    // Bulletproof click event listener at the Cluster Group container level
-    clusterGroup.on("click", (event: any) => {
-      const leafletMarker = event.layer;
-      if (!leafletMarker || typeof leafletMarker.getChildCount === "function") return; // Skip if it's a cluster icon click!
-      
-      const latlng = leafletMarker.getLatLng();
-      if (!latlng) return;
+    // Custom clusterclick handler
+    clusterGroup.on("clusterclick", (e: any) => {
+      const cluster = e.layer;
+      if (!cluster || clusterActionLockRef.current) return;
 
-      // Use a tiny float epsilon margin to match markers safely
-      const matchedPlace = places.find(p => 
-        Math.abs(p.latitude - latlng.lat) < 0.00001 && 
-        Math.abs(p.longitude - latlng.lng) < 0.00001
-      );
-      
-      if (matchedPlace) {
-        handleMarkerTap({
-          slug: matchedPlace.slug,
-          name: matchedPlace.name,
-          name_en: matchedPlace.name_en || matchedPlace.name,
-          lat: matchedPlace.latitude,
-          lng: matchedPlace.longitude,
-          category: (matchedPlace.category || "tam_linh") as any
+      clusterActionLockRef.current = true;
+      if (typeof map.stop === "function") {
+        map.stop();
+      }
+      if (clusterGroupRef.current && typeof clusterGroupRef.current.unspiderfy === "function") {
+        clusterGroupRef.current.unspiderfy();
+      }
+
+      setSelectedPlace(null);
+      setSelectedMarker(null);
+
+      const currentZoom = map.getZoom();
+      const targetMaxZoom = Math.min(17, map.getMaxZoom());
+
+      let unlocked = false;
+      let fallbackTimer: number | undefined;
+
+      const unlock = () => {
+        if (unlocked) return;
+        unlocked = true;
+        clusterActionLockRef.current = false;
+        map.off("moveend", unlock);
+        map.off("zoomend", unlock);
+        if (fallbackTimer !== undefined) {
+          window.clearTimeout(fallbackTimer);
+        }
+      };
+
+      map.on("moveend", unlock);
+      map.on("zoomend", unlock);
+      fallbackTimer = window.setTimeout(unlock, 700);
+
+      if (currentZoom < targetMaxZoom) {
+        map.fitBounds(cluster.getBounds(), {
+          padding: [48, 48],
+          maxZoom: targetMaxZoom,
+          animate: true
         });
+      } else {
+        cluster.spiderfy();
+        window.setTimeout(unlock, 250);
       }
     });
 
@@ -240,55 +473,94 @@ export const MapPage: React.FC = () => {
       }
       markersRef.current = {};
     };
-  }, [leafletLoaded, places, language]);
+  }, [leafletLoaded, places]);
 
-  // Clean active route polyline on route id change
+  // 5. STABLE DOM Styling updates (Classes toggled instead of redrawing icons)
+  useEffect(() => {
+    if (!leafletLoaded || places.length === 0) return;
+
+    const routeIndexBySlug = new Map(
+      (activeRoute?.place_slugs || []).map((slug, index) => [slug, index])
+    );
+
+    places.forEach((place) => {
+      const leafletMarker = markersRef.current[place.slug];
+      const el = leafletMarker ? leafletMarker.getElement() : null;
+      if (!el) return;
+
+      const dot = el.querySelector(".marker-inner-dot") as HTMLElement;
+      if (!dot) return;
+
+      const isSelected = selectedPlace?.slug === place.slug;
+      const routeIndex = routeIndexBySlug.get(place.slug) ?? -1;
+
+      // 1. Toggle Selection highlighting
+      dot.classList.toggle("is-selected", isSelected);
+
+      // 2. Toggle Itinerary Route highlighting & numbering
+      if (routeIndex !== -1) {
+        dot.classList.add("is-in-route");
+        dot.style.setProperty("--route-color", activeRoute?.color || "var(--accent-gold)");
+        dot.innerHTML = `<span>${routeIndex + 1}</span>`;
+      } else {
+        dot.classList.remove("is-in-route");
+        dot.style.removeProperty("--route-color");
+        dot.innerHTML = "";
+      }
+    });
+  }, [activeRoute, selectedPlace?.slug, places, leafletLoaded]);
+
+  // 6. Language support tooltip updates
+  useEffect(() => {
+    if (!leafletLoaded) return;
+    places.forEach((place) => {
+      const marker = markersRef.current[place.slug];
+      if (!marker) return;
+      const label = language === "en" ? (place.name_en || place.name) : place.name;
+      marker.setTooltipContent(label);
+    });
+  }, [language, places, leafletLoaded]);
+
+  // 7. Drawing itinerary route polyline
   useEffect(() => {
     const L = (window as any).L;
     const map = mapInstanceRef.current;
     if (!L || !map) return;
 
-    // Clear existing polyline
     if (routePolylineRef.current) {
       map.removeLayer(routePolylineRef.current);
       routePolylineRef.current = null;
     }
 
-    if (activeRouteId) {
-      const route = itineraries.find(r => r.id === activeRouteId);
-      if (route) {
-        // Resolve coordinates dynamically from Supabase database places state!
-        const resolvedPath: [number, number][] = [];
-        const slugs = route.place_slugs || [];
-        slugs.forEach((slug) => {
-          const matched = places.find(p => p.slug === slug);
-          if (matched) {
-            resolvedPath.push([matched.latitude, matched.longitude]);
-          }
-        });
-
-        if (resolvedPath.length > 0) {
-          // Draw the path polyline
-          const polyline = L.polyline(resolvedPath, {
-            color: route.color,
-            weight: 4,
-            dashArray: "10, 8",
-            opacity: 0.95
-          }).addTo(map);
-
-          routePolylineRef.current = polyline;
-
-          // Auto zoom and pan to fit entire route perfectly
-          map.fitBounds(polyline.getBounds(), {
-            padding: [40, 40],
-            maxZoom: 16
-          });
+    if (activeRoute) {
+      const resolvedPath: [number, number][] = [];
+      const slugs = activeRoute.place_slugs || [];
+      slugs.forEach((slug) => {
+        const matched = placeBySlug.get(slug);
+        if (matched) {
+          resolvedPath.push([matched.latitude, matched.longitude]);
         }
+      });
+
+      if (resolvedPath.length > 0) {
+        const polyline = L.polyline(resolvedPath, {
+          color: activeRoute.color,
+          weight: 4,
+          dashArray: "10, 8",
+          opacity: 0.95
+        }).addTo(map);
+
+        routePolylineRef.current = polyline;
+
+        map.fitBounds(polyline.getBounds(), {
+          padding: [40, 40],
+          maxZoom: 16
+        });
       }
     }
-  }, [activeRouteId, places]);
+  }, [activeRoute, placeBySlug]);
 
-  // Draw or update GPS Marker on coordinates change
+  // 8. GPS Location Marker plot & updates
   useEffect(() => {
     const L = (window as any).L;
     const map = mapInstanceRef.current;
@@ -302,12 +574,7 @@ export const MapPage: React.FC = () => {
     if (gpsLocation) {
       const gpsIcon = L.divIcon({
         className: "gps-div-icon",
-        html: `<div style="
-          position: relative;
-          width: 20px;
-          height: 20px;
-        ">
-          <!-- Pulse wave ring -->
+        html: `<div style="position: relative; width: 20px; height: 20px;">
           <div style="
             position: absolute;
             width: 32px;
@@ -318,7 +585,6 @@ export const MapPage: React.FC = () => {
             left: -6px;
             animation: gps-pulse 1.8s infinite;
           "></div>
-          <!-- Solid core -->
           <div style="
             position: absolute;
             width: 14px;
@@ -341,104 +607,59 @@ export const MapPage: React.FC = () => {
     }
   }, [gpsLocation]);
 
-  // 4. Unified Marker Icon Controller (Pulsing sequence numbers & highlights)
-  useEffect(() => {
-    const L = (window as any).L;
-    const map = mapInstanceRef.current;
-    if (!L || !map) return;
-
-    const activeItinerary = itineraries.find(r => r.id === activeRouteId);
-
-    Object.keys(markersRef.current).forEach((slug) => {
-      const marker = places.find(p => p.slug === slug);
-      const leafletMarker = markersRef.current[slug];
-      if (!marker || !leafletMarker) return;
-
-      const isSelected = selectedPlace?.slug === slug;
-      
-      // Determine if this marker belongs to the active itinerary path
-      let routeIndex = -1;
-      if (activeItinerary) {
-        const slugs = activeItinerary.place_slugs || [];
-        routeIndex = slugs.indexOf(marker.slug);
-      }
-
-      // Base Styling tokens
-      let bgColor = "var(--accent-gold)";
-      let borderStyle = "2.5px solid #ffffff";
-      let scaleClass = isSelected ? "scale(1.25)" : "scale(1)";
-      let innerHtml = "";
-      let markerSize: [number, number] = [14, 14];
-      let anchorSize: [number, number] = [7, 7];
-
-      if (isSelected) {
-        bgColor = "#f97316"; // Beautiful active orange highlight
-        borderStyle = "2.5px solid #ffffff";
-        markerSize = [18, 18];
-        anchorSize = [9, 9];
-      } else if (routeIndex !== -1) {
-        bgColor = activeItinerary?.color || "var(--accent-gold)"; // Route-specific color code
-        borderStyle = "2px solid #ffffff";
-        markerSize = [20, 20];
-        anchorSize = [10, 10];
-        // Embed the sequence index 1, 2, 3...
-        innerHtml = `<span style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          color: var(--primary-navy);
-          font-size: 10px;
-          font-weight: 900;
-          font-family: Arial, sans-serif;
-          line-height: 1;
-        ">${routeIndex + 1}</span>`;
-      }
-
-      // Apply leaflet DivIcon changes dynamically
-      leafletMarker.setIcon(
-        L.divIcon({
-          className: "custom-leaflet-poi-icon",
-          html: `<div style="
-            width: ${markerSize[0]}px;
-            height: ${markerSize[1]}px;
-            background-color: ${bgColor};
-            border: ${borderStyle};
-            border-radius: 50%;
-            box-shadow: 0 0 12px ${bgColor};
-            transform: ${scaleClass};
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            ${innerHtml}
-          </div>`,
-          iconSize: markerSize,
-          iconAnchor: anchorSize
-        })
-      );
-    });
-  }, [activeRouteId, selectedPlace, places, leafletLoaded]);
-
-  // Update selected marker scale icon dynamically on click
+  // Marker Tap handler
   const handleMarkerTap = (marker: MapMarker) => {
-    const matchedPlace = places.find(p => p.slug === marker.slug);
+    const now = Date.now();
+
+    // Debounce fast multi-taps
+    if (
+      lastTapRef.current?.slug === marker.slug &&
+      now - lastTapRef.current.time < 400
+    ) {
+      return;
+    }
+
+    lastTapRef.current = { slug: marker.slug, time: now };
+
+    const matchedPlace = placeBySlug.get(marker.slug);
     setSelectedPlace(matchedPlace ?? null);
     setSelectedMarker(marker);
-    setActiveRouteId(null); // Clear active AI suggestion route to avoid UI clash
+    setActiveRouteId(null); // Reset active AI route on click
 
-    // Pan map to marker center
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([marker.lat, marker.lng], 16, {
-        animate: true,
-        duration: 0.5
-      });
+    const L = (window as any).L;
+    const map = mapInstanceRef.current;
+    const clusterGroup = clusterGroupRef.current;
+
+    if (!map || !L) return;
+
+    if (typeof map.stop === "function") {
+      map.stop();
     }
+    if (clusterGroup && typeof clusterGroup.unspiderfy === "function") {
+      clusterGroup.unspiderfy();
+    }
+
+    const currentZoom = map.getZoom();
+    const targetZoom = currentZoom < 16 ? 16 : currentZoom;
+    const targetLatLng = L.latLng(marker.lat, marker.lng);
+    const currentCenter = map.getCenter();
+    const distance = currentCenter.distanceTo(targetLatLng);
+
+    // Skip flyTo if already focused
+    const isAlreadyFocused = distance < 5 && currentZoom >= 16;
+    if (selectedPlace?.slug === marker.slug && isAlreadyFocused) return;
+
+    map.flyTo(targetLatLng, targetZoom, {
+      animate: true,
+      duration: 0.35
+    });
   };
 
-  // Real Native Zalo GPS Activation
+  useEffect(() => {
+    handleMarkerTapRef.current = handleMarkerTap;
+  }, [handleMarkerTap]);
+
+  // Activate GPS location using Zalo SDK
   const handleActivateGPS = async (isAutoLoad: boolean = false) => {
     setGpsLoading(true);
     try {
@@ -451,7 +672,6 @@ export const MapPage: React.FC = () => {
 
         const isRemote = latitude < 11.35 || latitude > 11.41 || longitude < 106.12 || longitude > 106.21;
 
-        // Pan map target center ONLY if they are not remote OR if it's an explicit manual click
         if (mapInstanceRef.current && (!isRemote || !isAutoLoad)) {
           mapInstanceRef.current.setView([latitude, longitude], 16, {
             animate: true,
@@ -459,7 +679,6 @@ export const MapPage: React.FC = () => {
           });
         }
 
-        // Bounding check: if outside Tay Ninh mountain area and manually clicked
         if (isRemote && !isAutoLoad) {
           alert(
             language === "en"
@@ -482,14 +701,14 @@ export const MapPage: React.FC = () => {
     }
   };
 
-  // 3.7 Auto-activate native Zalo GPS on load once Leaflet is ready
+  // Auto-GPS triggers on load once Leaflet is ready
   useEffect(() => {
     if (leafletLoaded && mapInstanceRef.current) {
-      handleActivateGPS(true); // Pass true to silently register GPS on load
+      handleActivateGPS(true);
     }
   }, [leafletLoaded]);
 
-  // Zoom controls wrappers
+  // Map zoom handlers
   const handleZoomIn = () => {
     if (mapInstanceRef.current) mapInstanceRef.current.zoomIn();
   };
@@ -498,7 +717,7 @@ export const MapPage: React.FC = () => {
   };
   const handleResetZoom = () => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([11.378345, 106.168924], 15, {
+      mapInstanceRef.current.setView(MAP_CENTER, 15, {
         animate: true,
         duration: 0.5
       });
@@ -509,14 +728,13 @@ export const MapPage: React.FC = () => {
   };
 
   return (
-    <Page 
-      style={{ 
+    <Page
+      style={{
         position: "absolute",
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        height: "100vh",
         paddingTop: "calc(48px + var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px)))",
         color: "#f4f7f6",
         display: "flex",
@@ -526,20 +744,17 @@ export const MapPage: React.FC = () => {
         zIndex: 97
       }}
     >
-      {/* Dynamic Keyframe style blocks specifically for map pulsing beacons and dark theme overlay */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        /* Clean, vibrant light background matching modern tourism aesthetics */
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .leaflet-container {
           background-color: #f4f8fa !important;
         }
 
-        /* Pulsing CSS animations for location beacons */
         @keyframes gps-pulse {
           0% { transform: scale(0.5); opacity: 0.8; }
           100% { transform: scale(1.4); opacity: 0; }
         }
 
-        /* Premium label markers style overrides - with click-through pointer events */
         .leaflet-premium-tooltip {
           background-color: var(--primary-navy) !important;
           border: 1px solid var(--accent-gold) !important;
@@ -551,28 +766,74 @@ export const MapPage: React.FC = () => {
           box-shadow: 0 2px 6px rgba(11, 37, 69, 0.4) !important;
           opacity: 0.95 !important;
           white-space: nowrap !important;
-          pointer-events: none !important; /* Critical: allows clicking marker under label! */
+          pointer-events: auto !important;
+          cursor: pointer !important;
         }
 
-        /* Custom Marker Cluster Styling (HSL Gold/Navy theme) */
         .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
           background-color: rgba(11, 37, 69, 0.6) !important;
           border: 1.5px solid var(--accent-gold) !important;
         }
+
         .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
           background-color: rgba(212, 175, 55, 0.2) !important;
           color: var(--accent-gold) !important;
           font-weight: 800 !important;
         }
 
-        /* Force pointer events on all custom leaflet marker icons and pane items */
-        .custom-leaflet-poi-icon, .custom-div-icon, .leaflet-marker-icon {
+        .custom-leaflet-poi-icon {
+          background: transparent !important;
+          border: none !important;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           pointer-events: auto !important;
           cursor: pointer !important;
+          touch-action: manipulation !important;
+        }
+
+        .marker-inner-dot {
+          width: 14px;
+          height: 14px;
+          background-color: var(--accent-gold);
+          border: 2.5px solid #ffffff;
+          border-radius: 50%;
+          box-shadow: 0 0 12px var(--accent-gold);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        }
+
+        .marker-inner-dot.is-selected {
+          width: 18px !important;
+          height: 18px !important;
+          background-color: #f97316 !important;
+          box-shadow: 0 0 12px #f97316 !important;
+          border-color: #ffffff !important;
+          transform: scale(1.25);
+        }
+
+        .marker-inner-dot.is-in-route {
+          width: 20px !important;
+          height: 20px !important;
+          border-color: #ffffff !important;
+          background-color: var(--route-color, var(--accent-gold)) !important;
+          box-shadow: 0 0 12px var(--route-color, var(--accent-gold)) !important;
+          transform: scale(1.1);
+        }
+
+        .marker-inner-dot.is-in-route span {
+          color: var(--primary-navy);
+          font-size: 10px;
+          font-weight: 900;
+          font-family: Arial, sans-serif;
+          line-height: 1;
         }
       ` }} />
 
-      {/* Premium Dark Header */}
+      {/* Premium Header */}
       <Header
         title={
           <span style={{ color: "var(--accent-gold)", fontWeight: 800 }}>
@@ -592,7 +853,6 @@ export const MapPage: React.FC = () => {
         borderBottom: "1px solid rgba(212, 175, 55, 0.3)",
         zIndex: 10
       }}>
-        {/* GPS Control tools */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ fontSize: "11px", color: "#f4f7f6", opacity: 0.85 }}>
             {gpsLocation ? (
@@ -629,7 +889,7 @@ export const MapPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Curated AI routes list */}
+        {/* AI route scrollable list */}
         <div style={{
           display: "flex",
           gap: "8px",
@@ -665,7 +925,7 @@ export const MapPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Map Container DOM */}
+      {/* Main Map Content DOM */}
       <div style={{ flex: 1, position: "relative", width: "100%", height: "100%" }}>
         {!leafletLoaded && (
           <div style={{
@@ -688,11 +948,10 @@ export const MapPage: React.FC = () => {
             </p>
           </div>
         )}
-        
-        {/* Actual map div target */}
+
         <div ref={mapDivRef} style={{ width: "100%", height: "100%", backgroundColor: "var(--primary-navy)" }} />
 
-        {/* Zoom controls */}
+        {/* Zoom and resetting viewport overlay tools */}
         <div style={{
           position: "absolute",
           bottom: "16px",
@@ -700,7 +959,7 @@ export const MapPage: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           gap: "8px",
-          zIndex: 1000 // leaflet uses z-indexes around 400
+          zIndex: 1000
         }}>
           <button
             onClick={handleZoomIn}
@@ -761,24 +1020,23 @@ export const MapPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Pop-up bottom details sheet */}
-      {/* Pop-up bottom details sheet - Optimized with Zalo UI Level Specification */}
+      {/* Pop-up bottom details sheet panel */}
       <div style={{
         backgroundColor: "var(--primary-navy)",
         borderTop: "2.5px solid var(--accent-gold)",
-        padding: (selectedPlace || activeRoute) 
-          ? "10px 16px calc(16px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) 16px" 
-          : "6px 16px calc(8px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) 16px",
-        maxHeight: (selectedPlace || activeRoute) ? "260px" : "80px",
+        padding: (selectedPlace || activeRoute)
+          ? "8px 16px calc(12px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) 16px"
+          : "4px 16px calc(4px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) 16px",
+        maxHeight: (selectedPlace || activeRoute) ? "210px" : "48px",
         transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
         overflowY: "auto",
         zIndex: 1001,
         boxShadow: "0 -10px 30px rgba(0, 0, 0, 0.4)",
         display: "flex",
         flexDirection: "column",
-        gap: (selectedPlace || activeRoute) ? "10px" : "2px"
+        gap: (selectedPlace || activeRoute) ? "8px" : "2px"
       }}>
-        {/* Zalo UI Level Spec: Bottom Sheet Drag Handle Indicator */}
+        {/* Drag handle */}
         <div style={{
           width: "40px",
           height: "4px",
@@ -787,27 +1045,30 @@ export const MapPage: React.FC = () => {
           margin: "0 auto 6px auto",
           flexShrink: 0
         }} />
+
         {selectedPlace && selectedMarker ? (
           <div>
             <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
               <img
                 src={selectedPlace.image_url}
                 alt={selectedPlace.name}
-                width={80}
-                height={80}
-                style={{ borderRadius: "10px", objectFit: "cover", border: "1px solid var(--accent-gold)", flexShrink: 0 }}
+                width={64}
+                height={64}
+                loading="lazy"
+                decoding="async"
+                style={{ borderRadius: "8px", objectFit: "cover", border: "1px solid var(--accent-gold)", flexShrink: 0 }}
               />
-              
+
               <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: "14.5px", fontWeight: 700, color: "var(--accent-gold)", margin: "0 0 4px 0" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent-gold)", margin: "0 0 2px 0" }}>
                   {language === "en" && selectedPlace.name_en ? selectedPlace.name_en : selectedPlace.name}
                 </h3>
-                <p style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.7)", margin: "0 0 6px 0", display: "flex", alignItems: "center", gap: "4px" }}>
+                <p style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.7)", margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "4px" }}>
                   <MapPin size={10} style={{ stroke: "var(--accent-gold)" }} />
                   GPS: {selectedMarker.lat.toFixed(6)}, {selectedMarker.lng.toFixed(6)}
                 </p>
                 <p style={{
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   color: "var(--cream-white)",
                   opacity: 0.85,
                   margin: 0,
@@ -816,14 +1077,14 @@ export const MapPage: React.FC = () => {
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
-                  lineHeight: "1.4"
+                  lineHeight: "1.3"
                 }}>
                   {language === "en" && selectedPlace.short_description_en ? selectedPlace.short_description_en : selectedPlace.short_description}
                 </p>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+            <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
               <button
                 onClick={() => navigate(`/places/${selectedPlace.slug}`)}
                 style={{
@@ -835,12 +1096,12 @@ export const MapPage: React.FC = () => {
                   backgroundColor: "rgba(255, 255, 255, 0.08)",
                   color: "#ffffff",
                   border: "1px solid rgba(255,255,255,0.25)",
-                  borderRadius: "10px",
-                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  minHeight: "40px"
+                  minHeight: "36px"
                 }}
               >
                 <Info size={14} />
@@ -859,12 +1120,12 @@ export const MapPage: React.FC = () => {
                     backgroundColor: "var(--accent-gold)",
                     color: "var(--primary-navy)",
                     border: "none",
-                    borderRadius: "10px",
-                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
                     fontSize: "12px",
                     fontWeight: 800,
                     cursor: "pointer",
-                    minHeight: "40px"
+                    minHeight: "36px"
                   }}
                 >
                   <Volume2 size={14} />
@@ -875,35 +1136,35 @@ export const MapPage: React.FC = () => {
           </div>
         ) : activeRoute ? (
           <div>
-            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "6px", marginBottom: "8px" }}>
-              <h3 style={{ fontSize: "14px", fontWeight: 700, color: activeRoute.color, margin: "0 0 2px 0" }}>
+            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "4px", marginBottom: "6px" }}>
+              <h3 style={{ fontSize: "13.5px", fontWeight: 700, color: activeRoute.color, margin: "0 0 2px 0" }}>
                 {language === "en" ? (activeRoute.name_en || activeRoute.name) : activeRoute.name}
               </h3>
-              <p style={{ fontSize: "11px", color: "var(--cream-white)", opacity: 0.8, margin: 0 }}>
+              <p style={{ fontSize: "10.5px", color: "var(--cream-white)", opacity: 0.8, margin: 0 }}>
                 {language === "en" ? "AI recommended travel steps:" : "Lộ trình đề xuất di chuyển chi tiết:"}
               </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto", maxHeight: "150px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "110px" }}>
               {activeRoute.steps.map((step, idx) => (
-                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "12.5px" }}>
+                <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px" }}>
                   <span style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "18px",
-                    height: "18px",
+                    width: "16px",
+                    height: "16px",
                     borderRadius: "50%",
                     backgroundColor: activeRoute.color,
                     color: "var(--primary-navy)",
-                    fontSize: "10px",
+                    fontSize: "9.5px",
                     fontWeight: 800,
                     marginTop: "2px",
                     flexShrink: 0
                   }}>
                     {idx + 1}
                   </span>
-                  <p style={{ margin: 0, color: "var(--cream-white)", opacity: 0.9, lineHeight: "1.4" }}>
+                  <p style={{ margin: 0, color: "var(--cream-white)", opacity: 0.9, lineHeight: "1.35" }}>
                     {language === "en" ? step.en : step.vi}
                   </p>
                 </div>
@@ -911,11 +1172,11 @@ export const MapPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center", 
-            gap: "8px", 
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
             padding: "2px 0",
             fontSize: "11.5px",
             color: "var(--cream-white)",
@@ -924,8 +1185,8 @@ export const MapPage: React.FC = () => {
           }}>
             <Compass size={13} style={{ stroke: "var(--accent-gold)", animation: "spin 12s linear infinite" }} />
             <span>
-              {language === "en" 
-                ? "Select a marker or an AI Itinerary to view route." 
+              {language === "en"
+                ? "Select a marker or an AI Itinerary to view route."
                 : "Chạm địa danh hoặc chọn Lộ trình AI để xem chi tiết."}
             </span>
           </div>

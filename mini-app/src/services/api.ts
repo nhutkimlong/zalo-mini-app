@@ -29,13 +29,17 @@ export interface TouristPlace {
   display_order?: number;
 }
 
-export const hasAudioGuide = (place: TouristPlace, language: string) => {
+export type MapPlace = Omit<TouristPlace, "full_description" | "full_description_en">;
+
+type AudioGuidePlace = Pick<TouristPlace, "audio_url" | "audio_url_en" | "audio_enabled">;
+
+export const hasAudioGuide = (place: AudioGuidePlace, language: string) => {
   const url = language === "en" && place.audio_url_en ? place.audio_url_en : place.audio_url;
   const hasUrl = !!url && url.trim().toLowerCase() !== "none";
   return place.audio_enabled === true && hasUrl;
 };
 
-export const getAudioGuideUrl = (place: TouristPlace, language: string) => {
+export const getAudioGuideUrl = (place: AudioGuidePlace, language: string) => {
   if (!hasAudioGuide(place, language)) return null;
   return language === "en" && place.audio_url_en ? place.audio_url_en : place.audio_url ?? null;
 };
@@ -109,6 +113,17 @@ class ApiClient {
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return (data as TouristPlace[]) ?? [];
+  }
+
+  async getMapPlaces(): Promise<MapPlace[]> {
+    const { data, error } = await supabase
+      .from("tourist_places")
+      .select("id,name,name_en,slug,short_description,short_description_en,image_url,audio_url,audio_url_en,audio_enabled,latitude,longitude,category,display_order")
+      .eq("status", "published")
+      .order("created_at", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return (data as MapPlace[]) ?? [];
   }
 
   async getPlaceBySlug(slug: string): Promise<TouristPlace> {

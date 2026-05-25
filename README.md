@@ -177,20 +177,20 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-Sau do:
+### Mini App Zalo
 
+Không dùng `localhost`. `VITE_BASE_URL` trong `.env.production` phải là public HTTPS backend.
+
+Khi chạy lệnh build (`npm run build`) hoặc deploy (`npm run deploy:zalo`), hệ thống sẽ kích hoạt một plugin Vite tùy chỉnh (`zaloMiniAppPlugin` trong `vite.config.ts`) tại bước đóng gói (`closeBundle` hook). Plugin này tự động:
+1. Sao chép `app-config.json` vào thư mục `www/` (Zalo Portal yêu cầu file này ở gốc thư mục zip upload).
+2. Chuyển thẻ `<script type="module" crossorigin src="./assets/index.js"></script>` trong `www/index.html` thành `<script defer src="./assets/index.js"></script>` để tương thích tốt nhất với webview offline của Zalo (tránh lỗi màn hình trắng do không hỗ trợ ES Modules).
+
+*Lưu ý*: Do `zmp-cli` tự chạy trình biên dịch Vite bằng API Node.js khi deploy, việc sử dụng plugin Vite là giải pháp duy nhất đảm bảo các bước đóng gói này luôn được thực thi (khác với các script npm thông thường sẽ bị Zalo CLI bỏ qua).
+
+Sau đó tiến hành deploy lên Zalo:
 ```bat
 npm run deploy:zalo
 ```
-
-Script `deploy:zalo` se chay `scripts/check-zalo-env.mjs` truoc khi `zmp deploy`. No chan deploy neu:
-
-- thieu `.env.production`
-- `VITE_BASE_URL` con la localhost
-- backend khong phai HTTPS
-- thieu Supabase URL/anon key
-
-Quan trong: Zalo khong doc `.env` runtime sau khi deploy. Vite se replace `import.meta.env.VITE_*` thanh string trong bundle luc build/deploy. Vi vay khong can hard-code trong source, nhung can `.env.production` dung truoc khi `zmp deploy`.
 
 ## Admin Dashboard
 

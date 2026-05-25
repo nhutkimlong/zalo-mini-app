@@ -16,6 +16,8 @@ venv/
 # Build output
 dist/
 build/
+www/
+mini-app/www/
 coverage/
 
 # Runtime logs
