@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Compass, AlertTriangle } from "lucide-react";
+import { Home, Bot, Compass, AlertTriangle } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 
 interface LayoutProps {
@@ -18,12 +18,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return false;
   };
 
-  const showBottomNav = path !== "/chat";
+  const showBottomNav = path !== "/chat" && path !== "/map";
 
   return (
     <div className="page-container" style={showBottomNav ? {} : { paddingBottom: 0, height: "100vh", overflow: "hidden" }}>
       {/* Dynamic Content */}
-      <main style={showBottomNav ? { minHeight: "calc(100vh - 60px)", paddingBottom: "20px" } : { height: "100vh", overflow: "hidden" }}>
+      <main style={showBottomNav ? { minHeight: "calc(100vh - 60px)" } : { height: "100vh", overflow: "hidden" }}>
         {children}
       </main>
 
@@ -36,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Link>
           
           <Link to="/chat" className={`nav-item ${isLinkActive("/chat") ? "nav-item-active" : ""}`} aria-label={t("nav.chat")}>
-            <MessageSquare size={22} aria-hidden="true" />
+            <Bot size={22} aria-hidden="true" />
             <span>{t("nav.chat")}</span>
           </Link>
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, ShieldAlert, CloudLightning, Calendar, Info, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Header, Page } from "zmp-ui";
+import { Bell, ShieldAlert, CloudLightning, Calendar, Info, Search, ChevronDown, ChevronUp } from "lucide-react";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -107,19 +107,19 @@ export const AnnouncementsPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <Page>
       {/* Page Header */}
-      <header className="app-header">
-        <Link to="/" style={{ color: "var(--cream-white)" }} aria-label={language === "en" ? "Back to home" : "Quay lại trang chủ"}>
-          <ArrowLeft size={22} style={{ color: "var(--accent-gold)" }} />
-        </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Bell size={20} style={{ stroke: "var(--accent-gold)" }} aria-hidden="true" />
-          <h1 style={{ color: "var(--accent-gold)", margin: 0, fontSize: "16px" }}>
-            {t("announcements.title").toUpperCase()}
-          </h1>
-        </div>
-      </header>
+      <Header
+        showBackIcon={true}
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Bell size={20} style={{ stroke: "var(--accent-gold)" }} aria-hidden="true" />
+            <span style={{ color: "var(--accent-gold)", fontWeight: 700 }}>
+              {t("announcements.title").toUpperCase()}
+            </span>
+          </div> as any
+        }
+      />
 
       {/* Hero Accent */}
       <div 
@@ -320,7 +320,7 @@ export const AnnouncementsPage: React.FC = () => {
           })
         )}
       </div>
-    </div>
+    </Page>
   );
 };
 

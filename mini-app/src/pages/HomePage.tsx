@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Compass, Info, FileText, AlertTriangle, Bell, PhoneCall, ChevronRight } from "lucide-react";
-import { getUserInfo } from "zmp-sdk/apis";
+import { Bot, Compass, Info, FileText, Map, Bell, PhoneCall, ChevronRight } from "lucide-react";
+import { getUserInfo, openPhone } from "zmp-sdk/apis";
+import { Header, Page } from "zmp-ui";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import heroImageUrl from "../assets/hero.webp";
@@ -37,20 +38,39 @@ export const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <div>
+    <Page>
       {/* Premium Header */}
-      <header className="app-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <img src={logoImageUrl} alt="Logo" width={36} height={36} style={{ borderRadius: "8px", border: "1px solid var(--accent-gold)", objectFit: "cover" }} />
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <h1 style={{ color: "var(--accent-gold)", margin: 0, fontSize: "16px", fontWeight: 800, letterSpacing: "0.5px" }}>NÚI BÀ ĐEN</h1>
-            <span style={{ fontSize: "10px", opacity: 0.85, fontWeight: 600 }}>
-              {userProfile?.name ? (language === "vi" ? `Kính chào anh/chị ${userProfile.name}!` : `Welcome, Mr/Ms ${userProfile.name}!`) : (language === "vi" ? "Trợ Lý Du Lịch Số Quốc Gia" : "National Digital Tourism Assistant")}
-            </span>
-          </div>
+      <Header
+        showBackIcon={false}
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <img src={logoImageUrl} alt="Logo" width={36} height={36} style={{ borderRadius: "8px", border: "1px solid var(--accent-gold)", objectFit: "cover" }} />
+            <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+              <h1 style={{ color: "var(--accent-gold)", margin: 0, fontSize: "16px", fontWeight: 800, letterSpacing: "0.5px" }}>
+                {language === "en" ? "BLACK LADY MOUNTAIN" : "NÚI BÀ ĐEN"}
+              </h1>
+              <span style={{ fontSize: "10px", color: "var(--cream-white)", opacity: 0.85, fontWeight: 600 }}>
+                {userProfile?.name ? (language === "vi" ? `Kính chào anh/chị ${userProfile.name}!` : `Welcome, Mr/Ms ${userProfile.name}!`) : (language === "vi" ? "Trợ Lý Du Lịch Số Quốc Gia" : "National Digital Tourism Assistant")}
+              </span>
+            </div>
+          </div> as any
+        }
+      />
+
+      {/* Control bar: Language Selector & Notifications */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "10px 16px",
+        backgroundColor: "var(--primary-navy)",
+        borderBottom: "1px solid rgba(212, 175, 55, 0.2)",
+      }}>
+        <div style={{ fontSize: "12px", color: "var(--cream-white)", opacity: 0.8 }}>
+          {language === "vi" ? "Chọn ngôn ngữ & thông báo:" : "Select language & notifications:"}
         </div>
-        {/* Bilingual Selector & Bell Announcements Icon */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* Bell Icon */}
           <Link
             to="/announcements"
             style={{
@@ -88,11 +108,13 @@ export const HomePage: React.FC = () => {
               !
             </span>
           </Link>
+          
+          {/* Language Selector */}
           <div className="language-selector" style={{ display: "flex", backgroundColor: "rgba(255, 255, 255, 0.08)", borderRadius: "20px", padding: "2px", border: "1px solid rgba(212, 175, 55, 0.4)" }}>
             <button
               onClick={() => setLanguage("vi")}
               style={{
-                padding: "4px 10px",
+                padding: "6px 12px",
                 borderRadius: "18px",
                 border: "none",
                 fontSize: "12px",
@@ -100,7 +122,12 @@ export const HomePage: React.FC = () => {
                 backgroundColor: language === "vi" ? "var(--accent-gold)" : "transparent",
                 color: language === "vi" ? "var(--primary-navy)" : "var(--cream-white)",
                 cursor: "pointer",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
+                minHeight: "36px",
+                minWidth: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
               }}
             >
               VI
@@ -108,7 +135,7 @@ export const HomePage: React.FC = () => {
             <button
               onClick={() => setLanguage("en")}
               style={{
-                padding: "4px 10px",
+                padding: "6px 12px",
                 borderRadius: "18px",
                 border: "none",
                 fontSize: "12px",
@@ -116,19 +143,24 @@ export const HomePage: React.FC = () => {
                 backgroundColor: language === "en" ? "var(--accent-gold)" : "transparent",
                 color: language === "en" ? "var(--primary-navy)" : "var(--cream-white)",
                 cursor: "pointer",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
+                minHeight: "36px",
+                minWidth: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
               }}
             >
               EN
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Hero Scenic Banner */}
       <div className="home-banner" style={{ backgroundImage: `url("${heroImageUrl}")` }}>
         <div className="banner-content">
-          <div className="banner-title">{language === "vi" ? "KHU DU LỊCH QUỐC GIA NÚI BÀ ĐEN" : "BA DEN MOUNTAIN NATIONAL TOURIST AREA"}</div>
+          <div className="banner-title">{language === "vi" ? "KHU DU LỊCH QUỐC GIA NÚI BÀ ĐEN" : "BLACK LADY MOUNTAIN NATIONAL TOURIST AREA"}</div>
           <div className="banner-sub">{language === "vi" ? "Huyền thoại linh thiêng - Nóc nhà Nam Bộ 986m" : "Sacred Legend - The Roof of Southern Vietnam 986m"}</div>
         </div>
       </div>
@@ -184,7 +216,7 @@ export const HomePage: React.FC = () => {
                 alignItems: "center",
                 justifyContent: "center"
               }}>
-                <MessageSquare size={20} aria-hidden="true" />
+                <Bot size={20} aria-hidden="true" />
               </div>
               <div>
                 <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--accent-gold)" }}>{language === "vi" ? "Hỏi Trợ lý Du lịch AI" : "Ask AI Tour Guide"}</h3>
@@ -219,11 +251,11 @@ export const HomePage: React.FC = () => {
           <span>{language === "vi" ? "Thuyết minh số" : "Digital Guide"}</span>
         </Link>
 
-        <Link to="/feedback" className="menu-card">
+        <Link to="/map" className="menu-card">
           <div className="menu-icon-container">
-            <AlertTriangle size={24} />
+            <Map size={24} />
           </div>
-          <span>{t("nav.feedback")}</span>
+          <span>{language === "vi" ? "Bản đồ số" : "Digital Map"}</span>
         </Link>
       </div>
 
@@ -245,6 +277,10 @@ export const HomePage: React.FC = () => {
               <a
                 key={hotline.phone}
                 href={`tel:${hotline.phone}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  openPhone({ phoneNumber: hotline.phone });
+                }}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -270,7 +306,7 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   );
 };
 

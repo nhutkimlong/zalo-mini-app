@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, AlertTriangle, CheckCircle, Image, MapPin } from "lucide-react";
+import { Header, Page } from "zmp-ui";
+import { AlertTriangle, CheckCircle, Image, MapPin } from "lucide-react";
 import { getUserInfo, getLocation } from "zmp-sdk/apis";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -43,7 +44,7 @@ export const FeedbackPage: React.FC = () => {
     fetchProfile();
   }, []);
 
-  // 2. Native Geolocation integration with high-precision mock fallback
+  // 2. Native Geolocation integration
   const handleGpsToggle = async () => {
     if (!gpsEnabled) {
       try {
@@ -58,12 +59,11 @@ export const FeedbackPage: React.FC = () => {
           throw new Error("Invalid location details");
         }
       } catch (err) {
-        console.warn("Native GPS getLocation failed, falling back to high-precision Bà Đen coordinates:", err);
-        setCoords({
-          lat: 11.378345 + (Math.random() - 0.5) * 0.002,
-          lng: 106.168924 + (Math.random() - 0.5) * 0.002
-        });
-        setGpsEnabled(true);
+        console.warn("Native GPS getLocation failed:", err);
+        alert(language === "en" 
+          ? "Unable to get location. Please allow GPS access and try again." 
+          : "Không thể lấy vị trí. Vui lòng cấp quyền truy cập GPS và thử lại."
+        );
       }
     } else {
       setCoords({});
@@ -154,15 +154,11 @@ export const FeedbackPage: React.FC = () => {
 
   if (isSubmitted) {
     return (
-      <div>
-        <header className="app-header">
-          <Link to="/" style={{ color: "var(--cream-white)" }}>
-            <ArrowLeft size={22} style={{ color: "var(--accent-gold)" }} />
-          </Link>
-          <span style={{ margin: 0, fontSize: "16px", fontWeight: "bold" }}>
-            {language === "en" ? "Feedback Sent Successfully" : "Gửi phản ánh thành công"}
-          </span>
-        </header>
+      <Page>
+        <Header
+          title={language === "en" ? "Feedback Sent Successfully" : "Gửi phản ánh thành công"}
+          showBackIcon={true}
+        />
 
         <div style={{ padding: "30px 16px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
           <CheckCircle size={60} style={{ color: "#00C853" }} />
@@ -171,7 +167,7 @@ export const FeedbackPage: React.FC = () => {
           </h2>
           <p style={{ fontSize: "13.5px", color: "var(--light-text)", lineHeight: 1.6 }}>
             {language === "en"
-              ? "Thank you for your feedback. Ba Den Mountain Relic Board has received your report and will coordinate with professional units to resolve it as soon as possible."
+              ? "Thank you for your feedback. Black Lady Mountain Relic Board has received your report and will coordinate with professional units to resolve it as soon as possible."
               : "Cảm ơn quý khách đã gửi phản ánh kiến nghị. Ban quản lý Khu du lịch Núi Bà Đen đã tiếp nhận thông tin và sẽ điều phối đơn vị nghiệp vụ xử lý sớm nhất."}
           </p>
 
@@ -186,22 +182,24 @@ export const FeedbackPage: React.FC = () => {
             {language === "en" ? "Back to Homepage" : "Quay lại trang chủ"}
           </Link>
         </div>
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div>
+    <Page>
       {/* Header */}
-      <header className="app-header">
-        <Link to="/" style={{ color: "var(--cream-white)" }}>
-          <ArrowLeft size={22} style={{ color: "var(--accent-gold)" }} />
-        </Link>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <AlertTriangle size={20} style={{ color: "var(--accent-gold)" }} />
-          <h1 style={{ margin: 0, fontSize: "16px" }}>{t("feedback.title")}</h1>
-        </div>
-      </header>
+      <Header
+        showBackIcon={true}
+        title={
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <AlertTriangle size={20} style={{ color: "var(--accent-gold)" }} />
+            <span style={{ color: "var(--accent-gold)", fontWeight: 700 }}>
+              {t("feedback.title")}
+            </span>
+          </div> as any
+        }
+      />
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -279,7 +277,7 @@ export const FeedbackPage: React.FC = () => {
             />
           </div>
 
-          {/* Photo upload mock */}
+          {/* Photo upload */}
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
               {language === "en" ? "Attach Photo Evidence" : "Ảnh đính kèm minh chứng"}
@@ -321,7 +319,7 @@ export const FeedbackPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Geolocation mock */}
+          {/* Geolocation */}
           <div style={{ 
             borderTop: "1px solid rgba(0,0,0,0.05)", 
             paddingTop: "12px", 
@@ -380,7 +378,7 @@ export const FeedbackPage: React.FC = () => {
         </button>
 
       </form>
-    </div>
+    </Page>
   );
 };
 

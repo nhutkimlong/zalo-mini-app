@@ -119,8 +119,8 @@ OFFLINE_PLACES = [
 @router.get("/", response_model=List[PlaceResponse])
 def get_places(category: Optional[str] = None, db: Optional[Client] = Depends(get_db)):
     if not db:
-        # Offline mode
-        res = OFFLINE_PLACES
+        # Offline mode sorted by display_order, then created_at
+        res = sorted(OFFLINE_PLACES, key=lambda x: (x.get("display_order", 0), x.get("created_at", "")))
         if category:
             res = [p for p in res if p["category"] == category]
         return res
@@ -129,12 +129,12 @@ def get_places(category: Optional[str] = None, db: Optional[Client] = Depends(ge
         query = db.table("tourist_places").select("*").eq("status", "published")
         if category:
             query = query.eq("category", category)
-        response = query.order("created_at").execute()
+        response = query.order("display_order", ascending=True).order("created_at").execute()
         return response.data
     except Exception as e:
         print(f"Places database error: {e}")
         # Graceful fallback to offline seeds on errors
-        res = OFFLINE_PLACES
+        res = sorted(OFFLINE_PLACES, key=lambda x: (x.get("display_order", 0), x.get("created_at", "")))
         if category:
             res = [p for p in res if p["category"] == category]
         return res

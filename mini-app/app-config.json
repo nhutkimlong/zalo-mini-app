@@ -4,7 +4,9 @@
     "headerColor": "#0b2545",
     "textColor": "white",
     "statusBarColor": "#0b2545",
-    "leftButton": "back"
+    "leftButton": "back",
+    "actionBarHidden": true,
+    "statusBar": "transparent"
   },
   "listSyncJS": [
     "assets/index.js"

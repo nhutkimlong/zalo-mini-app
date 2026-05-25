@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, RotateCcw, Volume2, MessageSquare, Tag } from "lucide-react";
+import { Header, Page } from "zmp-ui";
+import { Play, Pause, RotateCcw, Volume2, Bot, Tag } from "lucide-react";
 import api, { TouristPlace, getAudioGuideUrl, hasAudioGuide } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -15,7 +16,7 @@ export const PlaceDetailPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 100
   const [currentTime, setCurrentTime] = useState("00:00");
-  const [duration, setDuration] = useState("03:15");
+  const [duration, setDuration] = useState("--:--");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -100,33 +101,11 @@ export const PlaceDetailPage: React.FC = () => {
         setIsPlaying(true);
       }).catch((e) => {
         console.error("Audio playback error:", e);
-        // Fallback simulate
-        setIsPlaying(true);
+        alert(language === "en" ? "Cannot play audio guide." : "Không thể phát âm thanh thuyết minh.");
       });
     }
   };
 
-  // Ticker simulation fallback if no audio URL is present or fails to play
-  useEffect(() => {
-    let interval: any;
-    if (isPlaying && place && !hasAudioGuide(place, language)) {
-      interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            setIsPlaying(false);
-            return 0;
-          }
-          const next = prev + 0.5;
-          const totalSecs = Math.floor((next / 100) * 195); // 195s = 3m15s
-          const mins = Math.floor(totalSecs / 60);
-          const secs = totalSecs % 60;
-          setCurrentTime(`${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`);
-          return next;
-        });
-      }, 500);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, place, language]);
 
   const handleReset = () => {
     setProgress(0);
@@ -187,16 +166,9 @@ export const PlaceDetailPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <Page>
       {/* Header */}
-      <header className="app-header">
-        <Link to="/places" style={{ color: "var(--cream-white)" }}>
-          <ArrowLeft size={22} style={{ color: "var(--accent-gold)" }} />
-        </Link>
-        <h1 style={{ margin: 0, fontSize: "15px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {localizedName}
-        </h1>
-      </header>
+      <Header title={localizedName} showBackIcon={true} />
 
       {/* Hero Image */}
       <div style={{ width: "100%", height: "220px", overflow: "hidden", position: "relative" }}>
@@ -329,12 +301,12 @@ export const PlaceDetailPage: React.FC = () => {
               transition: "all 0.2s"
             }}
           >
-            <MessageSquare size={16} />
+            <Bot size={16} />
             <span>{language === "en" ? "Ask AI Assistant about this" : "Hỏi Trợ lý AI về điểm này"}</span>
           </button>
         </div>
       </div>
-    </div>
+    </Page>
   );
 };
 

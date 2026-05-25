@@ -19,6 +19,7 @@ class PlaceCreate(BaseModel):
     longitude: Optional[float] = Field(None, description="Kinh độ")
     category: Optional[str] = Field("tam_linh", description="Phân loại ('tam_linh', 'phong_canh', 'dich_vu')")
     status: str = Field("published", description="Trạng thái ('draft', 'published', 'archived')")
+    display_order: Optional[int] = Field(0, description="Thứ tự hiển thị (ưu tiên)")
 
 class PlaceUpdate(BaseModel):
     name: Optional[str] = None
@@ -36,6 +37,7 @@ class PlaceUpdate(BaseModel):
     longitude: Optional[float] = None
     category: Optional[str] = None
     status: Optional[str] = None
+    display_order: Optional[int] = None
 
 class PlaceResponse(BaseModel):
     id: UUID
@@ -54,6 +56,7 @@ class PlaceResponse(BaseModel):
     longitude: Optional[float] = None
     category: Optional[str] = None
     status: str
+    display_order: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
 

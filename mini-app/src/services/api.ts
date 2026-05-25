@@ -1,18 +1,15 @@
 // Zalo Mini App - API Client Service
-// Uses Supabase JS client directly for data + 9Router for TTS + FastAPI backend for RAG (HÆ°á»›ng dáº«n viÃªn 4.0)
+// Uses Supabase JS client directly for data + 9Router for TTS + FastAPI backend for RAG (Hướng dẫn viên 4.0)
 
 import { createClient } from "@supabase/supabase-js";
 
-// â”€â”€â”€ Supabase Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Supabase Config ──────────────────────────────────────────────────────────
 const SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || "");
 const SUPABASE_ANON_KEY = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY || "");
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-
-
-
-// â”€â”€â”€ Type Definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Type Definitions ──────────────────────────────────────────────────────────
 export interface TouristPlace {
   id: string;
   name: string;
@@ -29,6 +26,7 @@ export interface TouristPlace {
   latitude: number;
   longitude: number;
   category: string;
+  display_order?: number;
 }
 
 export const hasAudioGuide = (place: TouristPlace, language: string) => {
@@ -63,7 +61,26 @@ export interface ChatResponse {
   }>;
 }
 
-// â”€â”€â”€ API Client â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export interface ItineraryStep {
+  vi: string;
+  en: string;
+}
+
+export interface Itinerary {
+  id: string;
+  name: string;
+  name_en?: string;
+  duration: string;
+  duration_en?: string;
+  color: string;
+  place_slugs: string[];
+  steps: ItineraryStep[];
+  status?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── API Client ───────────────────────────────────────────────────────────────
 class ApiClient {
   private backendUrl: string;
 
@@ -79,7 +96,7 @@ class ApiClient {
     return response.json();
   }
 
-  // â”€â”€â”€ Tourist Places â€” Direct Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Tourist Places ─ Direct Supabase ───────────────────
   async getPlaces(category?: string): Promise<TouristPlace[]> {
     let query = supabase
       .from("tourist_places")
@@ -102,11 +119,11 @@ class ApiClient {
       .eq("status", "published")
       .single();
 
-    if (error || !data) throw new Error(error?.message ?? "KhÃ´ng tÃ¬m tháº¥y Ä‘á»‹a Ä‘iá»ƒm");
+    if (error || !data) throw new Error(error?.message ?? "Không tìm thấy địa điểm");
     return data as TouristPlace;
   }
 
-  // â”€â”€â”€ Announcements â€” Direct Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Announcements ─ Direct Supabase ────────────────────
   async getAnnouncements(): Promise<Announcement[]> {
     const { data, error } = await supabase
       .from("announcements")
@@ -118,7 +135,12 @@ class ApiClient {
     return (data as Announcement[]) ?? [];
   }
 
-  // â”€â”€â”€ HÆ°á»›ng dáº«n viÃªn 4.0 AI Chat â€” FastAPI RAG backend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Itineraries ─ FastAPI Backend ──────────────────────
+  async getItineraries(): Promise<Itinerary[]> {
+    return this.backendRequest<Itinerary[]>("/api/itineraries");
+  }
+
+  // ─── Hướng dẫn viên 4.0 AI Chat ─ FastAPI RAG backend ───────
   async askAssistant(
     question: string,
     language: string = "vi",
@@ -137,7 +159,7 @@ class ApiClient {
     });
   }
 
-  // â”€â”€â”€ Tri thá»©c/Knowledge Articles â€” Direct Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Tri thức/Knowledge Articles ─ Direct Supabase ───────
   async getArticlesByCategory(category: string): Promise<any[]> {
     const { data, error } = await supabase
       .from("knowledge_articles")
@@ -154,9 +176,7 @@ class ApiClient {
     return data ?? [];
   }
 
-
-
-  // â”€â”€â”€ Storage â€” Supabase upload image â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Storage ─ Supabase upload image ────────────────────
   async uploadImage(file: File): Promise<string> {
     const formData = new FormData();
     formData.append("file", file);
@@ -176,7 +196,7 @@ class ApiClient {
     return data.url;
   }
 
-  // â”€â”€â”€ Feedback â€” Direct Supabase insert â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Feedback ─ Direct Supabase insert ──────────────────
   async submitFeedback(data: {
     reporter_name?: string;
     phone?: string;

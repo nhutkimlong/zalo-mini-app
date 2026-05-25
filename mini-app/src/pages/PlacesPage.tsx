@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { Header, Page } from "zmp-ui";
+import { MapPin, Map } from "lucide-react";
 import api, { TouristPlace } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -31,14 +32,9 @@ export const PlacesPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <Page>
       {/* Header */}
-      <header className="app-header">
-        <Link to="/" style={{ color: "var(--cream-white)" }}>
-          <ArrowLeft size={22} style={{ color: "var(--accent-gold)" }} />
-        </Link>
-        <h1 style={{ margin: 0, fontSize: "16px" }}>{t("places.title")}</h1>
-      </header>
+      <Header title={t("places.title")} showBackIcon={true} />
 
       {/* Category filters row */}
       <div style={{ 
@@ -142,7 +138,33 @@ export const PlacesPage: React.FC = () => {
           ))
         )}
       </div>
-    </div>
+
+      {/* Floating Map Toggle FAB */}
+      <Link
+        to="/map"
+        className="floating-ai-btn pulse-gold-border"
+        style={{
+          position: "fixed",
+          bottom: "80px",
+          right: "20px",
+          width: "auto",
+          height: "48px",
+          borderRadius: "24px",
+          padding: "0 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          textDecoration: "none",
+          zIndex: 99,
+          boxShadow: "0 4px 16px rgba(11, 37, 69, 0.35)"
+        }}
+      >
+        <Map size={20} />
+        <span style={{ fontSize: "13px", fontWeight: 700 }}>
+          {language === "vi" ? "Xem Bản Đồ" : "View Map"}
+        </span>
+      </Link>
+    </Page>
   );
 };
 

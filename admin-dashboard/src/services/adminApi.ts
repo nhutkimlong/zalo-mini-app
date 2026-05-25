@@ -29,6 +29,26 @@ export interface AdminPlace {
   latitude: number;
   longitude: number;
   category: string;
+  display_order?: number;
+}
+
+export interface AdminItineraryStep {
+  vi: string;
+  en: string;
+}
+
+export interface AdminItinerary {
+  id: string;
+  name: string;
+  name_en?: string;
+  duration: string;
+  duration_en?: string;
+  color: string;
+  place_slugs: string[];
+  steps: AdminItineraryStep[];
+  status?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AdminAnnouncement {
@@ -186,59 +206,30 @@ class AdminApiClient {
       const articles = await this.request<any[]>("/api/admin/knowledge");
       return articles.map(article => this.normalizeArticle(article));
     } catch (e) {
-      return MOCK_ARTICLES;
+      return MOCK_ARTICLES.map(article => this.normalizeArticle(article));
     }
   }
 
   async createArticle(data: Omit<AdminKnowledgeArticle, "id" | "created_at" | "updated_at">): Promise<AdminKnowledgeArticle> {
-    try {
-      const created = await this.request<any>("/api/admin/knowledge", {
-        method: "POST",
-        body: JSON.stringify(this.toArticlePayload(data))
-      });
-      return this.normalizeArticle(created);
-    } catch (e) {
-      const newArt: AdminKnowledgeArticle = {
-        ...data,
-        id: `art-${Math.floor(Math.random() * 100000)}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      MOCK_ARTICLES.unshift(newArt);
-      return newArt;
-    }
+    const created = await this.request<any>("/api/admin/knowledge", {
+      method: "POST",
+      body: JSON.stringify(this.toArticlePayload(data))
+    });
+    return this.normalizeArticle(created);
   }
 
   async updateArticle(id: string, data: Partial<AdminKnowledgeArticle>): Promise<AdminKnowledgeArticle> {
-    try {
-      const updated = await this.request<any>(`/api/admin/knowledge/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(this.toArticlePayload(data))
-      });
-      return this.normalizeArticle(updated);
-    } catch (e) {
-      const idx = MOCK_ARTICLES.findIndex(a => a.id === id);
-      if (idx === -1) throw new Error("Article not found");
-      const updated = {
-        ...MOCK_ARTICLES[idx],
-        ...data,
-        updated_at: new Date().toISOString()
-      };
-      MOCK_ARTICLES[idx] = updated;
-      return updated;
-    }
+    const updated = await this.request<any>(`/api/admin/knowledge/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(this.toArticlePayload(data))
+    });
+    return this.normalizeArticle(updated);
   }
 
   async deleteArticle(id: string): Promise<{ success: boolean }> {
-    try {
-      return await this.request<{ success: boolean }>(`/api/admin/knowledge/${id}`, {
-        method: "DELETE"
-      });
-    } catch (e) {
-      const idx = MOCK_ARTICLES.findIndex(a => a.id === id);
-      if (idx !== -1) MOCK_ARTICLES.splice(idx, 1);
-      return { success: true };
-    }
+    return await this.request<{ success: boolean }>(`/api/admin/knowledge/${id}`, {
+      method: "DELETE"
+    });
   }
 
   async reindexKnowledge(): Promise<{ status: string; indexed_articles: number; failed_article_ids: string[] }> {
@@ -249,54 +240,27 @@ class AdminApiClient {
 
   // --- Places (CRUD) ---
   async getPlaces(): Promise<AdminPlace[]> {
-    try {
-      return await this.request<AdminPlace[]>("/api/places");
-    } catch (e) {
-      return MOCK_PLACES;
-    }
+    return await this.request<AdminPlace[]>("/api/places");
   }
 
   async createPlace(data: Omit<AdminPlace, "id">): Promise<AdminPlace> {
-    try {
-      return await this.request<AdminPlace>("/api/places", {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
-    } catch (e) {
-      const newP: AdminPlace = {
-        ...data,
-        id: `pl-${Math.floor(Math.random() * 100000)}`
-      };
-      MOCK_PLACES.unshift(newP);
-      return newP;
-    }
+    return await this.request<AdminPlace>("/api/places", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
   }
 
   async updatePlace(id: string, data: Partial<AdminPlace>): Promise<AdminPlace> {
-    try {
-      return await this.request<AdminPlace>(`/api/places/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data)
-      });
-    } catch (e) {
-      const idx = MOCK_PLACES.findIndex(p => p.id === id);
-      if (idx === -1) throw new Error("Place not found");
-      const updated = { ...MOCK_PLACES[idx], ...data };
-      MOCK_PLACES[idx] = updated;
-      return updated;
-    }
+    return await this.request<AdminPlace>(`/api/places/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
   }
 
   async deletePlace(id: string): Promise<{ success: boolean }> {
-    try {
-      return await this.request<{ success: boolean }>(`/api/places/${id}`, {
-        method: "DELETE"
-      });
-    } catch (e) {
-      const idx = MOCK_PLACES.findIndex(p => p.id === id);
-      if (idx !== -1) MOCK_PLACES.splice(idx, 1);
-      return { success: true };
-    }
+    return await this.request<{ success: boolean }>(`/api/places/${id}`, {
+      method: "DELETE"
+    });
   }
 
   // --- Announcements (CRUD) ---
@@ -350,6 +314,31 @@ class AdminApiClient {
       if (idx !== -1) MOCK_ANNOUNCEMENTS.splice(idx, 1);
       return { success: true };
     }
+  }
+
+  // --- Itineraries (CRUD) ---
+  async getItineraries(): Promise<AdminItinerary[]> {
+    return await this.request<AdminItinerary[]>("/api/itineraries");
+  }
+
+  async createItinerary(data: Omit<AdminItinerary, "id" | "created_at" | "updated_at">): Promise<AdminItinerary> {
+    return await this.request<AdminItinerary>("/api/itineraries", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateItinerary(id: string, data: Partial<AdminItinerary>): Promise<AdminItinerary> {
+    return await this.request<AdminItinerary>(`/api/itineraries/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteItinerary(id: string): Promise<{ success: boolean }> {
+    return await this.request<{ success: boolean }>(`/api/itineraries/${id}`, {
+      method: "DELETE"
+    });
   }
 
   // --- Feedbacks Manager ---
@@ -450,70 +439,6 @@ const MOCK_ARTICLES: AdminKnowledgeArticle[] = [
   }
 ];
 
-const MOCK_PLACES: AdminPlace[] = [
-  {
-    id: "e1",
-    name: "Chùa Bà (Linh Sơn Tiên Thạch Tự)",
-    slug: "chua-ba-linh-son-tien-thach-tu",
-    short_description: "Ngôi chùa cổ hơn 300 năm tuổi, trung tâm hành hương linh thiêng nhất tại Núi Bà Đen.",
-    full_description: "Linh Sơn Tiên Thạch Tự (thường gọi là Chùa Bà) nằm ở độ cao 350m giữa sườn núi Bà Đen. Ngôi chùa được khởi dựng từ thế kỷ 18, gắn liền với huyền thoại sắc phong Linh Sơn Thánh Mẫu (Bà Đen). Kiến trúc Chùa Bà pha trộn giữa nghệ thuật chùa cổ Nam Bộ và các đường nét hiện đại sau nhiều lần trùng tu. Hàng năm, hàng triệu du khách đổ về đây để cầu bình an, tài lộc.",
-    image_url: "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?w=800",
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    audio_enabled: true,
-    latitude: 11.378345,
-    longitude: 106.168924,
-    category: "tam_linh"
-  },
-  {
-    id: "e2",
-    name: "Điện Bà (Đền thờ Linh Sơn Thánh Mẫu)",
-    slug: "dien-ba-den-tho-linh-son-thanh-mau",
-    short_description: "Nơi thờ chính Linh Sơn Thánh Mẫu Bà Đen - biểu tượng tâm linh tối cao của tỉnh Tây Ninh.",
-    full_description: "Điện Bà nằm ngay sát bên cạnh Chùa Bà, được xây dựng ẩn sâu vào lòng một hang đá tự nhiên. Đây là nơi thờ Linh Sơn Thánh Mẫu, vị thần bảo hộ vùng đất Tây Ninh. Không gian Điện Bà luôn nghi ngút khói hương và tràn đầy không khí trang nghiêm.",
-    image_url: "https://images.unsplash.com/photo-1604999333679-b86d54738315?w=800",
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    audio_enabled: true,
-    latitude: 11.378512,
-    longitude: 106.169101,
-    category: "tam_linh"
-  },
-  {
-    id: "e3",
-    name: "Tượng Phật Bà Tây Bổ Đà Sơn",
-    slug: "tuong-phat-ba-tay-bo-da-son",
-    short_description: "Tượng Phật Bà bằng đồng cao nhất châu Á nằm trên đỉnh núi Bà Đen huyền thoại.",
-    full_description: "Tượng Phật Bà Tây Bổ Đà Sơn tọa lạc ngự trị trên đỉnh núi Bà Đen ở độ cao 986m. Đại tượng Phật có tổng chiều cao 72m, được đúc từ hơn 170 tấn đồng đỏ tinh xảo.",
-    image_url: "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-    latitude: 11.385423,
-    longitude: 106.172431,
-    category: "tam_linh"
-  },
-  {
-    id: "e4",
-    name: "Đỉnh Núi Bà Đen (Độ cao 986m)",
-    slug: "dinh-nui-ba-den-do-cao-986m",
-    short_description: "Nóc nhà Nam Bộ với mây phủ quanh năm và khuôn viên cảnh quan hoa rực rỡ.",
-    full_description: "Đỉnh Núi Bà Đen với độ cao 986m là đỉnh núi cao nhất khu vực Nam Bộ. Nơi đây có khí hậu mát mẻ ôn hòa quanh năm, thường xuyên có mây mù bao phủ tạo nên cảnh tượng bồng lai tiên cảnh.",
-    image_url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800",
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-    latitude: 11.385555,
-    longitude: 106.172555,
-    category: "phong_canh"
-  },
-  {
-    id: "e5",
-    name: "Hệ thống Cáp treo Sun World BaDen Mountain",
-    slug: "he-thong-cap-treo-sun-world-baden-mountain",
-    short_description: "Phương tiện di chuyển hiện đại đưa du khách lên Chùa Bà và Đỉnh Núi nhanh chóng.",
-    full_description: "Hệ thống cáp treo gồm Tuyến cáp Chùa Hang và Tuyến cáp Vân Sơn, được tổ chức Guinness công nhận nhà ga lớn nhất thế giới.",
-    image_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800",
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-    latitude: 11.371234,
-    longitude: 106.162345,
-    category: "dich_vu"
-  }
-];
 
 const MOCK_ANNOUNCEMENTS: AdminAnnouncement[] = [
   {

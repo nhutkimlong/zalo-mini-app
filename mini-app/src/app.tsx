@@ -11,6 +11,7 @@ import PlaceDetailPage from "./pages/PlaceDetailPage";
 import DigitalGuidePage from "./pages/DigitalGuidePage";
 import FeedbackPage from "./pages/FeedbackPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
+import MapPage from "./pages/MapPage";
 
 export const MyApp: React.FC = () => {
   return (
@@ -27,6 +28,7 @@ export const MyApp: React.FC = () => {
               <Route path="/digital-guide" element={<DigitalGuidePage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/announcements" element={<AnnouncementsPage />} />
+              <Route path="/map" element={<MapPage />} />
             </Routes>
           </Layout>
         </ZMPRouter>

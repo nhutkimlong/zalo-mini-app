@@ -54,7 +54,7 @@ body {
 .page-container {
   min-height: 100vh;
   background-color: var(--light-bg);
-  padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Dynamic spacing for bottom nav and safe area */
+  padding-bottom: calc(80px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); /* Dynamic spacing for bottom nav and safe area */
   position: relative;
   overflow-x: hidden;
 }
@@ -78,7 +78,7 @@ body {
 .app-header {
   background-color: var(--primary-navy);
   color: var(--cream-white);
-  padding: 16px 16px; /* Unified padding for mobile elegance */
+  padding: calc(16px + var(--zaui-safe-area-inset-top, 0px)) 16px 16px 16px; /* Unified padding for mobile elegance */
   position: sticky;
   top: 0;
   z-index: 100;
@@ -87,6 +87,37 @@ body {
   gap: 12px;
   box-shadow: var(--shadow-sm);
   border-bottom: 2px solid var(--accent-gold);
+}
+
+/* Official ZMP Header Custom Overrides to match premium Navy/Gold theme */
+.zaui-header {
+  background-color: var(--primary-navy) !important;
+  color: var(--cream-white) !important;
+  border-bottom: 2px solid var(--accent-gold) !important;
+}
+
+/* Universal zaui page layout fix: prevent header from covering top content on all screens */
+.zaui-page {
+  padding-top: calc(48px + var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px))) !important;
+}
+
+.zaui-header-title {
+  color: var(--cream-white) !important;
+  font-weight: 750 !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: normal !important;
+  height: auto !important;
+}
+
+.zaui-header-title-text {
+  color: var(--cream-white) !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.zaui-header .zaui-icon {
+  color: var(--accent-gold) !important;
 }
 
 .app-header h1 {
@@ -157,23 +188,25 @@ body {
   text-align: center;
   border-radius: 16px;
   background: var(--cream-white);
-  border: 1px solid rgba(197, 168, 128, 0.15);
+  border: 1.5px solid var(--accent-gold);
   box-shadow: var(--shadow-sm);
-  color: var(--dark-text);
+  color: var(--primary-navy);
   text-decoration: none;
+  transition: all 0.2s ease;
 }
 
 .menu-card:active {
-  background-color: #f8fafc;
-  border-color: var(--accent-gold);
+  background: linear-gradient(135deg, var(--primary-navy), var(--secondary-blue)) !important;
+  border-color: var(--accent-gold) !important;
+  color: var(--cream-white) !important;
 }
 
 .menu-icon-container {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background-color: rgba(11, 37, 69, 0.05);
-  color: var(--primary-navy);
+  background-color: var(--primary-navy);
+  color: var(--accent-gold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -181,13 +214,13 @@ body {
 }
 
 .menu-card:active .menu-icon-container {
-  background-color: var(--primary-navy);
-  color: var(--accent-gold);
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: var(--accent-gold) !important;
 }
 
 .menu-card span {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Sticky floating AI launcher */
@@ -388,8 +421,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(60px + env(safe-area-inset-bottom)); /* Safe area support for iOS home bar */
-  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(60px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); /* Safe area support for iOS home bar */
+  padding-bottom: var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   background-color: var(--cream-white);
   border-top: 1px solid rgba(11, 37, 69, 0.08);
   display: flex;
@@ -471,6 +504,7 @@ body {
   left: 0;
   right: 0;
   height: 100%;
+  padding-top: calc(48px + var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px))) !important;
   color: #f4f7f6;
   display: flex;
   flex-direction: column;
@@ -483,7 +517,7 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 2px solid rgba(212, 175, 55, 0.4);
-  padding: 16px 16px; /* Unified padding for identical visual weight */
+  padding: calc(16px + var(--zaui-safe-area-inset-top, 0px)) 16px 16px 16px; /* Unified padding for identical visual weight */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -608,7 +642,7 @@ body {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 16px calc(12px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   display: flex;
   align-items: center;
   gap: 10px;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -17,7 +17,8 @@ import {
   Bot,
   Headphones,
   DollarSign,
-  Camera
+  Camera,
+  Compass
 } from "lucide-react";
 import adminApi, { 
   AdminKnowledgeArticle, 
@@ -25,15 +26,46 @@ import adminApi, {
   AdminAnnouncement, 
   AdminFeedback,
   AdminChatLog,
-  AdminUsageSummary
+  AdminUsageSummary,
+  AdminItineraryStep,
+  AdminItinerary
 } from "./services/adminApi";
 
+const toSlug = (str: string): string => {
+  if (!str) return "";
+  let slug = str.toLowerCase();
+  
+  // Replace Vietnamese accents
+  slug = slug.replace(/[áàảãạăắằẳẵặâấầẩẫậ]/g, "a");
+  slug = slug.replace(/[éèẻẽẹêếềểễệ]/g, "e");
+  slug = slug.replace(/[íìỉĩị]/g, "i");
+  slug = slug.replace(/[óòỏõọôốồổỗộơớờởỡợ]/g, "o");
+  slug = slug.replace(/[úùủũụưứừửữự]/g, "u");
+  slug = slug.replace(/[ýỳỷỹỵ]/g, "y");
+  slug = slug.replace(/đ/g, "d");
+  
+  // Replace non-alphanumeric characters with hyphens
+  slug = slug.replace(/[^a-z0-9]+/g, "-");
+  
+  // Remove starting and ending hyphens
+  slug = slug.replace(/(^-|-$)/g, "");
+  
+  return slug;
+};
+
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "announcements" | "feedbacks" | "chats" | "usage">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage">("dashboard");
+
+  // Leaflet Map states & refs inside Admin Place Modal Form
+  const [adminLeafletLoaded, setAdminLeafletLoaded] = useState(false);
+  const adminMapDivRef = useRef<HTMLDivElement | null>(null);
+  const adminMapInstanceRef = useRef<any>(null);
+  const adminMarkerRef = useRef<any>(null);
 
   // State arrays
   const [articles, setArticles] = useState<AdminKnowledgeArticle[]>([]);
   const [places, setPlaces] = useState<AdminPlace[]>([]);
+  const [itineraries, setItineraries] = useState<AdminItinerary[]>([]);
   const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
   const [feedbacks, setFeedbacks] = useState<AdminFeedback[]>([]);
   const [chats, setChats] = useState<AdminChatLog[]>([]);
@@ -46,7 +78,7 @@ export const App: React.FC = () => {
 
   // Modal Control
   const [modalType, setModalType] = useState<"add" | "edit" | "resolve" | null>(null);
-  const [modalResource, setModalResource] = useState<"article" | "place" | "announcement" | "feedback" | null>(null);
+  const [modalResource, setModalResource] = useState<"article" | "place" | "announcement" | "feedback" | "itinerary" | null>(null);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   // Form states for Knowledge Articles
@@ -134,6 +166,7 @@ export const App: React.FC = () => {
   const [plAudioEnabled, setPlAudioEnabled] = useState(false);
   const [plLat, setPlLat] = useState(11.378345);
   const [plLng, setPlLng] = useState(106.168924);
+  const [plDisplayOrder, setPlDisplayOrder] = useState<number>(0);
 
   // Form states for Announcements
   const [annTitle, setAnnTitle] = useState("");
@@ -141,6 +174,16 @@ export const App: React.FC = () => {
   const [annContent, setAnnContent] = useState("");
   const [annContentEn, setAnnContentEn] = useState("");
   const [annType, setAnnType] = useState<"general" | "emergency" | "weather" | "festival">("general");
+
+  // Form states for Itineraries
+  const [itName, setItName] = useState("");
+  const [itNameEn, setItNameEn] = useState("");
+  const [itDuration, setItDuration] = useState("");
+  const [itDurationEn, setItDurationEn] = useState("");
+  const [itColor, setItColor] = useState("#ffc107");
+  const [itPlaceSlugs, setItPlaceSlugs] = useState<string[]>([]);
+  const [itSteps, setItSteps] = useState<AdminItineraryStep[]>([]);
+  const [itStatus, setItStatus] = useState("published");
 
   // AI and Media integration helpers
   const [translatingField, setTranslatingField] = useState<string | null>(null);
@@ -154,7 +197,7 @@ export const App: React.FC = () => {
     setUploadingFile(null);
   };
 
-  const handleTranslate = async (sourceText: string, fieldToSet: "plNameEn" | "plShortEn" | "plFullEn" | "annTitleEn" | "annContentEn") => {
+  const handleTranslate = async (sourceText: string, fieldToSet: "plNameEn" | "plShortEn" | "plFullEn" | "annTitleEn" | "annContentEn" | "itNameEn") => {
     if (!sourceText) {
       alert("Vui lòng nhập nội dung tiếng Việt trước khi dịch!");
       return;
@@ -167,6 +210,7 @@ export const App: React.FC = () => {
       else if (fieldToSet === "plFullEn") setPlFullEn(res.translated_text);
       else if (fieldToSet === "annTitleEn") setAnnTitleEn(res.translated_text);
       else if (fieldToSet === "annContentEn") setAnnContentEn(res.translated_text);
+      else if (fieldToSet === "itNameEn") setItNameEn(res.translated_text);
     } catch (e: any) {
       console.error(e);
       alert(e?.message || "Lỗi khi dịch tự động.");
@@ -191,6 +235,99 @@ export const App: React.FC = () => {
       setUploadingFile(null);
     }
   };
+
+  // --- Leaflet Map integration inside Place modal ---
+  useEffect(() => {
+    if (modalResource !== "place") {
+      // Clean up map instance when modal closes
+      if (adminMapInstanceRef.current) {
+        adminMapInstanceRef.current.remove();
+        adminMapInstanceRef.current = null;
+        adminMarkerRef.current = null;
+      }
+      return;
+    }
+
+    const L = (window as any).L;
+    if (L) {
+      setAdminLeafletLoaded(true);
+      return;
+    }
+
+    // Append Leaflet CSS
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    link.crossOrigin = "";
+    document.head.appendChild(link);
+
+    // Append Leaflet JS
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.crossOrigin = "";
+    script.onload = () => {
+      setAdminLeafletLoaded(true);
+    };
+    document.body.appendChild(script);
+  }, [modalResource]);
+
+  useEffect(() => {
+    if (!adminLeafletLoaded || !adminMapDivRef.current || adminMapInstanceRef.current || modalResource !== "place") return;
+
+    const L = (window as any).L;
+    if (!L) return;
+
+    // Centered on current plLat and plLng
+    const map = L.map(adminMapDivRef.current, {
+      zoomControl: true,
+      attributionControl: false
+    }).setView([plLat || 11.378345, plLng || 106.168924], 15);
+
+    adminMapInstanceRef.current = map;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      minZoom: 13
+    }).addTo(map);
+
+    const marker = L.marker([plLat || 11.378345, plLng || 106.168924], {
+      draggable: true
+    }).addTo(map);
+
+    adminMarkerRef.current = marker;
+
+    // Listen to marker drag events to update fields
+    marker.on("dragend", () => {
+      const position = marker.getLatLng();
+      setPlLat(Number(position.lat.toFixed(6)));
+      setPlLng(Number(position.lng.toFixed(6)));
+    });
+
+    // Listen to map clicks to update marker and fields
+    map.on("click", (e: any) => {
+      const { lat, lng } = e.latlng;
+      setPlLat(Number(lat.toFixed(6)));
+      setPlLng(Number(lng.toFixed(6)));
+      marker.setLatLng([lat, lng]);
+    });
+  }, [adminLeafletLoaded, modalResource]);
+
+  // Synchronize manual inputs updates -> map marker moves in real time!
+  useEffect(() => {
+    const map = adminMapInstanceRef.current;
+    const marker = adminMarkerRef.current;
+    if (!map || !marker) return;
+
+    const lat = Number(plLat);
+    const lng = Number(plLng);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      const currentPos = marker.getLatLng();
+      if (currentPos.lat !== lat || currentPos.lng !== lng) {
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng], map.getZoom(), { animate: true });
+      }
+    }
+  }, [plLat, plLng]);
 
   // Form states for Feedback resolution
   const [fbStatus, setFbStatus] = useState<AdminFeedback["status"]>("new");
@@ -268,20 +405,30 @@ export const App: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [artList, plList, annList, fbList, chList, usageData] = await Promise.all([
+      const results = await Promise.allSettled([
         adminApi.getArticles(),
         adminApi.getPlaces(),
         adminApi.getAnnouncements(),
         adminApi.getFeedbacks(),
         adminApi.getChatLogs(),
-        adminApi.getUsageSummary()
+        adminApi.getUsageSummary(),
+        adminApi.getItineraries()
       ]);
-      setArticles(artList);
-      setPlaces(plList);
-      setAnnouncements(annList);
-      setFeedbacks(fbList);
-      setChats(chList);
-      setUsageSummary(usageData);
+
+      if (results[0].status === "fulfilled") setArticles(results[0].value);
+      
+      if (results[1].status === "fulfilled") {
+        setPlaces(results[1].value);
+      } else {
+        console.error("Failed to load places from database:", results[1].reason);
+        alert("Lỗi: Không thể tải dữ liệu địa danh từ database Supabase! Vui lòng kiểm tra kết nối mạng hoặc API server.");
+      }
+
+      if (results[2].status === "fulfilled") setAnnouncements(results[2].value);
+      if (results[3].status === "fulfilled") setFeedbacks(results[3].value);
+      if (results[4].status === "fulfilled") setChats(results[4].value);
+      if (results[5].status === "fulfilled") setUsageSummary(results[5].value);
+      if (results[6].status === "fulfilled") setItineraries(results[6].value);
     } catch (e) {
       console.error("Failed to load backend administration data:", e);
     } finally {
@@ -468,6 +615,7 @@ export const App: React.FC = () => {
     setPlAudioEnabled(false);
     setPlLat(11.378);
     setPlLng(106.168);
+    setPlDisplayOrder(0);
     setModalResource("place");
     setModalType("add");
   };
@@ -487,6 +635,7 @@ export const App: React.FC = () => {
     setPlAudioEnabled(pl.audio_enabled === true || !!getOptionalUrlValue(pl.audio_url || ""));
     setPlLat(pl.latitude ?? 11.378345);
     setPlLng(pl.longitude ?? 106.168924);
+    setPlDisplayOrder(pl.display_order ?? 0);
     setModalResource("place");
     setModalType("edit");
   };
@@ -502,10 +651,7 @@ export const App: React.FC = () => {
       const data = {
         name: plName,
         name_en: plNameEn,
-        slug: selectedItem?.slug || plName.toLowerCase()
-          .replace(/đ/g, "d")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, ""),
+        slug: selectedItem?.slug || toSlug(plName),
         category: plCategory,
         short_description: plShort,
         short_description_en: plShortEn,
@@ -516,15 +662,25 @@ export const App: React.FC = () => {
         audio_url_en: getOptionalUrlValue(plAudioEn),
         audio_enabled: plAudioEnabled,
         latitude: Number(plLat),
-        longitude: Number(plLng)
+        longitude: Number(plLng),
+        display_order: Number(plDisplayOrder)
+      };
+
+      const sortPlaces = (list: AdminPlace[]) => {
+        return [...list].sort((a, b) => {
+          const orderA = a.display_order ?? 0;
+          const orderB = b.display_order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.name || "").localeCompare(b.name || "");
+        });
       };
 
       if (selectedItem) {
         const res = await adminApi.updatePlace(selectedItem.id, data);
-        setPlaces(places.map(p => p.id === res.id ? res : p));
+        setPlaces(sortPlaces(places.map(p => p.id === res.id ? res : p)));
       } else {
         const res = await adminApi.createPlace(data);
-        setPlaces([res, ...places]);
+        setPlaces(sortPlaces([res, ...places]));
       }
       closeModal();
     } catch (err) {
@@ -537,6 +693,73 @@ export const App: React.FC = () => {
       try {
         await adminApi.deletePlace(id);
         setPlaces(places.filter(p => p.id !== id));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  // --- Itineraries Submissions ---
+  const handleOpenAddItinerary = () => {
+    setSelectedItem(null);
+    setItName("");
+    setItNameEn("");
+    setItDuration("");
+    setItDurationEn("");
+    setItColor("#ffc107");
+    setItPlaceSlugs([]);
+    setItSteps([]);
+    setItStatus("published");
+    setModalResource("itinerary");
+    setModalType("add");
+  };
+
+  const handleOpenEditItinerary = (it: AdminItinerary) => {
+    setSelectedItem(it);
+    setItName(it.name);
+    setItNameEn(it.name_en || "");
+    setItDuration(it.duration);
+    setItDurationEn(it.duration_en || "");
+    setItColor(it.color || "#ffc107");
+    setItPlaceSlugs(it.place_slugs || []);
+    setItSteps(it.steps || []);
+    setItStatus(it.status || "published");
+    setModalResource("itinerary");
+    setModalType("edit");
+  };
+
+  const handleSaveItinerary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const data = {
+        name: itName,
+        name_en: itNameEn,
+        duration: itDuration,
+        duration_en: itDurationEn,
+        color: itColor,
+        place_slugs: itPlaceSlugs,
+        steps: itSteps,
+        status: itStatus
+      };
+
+      if (selectedItem) {
+        const res = await adminApi.updateItinerary(selectedItem.id, data);
+        setItineraries(itineraries.map(i => i.id === res.id ? res : i));
+      } else {
+        const res = await adminApi.createItinerary(data);
+        setItineraries([res, ...itineraries]);
+      }
+      closeModal();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteItinerary = async (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa lộ trình này?")) {
+      try {
+        await adminApi.deleteItinerary(id);
+        setItineraries(itineraries.filter(i => i.id !== id));
       } catch (err) {
         console.error(err);
       }
@@ -761,6 +984,13 @@ export const App: React.FC = () => {
               <span>Điểm Tham Quan</span>
             </li>
             <li 
+              className={`nav-item ${activeTab === "itineraries" ? "nav-item-active" : ""}`}
+              onClick={() => { setActiveTab("itineraries"); setSearchQuery(""); }}
+            >
+              <Compass size={18} style={{ color: "var(--accent-gold)" }} />
+              <span>Lộ Trình AI</span>
+            </li>
+            <li 
               className={`nav-item ${activeTab === "announcements" ? "nav-item-active" : ""}`}
               onClick={() => { setActiveTab("announcements"); setSearchQuery(""); }}
             >
@@ -816,6 +1046,7 @@ export const App: React.FC = () => {
             {activeTab === "articles" && "Quản Lý Kho Tri Thức RAG (Supabase pgvector)"}
             {activeTab === "guides" && "Thông Tin Hướng Dẫn Tham Quan (Đồng bộ Zalo Mini App)"}
             {activeTab === "places" && "Danh Mục Điểm Tham Quan & Thuyết Minh Số"}
+            {activeTab === "itineraries" && "Thiết Kế Tuyến Đi & Lộ Trình Tham Quan Đề Xuất (Supabase Database)"}
             {activeTab === "announcements" && "Quản Lý Thông Báo & Cảnh Báo Bản Tin"}
             {activeTab === "feedbacks" && "Tổng Hợp Ý Kiến & Phản Ánh Của Du Khách"}
             {activeTab === "chats" && "Nhật Ký Hội Thoại AI & Kiểm Toán Chất Lượng RAG"}
@@ -1212,7 +1443,12 @@ export const App: React.FC = () => {
                               />
                             </td>
                             <td>
-                              <div style={{ fontWeight: 700, color: "var(--primary-navy)" }}>{pl.name}</div>
+                              <div style={{ fontWeight: 700, color: "var(--primary-navy)", display: "flex", alignItems: "center", gap: "8px" }}>
+                                {pl.name}
+                                <span className="badge" style={{ backgroundColor: "#e2e8f0", color: "#475569", fontSize: "10px", padding: "2px 6px" }}>
+                                  #{pl.display_order ?? 0}
+                                </span>
+                              </div>
                               <div style={{ fontSize: "11px", color: "var(--text-light)" }}>Slug: {pl.slug}</div>
                             </td>
                             <td>
@@ -1251,6 +1487,93 @@ export const App: React.FC = () => {
                             </td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* --- PANEL 3.5: ITINERARIES MANAGEMENT --- */}
+              {activeTab === "itineraries" && (
+                <div className="panel-card">
+                  <div className="panel-header">
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <input
+                        type="text"
+                        placeholder="Tìm lộ trình..."
+                        className="form-input"
+                        style={{ width: "240px", padding: "6px 12px" }}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <button className="btn btn-primary" onClick={handleOpenAddItinerary}>
+                      <Plus size={16} />
+                      <span>Thêm lộ trình mới</span>
+                    </button>
+                  </div>
+
+                  <div className="admin-table-container">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Lộ trình (Tên)</th>
+                          <th>Thời lượng</th>
+                          <th>Mã màu vẽ</th>
+                          <th>Tuyến đi (Điểm kết nối)</th>
+                          <th>Số chặng</th>
+                          <th>Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {itineraries
+                          .filter(it => it.name.toLowerCase().includes(searchQuery.toLowerCase()) || (it.name_en || "").toLowerCase().includes(searchQuery.toLowerCase()))
+                          .map((it) => (
+                            <tr key={it.id}>
+                              <td>
+                                <div style={{ fontWeight: 700, color: "var(--primary-navy)" }}>{it.name}</div>
+                                <div style={{ fontSize: "11px", color: "var(--text-light)" }}>EN: {it.name_en || "-"}</div>
+                              </td>
+                              <td>
+                                <div style={{ fontWeight: 600 }}>{it.duration}</div>
+                                <div style={{ fontSize: "11px", color: "var(--text-light)" }}>EN: {it.duration_en || "-"}</div>
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <span style={{ display: "inline-block", width: "16px", height: "16px", borderRadius: "50%", backgroundColor: it.color, border: "1px solid #ccc" }} />
+                                  <span style={{ fontSize: "11px", fontFamily: "monospace" }}>{it.color}</span>
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                                  {it.place_slugs.map((slug, idx) => {
+                                    const matched = places.find(p => p.slug === slug);
+                                    return (
+                                      <React.Fragment key={idx}>
+                                        {idx > 0 && <span style={{ color: "var(--text-light)", fontSize: "10px" }}>➔</span>}
+                                        <span className="badge" style={{ backgroundColor: "rgba(11,37,69,0.06)", color: "var(--primary-navy)", border: "1px solid rgba(11,37,69,0.12)", fontSize: "11px" }}>
+                                          {matched ? matched.name : slug}
+                                        </span>
+                                      </React.Fragment>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                              <td>
+                                <span className="badge badge-info">{it.steps.length} chặng</span>
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                  <button className="btn btn-secondary btn-xs" onClick={() => handleOpenEditItinerary(it)}>
+                                    <Edit size={12} />
+                                  </button>
+                                  <button className="btn btn-danger btn-xs" onClick={() => handleDeleteItinerary(it.id)}>
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>
@@ -1993,6 +2316,17 @@ export const App: React.FC = () => {
                     />
                   </div>
                   <div className="form-group">
+                    <label className="form-label">Thứ tự hiển thị ưu tiên (1 - Lên đầu, số nhỏ hơn hiển thị trước)</label>
+                    <input 
+                      type="number" 
+                      className="form-input" 
+                      min="0"
+                      required 
+                      value={plDisplayOrder} 
+                      onChange={e => setPlDisplayOrder(Number(e.target.value))} 
+                    />
+                  </div>
+                  <div className="form-group">
                     <label className="form-label">Phân mục</label>
                     <select 
                       className="form-select" 
@@ -2167,10 +2501,288 @@ export const App: React.FC = () => {
                       />
                     </div>
                   </div>
+                  
+                  {/* Interactive Map Selector for Admin */}
+                  <div className="form-group" style={{ marginTop: "10px" }}>
+                    <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>Bản đồ chọn tọa độ thực địa</span>
+                      <span style={{ fontSize: "11px", color: "var(--accent-gold)", fontWeight: "normal" }}>
+                        (Bấm vào bản đồ hoặc kéo marker để chọn tọa độ)
+                      </span>
+                    </label>
+                    <div 
+                      ref={adminMapDivRef} 
+                      style={{ 
+                        width: "100%", 
+                        height: "220px", 
+                        borderRadius: "10px", 
+                        border: "1px solid rgba(0,0,0,0.12)",
+                        marginTop: "4px"
+                      }} 
+                    />
+                  </div>
                 </div>
                 <footer className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={closeModal}>Hủy</button>
                   <button type="submit" className="btn btn-primary">Lưu thông tin địa danh</button>
+                </footer>
+              </form>
+            </div>
+          )}
+
+          {/* Modal content for Itineraries */}
+          {modalResource === "itinerary" && (
+            <div className="modal-content" style={{ maxWidth: "600px" }}>
+              <header className="modal-header">
+                <h3>{modalType === "add" ? "Tạo lộ trình AI mới" : "Chỉnh sửa lộ trình AI"}</h3>
+                <button className="btn btn-secondary btn-xs" onClick={closeModal}>✕</button>
+              </header>
+              <form onSubmit={handleSaveItinerary}>
+                <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                  <div className="form-group">
+                    <label className="form-label">Tên lộ trình (VI)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      required 
+                      value={itName} 
+                      onChange={e => setItName(e.target.value)} 
+                      placeholder="Ví dụ: Lộ trình Hành hương Tâm linh"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>Tên lộ trình (EN)</span>
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary btn-xs" 
+                        style={{ padding: "2px 8px", fontSize: "10px" }}
+                        onClick={() => handleTranslate(itName, "itNameEn")}
+                      >
+                        {translatingField === "itNameEn" ? "Đang dịch..." : "Dịch tự động"}
+                      </button>
+                    </label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={itNameEn} 
+                      onChange={e => setItNameEn(e.target.value)} 
+                      placeholder="Ví dụ: Sacred Pilgrimage Route"
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div className="form-group">
+                      <label className="form-label">Thời lượng (VI)</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        required 
+                        value={itDuration} 
+                        onChange={e => setItDuration(e.target.value)} 
+                        placeholder="Ví dụ: 4 giờ hoặc 1 ngày"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Thời lượng (EN)</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        required 
+                        value={itDurationEn} 
+                        onChange={e => setItDurationEn(e.target.value)} 
+                        placeholder="Ví dụ: 4 hours or 1 day"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Màu hiển thị trên bản đồ (Color Picker)</label>
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                      <input 
+                        type="color" 
+                        value={itColor} 
+                        onChange={e => setItColor(e.target.value)} 
+                        style={{ width: "40px", height: "36px", border: "1px solid #ccc", padding: 0, cursor: "pointer", borderRadius: "4px" }}
+                      />
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={itColor} 
+                        onChange={e => setItColor(e.target.value)} 
+                        placeholder="#ffc107"
+                        style={{ flex: 1, fontFamily: "monospace" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Checklist of Places to form slugs path */}
+                  <div className="form-group" style={{ backgroundColor: "#f8fafc", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <label className="form-label" style={{ fontWeight: 700, color: "var(--primary-navy)" }}>Chọn các điểm trong tuyến đi (Theo thứ tự):</label>
+                    <p style={{ fontSize: "11px", color: "var(--text-light)", margin: "0 0 10px 0" }}>Chọn các địa danh từ danh sách để đưa vào lộ trình di chuyển:</p>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "150px", overflowY: "auto", padding: "4px" }}>
+                      {places.map((place) => {
+                        const isChecked = itPlaceSlugs.includes(place.slug);
+                        return (
+                          <label key={place.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", cursor: "pointer" }}>
+                            <input 
+                              type="checkbox" 
+                              checked={isChecked} 
+                              onChange={() => {
+                                if (isChecked) {
+                                  setItPlaceSlugs(itPlaceSlugs.filter(s => s !== place.slug));
+                                } else {
+                                  setItPlaceSlugs([...itPlaceSlugs, place.slug]);
+                                }
+                              }}
+                            />
+                            <span>{place.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {itPlaceSlugs.length > 0 && (
+                      <div style={{ marginTop: "12px", borderTop: "1px solid #e2e8f0", paddingTop: "8px" }}>
+                        <label className="form-label" style={{ fontSize: "11.5px", fontWeight: 700 }}>Thứ tự di chuyển hiện tại (Bấm để sắp xếp):</label>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px" }}>
+                          {itPlaceSlugs.map((slug, idx) => {
+                            const matched = places.find(p => p.slug === slug);
+                            return (
+                              <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#ffffff", padding: "4px 8px", borderRadius: "4px", border: "1px solid #e2e8f0", fontSize: "12px" }}>
+                                <span style={{ fontWeight: 600 }}>{idx + 1}. {matched ? matched.name : slug}</span>
+                                <div style={{ display: "flex", gap: "4px" }}>
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-secondary btn-xs" 
+                                    disabled={idx === 0}
+                                    onClick={() => {
+                                      const slugs = [...itPlaceSlugs];
+                                      const temp = slugs[idx];
+                                      slugs[idx] = slugs[idx - 1];
+                                      slugs[idx - 1] = temp;
+                                      setItPlaceSlugs(slugs);
+                                    }}
+                                    style={{ padding: "1px 4px", fontSize: "10px" }}
+                                  >
+                                    ▲
+                                  </button>
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-secondary btn-xs" 
+                                    disabled={idx === itPlaceSlugs.length - 1}
+                                    onClick={() => {
+                                      const slugs = [...itPlaceSlugs];
+                                      const temp = slugs[idx];
+                                      slugs[idx] = slugs[idx + 1];
+                                      slugs[idx + 1] = temp;
+                                      setItPlaceSlugs(slugs);
+                                    }}
+                                    style={{ padding: "1px 4px", fontSize: "10px" }}
+                                  >
+                                    ▼
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Interactive Steps Builder */}
+                  <div className="form-group" style={{ marginTop: "14px" }}>
+                    <label className="form-label" style={{ fontWeight: 700, color: "var(--primary-navy)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>Các bước hướng dẫn chiêm bái (Chặng đi):</span>
+                      <button 
+                        type="button" 
+                        className="btn btn-primary btn-xs" 
+                        onClick={() => setItSteps([...itSteps, { vi: "", en: "" }])}
+                      >
+                        + Thêm chặng đi
+                      </button>
+                    </label>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+                      {itSteps.map((step, idx) => (
+                        <div key={idx} style={{ backgroundColor: "#f8fafc", padding: "10px", borderRadius: "6px", border: "1px solid #e2e8f0", position: "relative" }}>
+                          <button 
+                            type="button" 
+                            className="btn btn-danger btn-xs" 
+                            style={{ position: "absolute", top: "8px", right: "8px", padding: "2px 6px", fontSize: "10px" }}
+                            onClick={() => setItSteps(itSteps.filter((_, i) => i !== idx))}
+                          >
+                            Xóa
+                          </button>
+                          
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--accent-gold)", display: "block", marginBottom: "6px" }}>
+                            Chặng {idx + 1}
+                          </span>
+
+                          <div className="form-group" style={{ marginBottom: "6px" }}>
+                            <label style={{ fontSize: "11px", display: "block", marginBottom: "2px", fontWeight: 600 }}>Hướng dẫn tiếng Việt</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required 
+                              value={step.vi} 
+                              onChange={e => {
+                                const newSteps = [...itSteps];
+                                newSteps[idx].vi = e.target.value;
+                                setItSteps(newSteps);
+                              }}
+                              placeholder="Ví dụ: Bắt đầu hành trình tại chân núi..."
+                              style={{ padding: "4px 8px", fontSize: "12px" }}
+                            />
+                          </div>
+
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: "11px", display: "flex", justifyContent: "space-between", marginBottom: "2px", fontWeight: 600 }}>
+                              <span>Hướng dẫn tiếng Anh (EN)</span>
+                              <button 
+                                type="button" 
+                                className="btn btn-secondary btn-xs" 
+                                style={{ padding: "0px 6px", fontSize: "9px" }}
+                                onClick={async () => {
+                                  if (!step.vi) return;
+                                  try {
+                                    const res = await adminApi.translateText(step.vi, "en");
+                                    const newSteps = [...itSteps];
+                                    newSteps[idx].en = res.translated_text;
+                                    setItSteps(newSteps);
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                }}
+                              >
+                                Dịch tự động
+                              </button>
+                            </label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              required 
+                              value={step.en} 
+                              onChange={e => {
+                                const newSteps = [...itSteps];
+                                newSteps[idx].en = e.target.value;
+                                setItSteps(newSteps);
+                              }}
+                              placeholder="Ví dụ: Start your journey at the mountain base..."
+                              style={{ padding: "4px 8px", fontSize: "12px" }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <footer className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={closeModal}>Hủy</button>
+                  <button type="submit" className="btn btn-primary">Lưu lộ trình di chuyển</button>
                 </footer>
               </form>
             </div>

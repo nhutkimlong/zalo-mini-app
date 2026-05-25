@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, Send, ArrowLeft, AlertCircle, UserCircle, Trash2 } from "lucide-react";
+import { Header, Page } from "zmp-ui";
+import { Bot, Send, AlertCircle, UserCircle, Trash2 } from "lucide-react";
 import { getUserInfo } from "zmp-sdk/apis";
 import api, { ChatResponse } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -21,13 +22,19 @@ export const ChatPage: React.FC = () => {
   
   const getWelcomeText = (name?: string) => {
     if (language === "en") {
-      return name
-        ? `Welcome, ${name}! I am Hướng dẫn viên 4.0 — your intelligent AI guide for Ba Den Mountain National Tourist Area. Ask me about cable car tickets, opening hours, transport routes, temple etiquette, or the legend of Linh Son Thanh Mau.\n\nHow can I help you today?`
-        : `Welcome! I am Hướng dẫn viên 4.0 — your intelligent AI guide for Ba Den Mountain National Tourist Area. Ask me about cable car tickets, opening hours, transport routes, temple etiquette, or the legend of Linh Son Thanh Mau.\n\nHow can I help you today?`;
+      const greeting = name ? `Welcome, ${name}!` : "Welcome to Black Lady Mountain!";
+      return `${greeting} I am Guide 4.0 — your AI Travel Assistant.
+
+I am ready to help you with cable car ticket prices, operating hours, transportation, or local history.
+
+How can I help you today?`;
     } else {
-      return name
-        ? `Xin kính chào anh/chị ${name}! Tôi là Hướng dẫn viên 4.0 — Trợ lý du lịch AI của Khu di tích quốc gia Núi Bà Đen. Tôi có thể giải đáp thông tin về giá vé cáp treo, giờ mở cửa, di chuyển, quy định tham quan đền chùa hoặc lịch sử sự tích Linh Sơn Thánh Mẫu.\n\nAnh/chị muốn tìm hiểu thông tin gì ạ?`
-        : `Xin kính chào quý khách! Tôi là Hướng dẫn viên 4.0 — Trợ lý du lịch AI của Khu di tích quốc gia Núi Bà Đen. Tôi có thể giải đáp thông tin về giá vé cáp treo, giờ mở cửa, di chuyển, quy định tham quan đền chùa hoặc lịch sử sự tích Linh Sơn Thánh Mẫu.\n\nQuý khách muốn tìm hiểu thông tin gì hôm nay ạ?`;
+      const greeting = name ? `Xin kính chào anh/chị ${name}!` : "Xin kính chào quý khách!";
+      return `${greeting} Tôi là Hướng dẫn viên 4.0 — Trợ lý du lịch AI của Núi Bà Đen.
+
+Tôi sẵn sàng giải đáp nhanh các câu hỏi về giá vé cáp treo, giờ mở cửa chùa, di chuyển hoặc lịch sử tâm linh tại đây.
+
+Hôm nay tôi có thể hỗ trợ gì cho quý khách ạ?`;
     }
   };
 
@@ -95,7 +102,7 @@ export const ChatPage: React.FC = () => {
         "What are the operating hours?",
         "What is the dress code for the temple?",
         "How do I travel from Ho Chi Minh City?",
-        "What is the legend of Ba Den?"
+        "What is the legend of Black Lady?"
       ]
     : [
         "Giá vé cáp treo hiện nay thế nào?",
@@ -208,20 +215,33 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="chat-page-dark">
+    <Page className="chat-page-dark">
       {/* App Header */}
-      <header className="chat-header-dark">
-        <Link to="/" style={{ color: "rgba(255, 255, 255, 0.8)", display: "flex", alignItems: "center" }}>
-          <ArrowLeft size={22} style={{ color: "var(--accent-gold)" }} />
-        </Link>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <MessageSquare size={20} style={{ color: "var(--accent-gold)" }} />
-          <h1 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--cream-white)" }}>
-            Hướng dẫn viên 4.0
-          </h1>
-        </div>
+      <Header
+        showBackIcon={true}
+        title={
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <Bot size={20} style={{ color: "var(--accent-gold)" }} />
+            <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--cream-white)" }}>
+              Hướng dẫn viên 4.0
+            </span>
+          </div> as any
+        }
+      />
         
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      {/* Control bar: Language Selector & Trash */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "10px 16px",
+        backgroundColor: "var(--primary-navy)",
+        borderBottom: "1px solid rgba(212, 175, 55, 0.2)",
+      }}>
+        <div style={{ fontSize: "12px", color: "var(--cream-white)", opacity: 0.8 }}>
+          {language === "vi" ? "Công cụ hỗ trợ:" : "Assistant tools:"}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button
             type="button"
             onClick={clearChatHistory}
@@ -259,7 +279,7 @@ export const ChatPage: React.FC = () => {
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Conversation Window */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
@@ -325,7 +345,7 @@ export const ChatPage: React.FC = () => {
                     flexShrink: 0,
                     boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
                   }}>
-                    <MessageSquare size={16} style={{ color: "var(--accent-gold)" }} />
+                    <Bot size={16} style={{ color: "var(--accent-gold)" }} />
                   </div>
                 )}
 
@@ -439,7 +459,7 @@ export const ChatPage: React.FC = () => {
         </button>
       </div>
 
-    </div>
+    </Page>
   );
 };
 
