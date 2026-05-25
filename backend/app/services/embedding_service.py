@@ -160,7 +160,62 @@ class EmbeddingService:
             return False
         try:
             self.supabase.table("knowledge_chunks").delete().eq("article_id", str(article_id)).execute()
-            chunks = self.split_text(f"Tiêu đề: {title}\n\nNội dung: {content}")
+            
+            # Detect JSON and format it into plain text for better RAG indexing
+            clean_content = content
+            trimmed = content.strip()
+            if trimmed.startswith("[") or trimmed.startswith("{"):
+                import json
+                try:
+                    data = json.loads(trimmed)
+                    text_parts = []
+                    
+                    # Format tickets
+                    tickets = data.get("tickets", [])
+                    if tickets:
+                        text_parts.append("DANH SÁCH GIÁ VÉ / TICKET PRICES:")
+                        for sec in tickets:
+                            title_vi = sec.get("title", "")
+                            title_en = sec.get("titleEn", "")
+                            text_parts.append(f"\n--- {title_vi} ({title_en}) ---")
+                            for item in sec.get("items", []):
+                                name_vi = item.get("name", "")
+                                name_en = item.get("nameEn", "")
+                                price_vi = item.get("price", "")
+                                price_en = item.get("priceEn", "")
+                                price_line = f"- {name_vi} ({name_en}): {price_vi} ({price_en})"
+                                oneway_vi = item.get("priceOneway", "")
+                                oneway_en = item.get("priceOnewayEn", "")
+                                if oneway_vi:
+                                    price_line += f" | Một chiều / One-way: {oneway_vi} ({oneway_en})"
+                                text_parts.append(price_line)
+                                
+                    # Format schedules
+                    schedules = data.get("schedules", [])
+                    if schedules:
+                        text_parts.append("\n\nLỊCH VẬN HÀNH / OPERATING HOURS:")
+                        for sec in schedules:
+                            title_vi = sec.get("title", "")
+                            title_en = sec.get("titleEn", "")
+                            text_parts.append(f"\n--- {title_vi} ({title_en}) ---")
+                            for item in sec.get("items", []):
+                                label_vi = item.get("label", "")
+                                label_en = item.get("labelEn", "")
+                                hours_vi = item.get("hours", "")
+                                hours_en = item.get("hoursEn", "")
+                                note_vi = item.get("note", "")
+                                note_en = item.get("noteEn", "")
+                                sched_line = f"- {label_vi} ({label_en}): {hours_vi} ({hours_en})"
+                                if note_vi:
+                                    sched_line += f" | Lưu ý / Note: {note_vi} ({note_en})"
+                                text_parts.append(sched_line)
+                    
+                    clean_content = "\n".join(text_parts)
+                except Exception as e:
+                    print(f"[Embedding] JSON format parser failed: {e}")
+                    clean_content = content
+
+            chunks = self.split_text(f"Tiêu đề: {title}\n\nNội dung: {clean_content}")
             for i, chunk_text in enumerate(chunks):
                 embedding = self.normalize_embedding_dim(self.generate_embedding(chunk_text))
                 self.supabase.table("knowledge_chunks").insert({
