@@ -388,31 +388,33 @@ body {
 /* Beautiful custom tab panels */
 .custom-tabs {
   display: flex;
-  background-color: rgba(11, 37, 69, 0.05);
+  background-color: rgba(11, 37, 69, 0.06);
   padding: 4px;
   border-radius: 12px;
   margin: 16px;
   gap: 4px;
+  border: 1px solid rgba(11, 37, 69, 0.08);
 }
 
 .tab-btn {
   flex: 1;
+  white-space: nowrap;
   text-align: center;
-  padding: 10px;
+  padding: 10px 4px;
   font-size: 13px;
   font-weight: 700;
   border-radius: 8px;
   border: none;
   background: transparent;
   color: var(--light-text);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .tab-btn-active {
   background-color: var(--cream-white);
   color: var(--primary-navy);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(197, 168, 128, 0.2);
+  box-shadow: 0 4px 10px rgba(11, 37, 69, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
 }
 
 /* Bottom Navigation Bar */

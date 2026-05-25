@@ -65,7 +65,7 @@ const DEFAULT_VISUAL_SCHEDULES = [
 
 interface ArticleModalProps {
   onClose: () => void;
-  onSave: (data: { title: string; category: string; content: string; is_published: boolean }) => void;
+  onSave: (data: { title: string; category: string; content: string; is_published: boolean; title_en?: string; content_en?: string }) => void;
   selectedItem: AdminKnowledgeArticle | null;
   modalType: "add" | "edit" | null;
   defaultCategory?: string;
@@ -79,20 +79,25 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   defaultCategory,
 }) => {
   const [artTitle, setArtTitle] = useState("");
+  const [artTitleEn, setArtTitleEn] = useState("");
   const [artCategory, setArtCategory] = useState("lich_su");
   const [artContent, setArtContent] = useState("");
+  const [artContentEn, setArtContentEn] = useState("");
   const [artPublished, setArtPublished] = useState(true);
 
   const [visualTickets, setVisualTickets] = useState<any[]>(DEFAULT_VISUAL_TICKETS);
   const [visualSchedules, setVisualSchedules] = useState<any[]>(DEFAULT_VISUAL_SCHEDULES);
   const [translatingTicketField, setTranslatingTicketField] = useState<string | null>(null);
+  const [translatingField, setTranslatingField] = useState<string | null>(null);
 
   // Initialize form fields
   useEffect(() => {
     if (selectedItem) {
       setArtTitle(selectedItem.title || "");
+      setArtTitleEn(selectedItem.title_en || "");
       setArtCategory(selectedItem.category || defaultCategory || "lich_su");
       setArtContent(selectedItem.content || "");
+      setArtContentEn(selectedItem.content_en || "");
       setArtPublished(selectedItem.is_published !== undefined ? selectedItem.is_published : true);
       
       if (selectedItem.category === "ve_va_gio_mo_cua") {
@@ -121,8 +126,10 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     } else {
       const cat = defaultCategory || "lich_su";
       setArtTitle("");
+      setArtTitleEn("");
       setArtCategory(cat);
       setArtContent("");
+      setArtContentEn("");
       setArtPublished(true);
       
       if (cat === "ve_va_gio_mo_cua") {
@@ -173,13 +180,33 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     }
   };
 
+  const handleTranslateGeneralField = async (field: "title" | "content") => {
+    setTranslatingField(field);
+    try {
+      const sourceText = field === "title" ? artTitle : artContent;
+      if (!sourceText) return;
+      const res = await adminApi.translateText(sourceText, "en");
+      if (field === "title") {
+        setArtTitleEn(res.translated_text);
+      } else {
+        setArtContentEn(res.translated_text);
+      }
+    } catch (e: any) {
+      alert(e?.message || "Lỗi khi dịch tự động.");
+    } finally {
+      setTranslatingField(null);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
       title: artTitle,
       category: artCategory,
       content: artContent,
-      is_published: artPublished
+      is_published: artPublished,
+      title_en: artTitleEn,
+      content_en: artContentEn
     });
   };
 
@@ -195,15 +222,33 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
       </header>
       <form onSubmit={handleSubmit}>
         <div className="modal-body">
-          <div className="form-group">
-            <label className="form-label">Tiêu đề bài viết</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              required 
-              value={artTitle} 
-              onChange={e => setArtTitle(e.target.value)} 
-            />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Tiêu đề bài viết (Tiếng Việt)</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                required 
+                value={artTitle} 
+                onChange={e => setArtTitle(e.target.value)} 
+              />
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <label className="form-label" style={{ margin: 0 }}>Tiêu đề bài viết (English)</label>
+                <button type="button" className="btn btn-secondary btn-xs" style={{ padding: "1px 6px", fontSize: "10px" }}
+                  disabled={translatingField === "title"}
+                  onClick={() => handleTranslateGeneralField("title")}>
+                  {translatingField === "title" ? "..." : "AI Dịch"}
+                </button>
+              </div>
+              <input 
+                type="text" 
+                className="form-input" 
+                value={artTitleEn} 
+                onChange={e => setArtTitleEn(e.target.value)} 
+              />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Phân mục tri thức</label>
@@ -497,16 +542,35 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             </div>
           ) : (
             /* ===== PLAIN TEXT TEXTAREA for RAG articles ===== */
-            <div className="form-group">
-              <label className="form-label">Nội dung chi tiết văn bản (RAG Context — AI sẽ đọc và tra cứu)</label>
-              <textarea 
-                className="form-textarea" 
-                required 
-                rows={8}
-                value={artContent} 
-                onChange={e => setArtContent(e.target.value)}
-                placeholder="Nhập nội dung văn bản, markdown được hỗ trợ. AI sẽ sử dụng đoạn này để trả lời câu hỏi của du khách..."
-              />
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label">Nội dung chi tiết (Tiếng Việt - RAG Context)</label>
+                <textarea 
+                  className="form-textarea" 
+                  required 
+                  rows={6}
+                  value={artContent} 
+                  onChange={e => setArtContent(e.target.value)}
+                  placeholder="Nhập nội dung văn bản tiếng Việt..."
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label className="form-label" style={{ margin: 0 }}>Nội dung chi tiết (English - Mini App Display)</label>
+                  <button type="button" className="btn btn-secondary btn-xs" style={{ padding: "1px 6px", fontSize: "10px" }}
+                    disabled={translatingField === "content"}
+                    onClick={() => handleTranslateGeneralField("content")}>
+                    {translatingField === "content" ? "..." : "AI Dịch"}
+                  </button>
+                </div>
+                <textarea 
+                  className="form-textarea" 
+                  rows={6}
+                  value={artContentEn} 
+                  onChange={e => setArtContentEn(e.target.value)}
+                  placeholder="Nhập nội dung văn bản tiếng Anh..."
+                />
+              </div>
             </div>
           )}
 

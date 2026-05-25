@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Header, Page } from "zmp-ui";
 import { Clock, Ticket, Navigation, ShieldCheck } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
-import api from "../services/api";
+import api, { KnowledgeArticle } from "../services/api";
 
 type TabType = "tickets" | "travel" | "rules";
 
@@ -435,11 +435,11 @@ export const VisitInfoPage: React.FC = () => {
 
 
 
-  const [ticketArticles, setTicketArticles] = useState<any[]>([]);
+  const [ticketArticles, setTicketArticles] = useState<KnowledgeArticle[]>([]);
 
-  const [travelArticles, setTravelArticles] = useState<any[]>([]);
+  const [travelArticles, setTravelArticles] = useState<KnowledgeArticle[]>([]);
 
-  const [rulesArticles, setRulesArticles] = useState<any[]>([]);
+  const [rulesArticles, setRulesArticles] = useState<KnowledgeArticle[]>([]);
 
   const [ticketsLoading, setTicketsLoading] = useState(true);
 
@@ -513,7 +513,7 @@ export const VisitInfoPage: React.FC = () => {
 
         >
 
-          {language === "en" ? "Tickets & Hours" : "Vé & Lịch hoạt động"}
+          {language === "en" ? "Tickets & Hours" : "Lịch & Vé"}
 
         </button>
 
@@ -525,7 +525,7 @@ export const VisitInfoPage: React.FC = () => {
 
         >
 
-          {language === "en" ? "Transport & Parking" : "Di chuyển & Bãi xe"}
+          {language === "en" ? "Transport" : "Di chuyển"}
 
         </button>
 
@@ -537,7 +537,7 @@ export const VisitInfoPage: React.FC = () => {
 
         >
 
-          {language === "en" ? "Rules & Etiquette" : "Nội quy & Ứng xử"}
+          {language === "en" ? "Rules" : "Nội quy"}
 
         </button>
 
@@ -773,7 +773,9 @@ export const VisitInfoPage: React.FC = () => {
 
             travelArticles.map((art, aIdx) => {
 
-              const items = parseArticleContent(art.content || "");
+              const content = (language === "en" && art.content_en) ? art.content_en : (art.content || "");
+
+              const items = parseArticleContent(content);
 
               return (
 
@@ -867,7 +869,9 @@ export const VisitInfoPage: React.FC = () => {
 
             rulesArticles.map((art, aIdx) => {
 
-              const items = parseArticleContent(art.content || "");
+              const content = (language === "en" && art.content_en) ? art.content_en : (art.content || "");
+
+              const items = parseArticleContent(content);
 
               return (
 

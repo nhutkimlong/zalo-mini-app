@@ -1,13 +1,13 @@
 import React from "react";
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  MapPin, 
-  Compass, 
-  Bell, 
-  AlertTriangle, 
-  MessageSquare, 
-  DollarSign 
+import {
+  LayoutDashboard,
+  BookOpen,
+  MapPin,
+  Compass,
+  Bell,
+  AlertTriangle,
+  MessageSquare,
+  DollarSign
 } from "lucide-react";
 
 interface SidebarProps {
@@ -35,13 +35,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className={`sidebar ${isOpen ? "sidebar-open" : ""}`} style={{ position: "relative" }}>
-      <button 
-        className="show-on-mobile btn btn-secondary" 
-        style={{ 
-          position: "absolute", 
-          top: "18px", 
-          right: "16px", 
-          padding: "4px 8px", 
+      <button
+        className="show-on-mobile btn btn-secondary"
+        style={{
+          position: "absolute",
+          top: "18px",
+          right: "16px",
+          padding: "4px 8px",
           fontSize: "12px",
           borderColor: "rgba(255,255,255,0.2)",
           backgroundColor: "rgba(255,255,255,0.1)",
@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           display: "flex",
           justifyContent: "center",
           alignItems: "center"
-        }} 
+        }}
         onClick={onClose}
       >
         ✕
@@ -65,83 +65,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <nav>
         <ul className="nav-list">
-          <li 
+          <li
             className={`nav-item ${activeTab === "dashboard" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("dashboard")}
           >
             <LayoutDashboard size={18} />
             <span>Bảng Tổng Quan</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "articles" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("articles")}
           >
             <BookOpen size={18} />
             <span>Kho Tri Thức RAG</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "guides" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("guides")}
           >
             <BookOpen size={18} style={{ color: "var(--accent-gold)" }} />
             <span>Hướng Dẫn Tham Quan</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "places" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("places")}
           >
             <MapPin size={18} />
             <span>Điểm Tham Quan</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "itineraries" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("itineraries")}
           >
             <Compass size={18} style={{ color: "var(--accent-gold)" }} />
             <span>Lộ Trình AI</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "announcements" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("announcements")}
           >
             <Bell size={18} />
             <span>Thông Báo BQL</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "feedbacks" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("feedbacks")}
           >
             <AlertTriangle size={18} />
             <span>Phản Ánh Du Khách</span>
             {newFeedbacks > 0 && (
-              <span 
-                style={{ 
-                  backgroundColor: "var(--danger)", 
-                  color: "white", 
-                  borderRadius: "10px", 
-                  padding: "1px 6px", 
+              <span
+                style={{
+                  backgroundColor: "var(--danger)",
+                  color: "white",
+                  borderRadius: "10px",
+                  padding: "1px 6px",
                   fontSize: "10px",
                   marginLeft: "auto",
-                  fontWeight: 700 
+                  fontWeight: 700
                 }}
               >
                 {newFeedbacks}
               </span>
             )}
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "chats" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("chats")}
           >
             <MessageSquare size={18} />
             <span>Giám Sát Chatbot AI</span>
           </li>
-          <li 
+          <li
             className={`nav-item ${activeTab === "usage" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("usage")}
           >
             <DollarSign size={18} />
-            <span>Chi Phi Beeknoee</span>
+            <span>Chi Phí</span>
           </li>
         </ul>
       </nav>

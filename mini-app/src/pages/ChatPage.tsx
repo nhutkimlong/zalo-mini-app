@@ -22,19 +22,11 @@ export const ChatPage: React.FC = () => {
   
   const getWelcomeText = (name?: string) => {
     if (language === "en") {
-      const greeting = name ? `Welcome, ${name}!` : "Welcome to Black Lady Mountain!";
-      return `${greeting} I am Guide 4.0 — your AI Travel Assistant.
-
-I am ready to help you with cable car ticket prices, operating hours, transportation, or local history.
-
-How can I help you today?`;
+      const greeting = name ? `Hello ${name}!` : "Hello!";
+      return `${greeting} I am your AI Travel Assistant. How can I help you today?`;
     } else {
-      const greeting = name ? `Xin kính chào anh/chị ${name}!` : "Xin kính chào quý khách!";
-      return `${greeting} Tôi là Hướng dẫn viên 4.0 — Trợ lý du lịch AI của Núi Bà Đen.
-
-Tôi sẵn sàng giải đáp nhanh các câu hỏi về giá vé cáp treo, giờ mở cửa chùa, di chuyển hoặc lịch sử tâm linh tại đây.
-
-Hôm nay tôi có thể hỗ trợ gì cho quý khách ạ?`;
+      const greeting = name ? `Xin chào anh/chị ${name}!` : "Xin chào quý khách!";
+      return `${greeting} Tôi là Trợ lý du lịch AI của Núi Bà Đen. Hôm nay tôi có thể giúp gì cho bạn?`;
     }
   };
 
@@ -223,7 +215,7 @@ Hôm nay tôi có thể hỗ trợ gì cho quý khách ạ?`;
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <Bot size={20} style={{ color: "var(--accent-gold)" }} />
             <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--cream-white)" }}>
-              Hướng dẫn viên 4.0
+              {language === "vi" ? "Trợ lý AI" : "AI Assistant"}
             </span>
           </div> as any
         }
@@ -310,7 +302,7 @@ Hôm nay tôi có thể hỗ trợ gì cho quý khách ạ?`;
                     />
                   </div>
                   <h2 style={{ fontSize: "16px", color: "var(--accent-gold)", fontWeight: 800, margin: "0 0 8px 0", letterSpacing: "0.5px" }}>
-                    {language === "vi" ? "HƯỚNG DẪN VIÊN 4.0 — TRỢ LÝ DU LỊCH AI" : "GUIDE 4.0 — AI TRAVEL GUIDE"}
+                    {language === "vi" ? "TRỢ LÝ DU LỊCH AI" : "AI TRAVEL ASSISTANT"}
                   </h2>
                   <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.85)", lineHeight: 1.6, whiteSpace: "pre-line", textAlign: "left", padding: "0 4px" }}>
                     {msg.text}

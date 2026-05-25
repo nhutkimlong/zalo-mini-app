@@ -10,6 +10,8 @@ class ArticleCreate(BaseModel):
     visibility: str = Field("public", description="Hiển thị ('public', 'private')")
     source: Optional[str] = Field(None, description="Nguồn tài liệu tham khảo")
     status: str = Field("draft", description="Trạng thái ('draft', 'published', 'archived')")
+    title_en: Optional[str] = Field(None, description="Tiêu đề bài viết tri thức (English)")
+    content_en: Optional[str] = Field(None, description="Nội dung chính chi tiết (English)")
 
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
@@ -18,6 +20,8 @@ class ArticleUpdate(BaseModel):
     visibility: Optional[str] = None
     source: Optional[str] = None
     status: Optional[str] = None
+    title_en: Optional[str] = None
+    content_en: Optional[str] = None
 
 class ArticleResponse(BaseModel):
     id: UUID
@@ -30,6 +34,8 @@ class ArticleResponse(BaseModel):
     updated_by: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
+    title_en: Optional[str] = None
+    content_en: Optional[str] = None
 
     class Config:
         from_attributes = True

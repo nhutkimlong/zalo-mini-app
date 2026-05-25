@@ -84,6 +84,20 @@ export interface Itinerary {
   updated_at: string;
 }
 
+export interface KnowledgeArticle {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  status?: string;
+  visibility?: string;
+  source?: string;
+  created_at: string;
+  updated_at: string;
+  title_en?: string;
+  content_en?: string;
+}
+
 // ─── API Client ───────────────────────────────────────────────────────────────
 class ApiClient {
   private backendUrl: string;
@@ -175,7 +189,7 @@ class ApiClient {
   }
 
   // ─── Tri thức/Knowledge Articles ─ Direct Supabase ───────
-  async getArticlesByCategory(category: string): Promise<any[]> {
+  async getArticlesByCategory(category: string): Promise<KnowledgeArticle[]> {
     const { data, error } = await supabase
       .from("knowledge_articles")
       .select("*")
@@ -188,7 +202,7 @@ class ApiClient {
       console.warn(`[Knowledge] Fetch for ${category} failed:`, error.message);
       throw new Error(error.message);
     }
-    return data ?? [];
+    return (data as KnowledgeArticle[]) ?? [];
   }
 
   // ─── Storage ─ Supabase upload image ────────────────────

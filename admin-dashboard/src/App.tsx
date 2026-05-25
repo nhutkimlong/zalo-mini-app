@@ -189,13 +189,15 @@ export const App: React.FC = () => {
     category: string;
     content: string;
     is_published: boolean;
+    title_en?: string;
+    content_en?: string;
   }) => {
     closeModal();
 
     // Dynamic animation wrapper showing vector ingestion (WOW Factor!)
     setIndexingMsg("Bắt đầu phân tích văn bản thành các chunks...");
     setTimeout(() => {
-      setIndexingMsg("Đang tạo vector embedding (1536 chiều) thông qua OpenAI/Gemini...");
+      setIndexingMsg("Đang tạo vector embedding (3072 chiều) thông qua OpenAI/Gemini...");
     }, 1200);
     setTimeout(() => {
       setIndexingMsg("Đang ghi vào cơ sở dữ liệu Supabase pgvector và cập nhật chỉ mục hnsw...");

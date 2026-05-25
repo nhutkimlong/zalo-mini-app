@@ -11,6 +11,8 @@ export interface AdminKnowledgeArticle {
   source?: string;
   created_at: string;
   updated_at: string;
+  title_en?: string;
+  content_en?: string;
 }
 
 export interface AdminPlace {
