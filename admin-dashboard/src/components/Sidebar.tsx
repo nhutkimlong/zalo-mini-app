@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => handleNavClick("usage")}
           >
             <DollarSign size={18} />
-            <span>Chi Phí</span>
+            <span>Chi Phí API</span>
           </li>
         </ul>
       </nav>
