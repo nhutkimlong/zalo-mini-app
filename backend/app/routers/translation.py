@@ -39,7 +39,6 @@ def translate_text(req: TranslationRequest):
                 {"role": "user", "content": req.text}
             ],
             temperature=0.3,
-            max_tokens=2000,
         )
 
         translated = completion.choices[0].message.content.strip()

@@ -1,0 +1,24 @@
+{
+  "name": "Hệ Thống Quản Trị - Trợ Lý Số Núi Bà Đen",
+  "short_name": "Admin Bà Đen",
+  "description": "Bảng điều khiển quản trị, kho tri thức RAG và tổng hợp phản ánh của Trợ lý số Núi Bà Đen.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B2545",
+  "theme_color": "#0B2545",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     BEEKNOEE_TTS_MODEL: str = "google/google-tts"
     BEEKNOEE_INPUT_COST_PER_1M: float = 0.30
     BEEKNOEE_OUTPUT_COST_PER_1M: float = 2.50
+    BEEKNOEE_EMBED_COST_PER_1M: float = 0.20
     EMBEDDING_DIM: int = 3072
 
     # ─── Legacy (kept for backward compat, not used) ──────────────────────────

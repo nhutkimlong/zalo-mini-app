@@ -32,6 +32,8 @@ class EmbeddingService:
         
         # In-memory cache to save free API quota for repeated search queries
         self._query_cache = {}
+        self._cached_settings = None
+        self._cached_at = 0.0
 
         # Supabase for indexing
         self.supabase = None
@@ -51,6 +53,38 @@ class EmbeddingService:
         else:
             print("[Embedding] WARNING: No Beeknoee API key. Will use mock embeddings.")
 
+    def _get_dynamic_settings(self) -> dict:
+        """Fetch primary embedding settings from database system_settings table, with local config fallback."""
+        import time
+        now = time.time()
+        if self._cached_settings and (now - self._cached_at < 30):
+            return self._cached_settings
+
+        config = {
+            "embed_model": settings.BEEKNOEE_EMBED_MODEL,
+            "embed_cost": settings.BEEKNOEE_EMBED_COST_PER_1M
+        }
+
+        if not self.supabase:
+            return config
+
+        try:
+            res = self.supabase.table("system_settings").select("*").execute()
+            if res.data:
+                for row in res.data:
+                    key = row["key"]
+                    val = row["value"]
+                    if key == "BEEKNOEE_EMBED_MODEL":
+                        config["embed_model"] = val
+                    elif key == "BEEKNOEE_EMBED_COST_PER_1M":
+                        config["embed_cost"] = float(val)
+                self._cached_settings = config
+                self._cached_at = now
+        except Exception as e:
+            print(f"[Embedding] Failed to fetch dynamic settings from database system_settings: {e}")
+
+        return config
+
     def generate_embedding(self, text: str) -> List[float]:
         """
         Generate embedding with automatic fallback chain.
@@ -66,7 +100,8 @@ class EmbeddingService:
             return self._mock_embedding(text)
 
         # Build chain: configured primary model first, then rest of chain
-        primary = settings.BEEKNOEE_EMBED_MODEL
+        dyn_config = self._get_dynamic_settings()
+        primary = dyn_config["embed_model"]
         chain = [primary] + [m for m in EMBED_MODEL_CHAIN if m != primary]
 
         last_error = None
@@ -83,6 +118,35 @@ class EmbeddingService:
                 
                 if model != primary:
                     print(f"[Embedding] Fallback succeeded with model: {model}")
+                
+                # Parse tokens
+                prompt_tokens = 0
+                if hasattr(response, "usage") and response.usage:
+                    prompt_tokens = getattr(response.usage, "prompt_tokens", 0)
+                if not prompt_tokens:
+                    prompt_tokens = max(1, len(text) // 4)
+
+                # Log usage to Supabase chat_logs for statistics
+                if self.supabase:
+                    try:
+                        embed_cost = dyn_config["embed_cost"]
+                        estimated_cost = (prompt_tokens / 1_000_000.0) * embed_cost
+                        
+                        self.supabase.table("chat_logs").insert({
+                            "user_id": None,
+                            "channel": "backend_rag",
+                            "question": f"Sinh vector embedding RAG (Độ dài: {len(text)} ký tự)",
+                            "answer": f"[Vector Embedding] Kích thước: {len(embedding)}",
+                            "confidence_score": 1.0,
+                            "model": model,
+                            "prompt_tokens": prompt_tokens,
+                            "completion_tokens": 0,
+                            "total_tokens": prompt_tokens,
+                            "estimated_cost_usd": estimated_cost
+                        }).execute()
+                    except Exception as log_err:
+                        print(f"[Embedding] Failed to insert log to chat_logs: {log_err}")
+
                 return embedding
             except Exception as e:
                 last_error = e
@@ -170,9 +234,14 @@ class EmbeddingService:
                     data = json.loads(trimmed)
                     text_parts = []
                     
+                    # For category ve_va_gio_mo_cua, separate indexing concern by title keywords to avoid outdated overlaps.
+                    title_lower = title.lower()
+                    is_tickets_article = any(k in title_lower for k in ["giá vé", "gia ve", "ticket", "price"])
+                    is_schedules_article = any(k in title_lower for k in ["giờ", "gio", "lịch", "lich", "schedule", "operating", "hour"])
+                    
                     # Format tickets
                     tickets = data.get("tickets", [])
-                    if tickets:
+                    if tickets and (is_tickets_article or not is_schedules_article or category != "ve_va_gio_mo_cua"):
                         text_parts.append("DANH SÁCH GIÁ VÉ / TICKET PRICES:")
                         for sec in tickets:
                             title_vi = sec.get("title", "")
@@ -192,7 +261,7 @@ class EmbeddingService:
                                 
                     # Format schedules
                     schedules = data.get("schedules", [])
-                    if schedules:
+                    if schedules and (is_schedules_article or not is_tickets_article or category != "ve_va_gio_mo_cua"):
                         text_parts.append("\n\nLỊCH VẬN HÀNH / OPERATING HOURS:")
                         for sec in schedules:
                             title_vi = sec.get("title", "")

@@ -37,6 +37,7 @@ Phong cách giao tiếp:
 - Không dùng emoji, không nói kiểu quảng cáo, không lặp lại tên hệ thống.
 
 Quy tắc bắt buộc:
+- ƯU TIÊN TUYỆT ĐỐI phần [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (nếu có). Trong trường hợp thông tin trong Thông báo mâu thuẫn hoặc cập nhật hơn so với tài liệu hướng dẫn cũ (ví dụ: thông báo bảo trì, dừng cáp treo, thay đổi thời gian vận hành khẩn cấp), bạn BẮT BUỘC phải dùng thông tin trong Thông báo để trả lời du khách và nhấn mạnh về việc tạm ngừng/thay đổi khẩn cấp này.
 - Chỉ dùng thông tin có trong tài liệu tham khảo bên dưới. Không suy đoán hay bịa đặt.
 - Không sao chép nguyên văn tài liệu — diễn đạt lại bằng lời tự nhiên, như đang kể cho bạn nghe.
 - Không tự thêm nguồn vào câu trả lời; giao diện hiển thị nguồn riêng.
@@ -60,6 +61,7 @@ Communication style:
 - No emojis. No repeating the system name.
 
 Mandatory rules:
+- ABSOLUTE PRIORITY TO [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (if present). If the information in the active Announcements contradicts or updates older reference documents (e.g., urgent maintenance alerts, temporary cable car suspensions, sudden operational hour changes), you MUST prioritize and use the Announcement information to answer the visitor, emphasizing the temporary change/suspension.
 - Use only information found in the reference documents below. Do not guess or fabricate.
 - Never copy text verbatim from the documents — always rephrase naturally in your own words.
 - Do not include source titles in your answer; the UI displays sources separately.
@@ -80,9 +82,9 @@ def _beeknoee_client() -> Optional[OpenAI]:
     )
 
 
-def _estimate_llm_cost(prompt_tokens: int, completion_tokens: int) -> float:
-    input_cost = (prompt_tokens / 1_000_000) * settings.BEEKNOEE_INPUT_COST_PER_1M
-    output_cost = (completion_tokens / 1_000_000) * settings.BEEKNOEE_OUTPUT_COST_PER_1M
+def _estimate_llm_cost(prompt_tokens: int, completion_tokens: int, input_cost_per_1m: float, output_cost_per_1m: float) -> float:
+    input_cost = (prompt_tokens / 1_000_000) * input_cost_per_1m
+    output_cost = (completion_tokens / 1_000_000) * output_cost_per_1m
     return round(input_cost + output_cost, 8)
 
 
@@ -90,20 +92,25 @@ def _call_llm(
     client: OpenAI,
     system_prompt: str,
     user_question: str,
+    model: str,
+    input_cost_per_1m: float,
+    output_cost_per_1m: float,
     temperature: float = 0.4,
-    max_tokens: int = 800,
+    max_tokens: Optional[int] = None,
 ) -> Tuple[str, Dict[str, Any]]:
-    """Call the configured LLM model from .env (BEEKNOEE_LLM_MODEL)."""
-    model = settings.BEEKNOEE_LLM_MODEL
-    completion = client.chat.completions.create(
-        model=model,
-        messages=[
+    """Call the configured LLM model."""
+    kwargs = {
+        "model": model,
+        "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_question},
         ],
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
+        "temperature": temperature,
+    }
+    if max_tokens is not None:
+        kwargs["max_tokens"] = max_tokens
+
+    completion = client.chat.completions.create(**kwargs)
     usage = completion.usage
     prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0) if usage else 0
     completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0) if usage else 0
@@ -113,12 +120,15 @@ def _call_llm(
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
         "total_tokens": total_tokens,
-        "estimated_cost_usd": _estimate_llm_cost(prompt_tokens, completion_tokens),
+        "estimated_cost_usd": _estimate_llm_cost(prompt_tokens, completion_tokens, input_cost_per_1m, output_cost_per_1m),
     }
     return completion.choices[0].message.content.strip(), usage_data
 
 
 class RAGService:
+    _cached_settings = None
+    _cached_at = 0.0
+
     def __init__(self):
         self.supabase: Optional[Client] = None
         if settings.SUPABASE_URL and settings.SUPABASE_KEY:
@@ -130,6 +140,47 @@ class RAGService:
             print(f"[{LOG_NAME}] Beeknoee LLM ready. Primary: {settings.BEEKNOEE_LLM_MODEL}")
         else:
             print(f"[{LOG_NAME}] WARNING: No Beeknoee key - keyword-only mode.")
+
+    def _get_dynamic_settings(self) -> Dict[str, Any]:
+        """Fetch model and pricing settings from database system_settings table, with local config fallback."""
+        import time
+        now = time.time()
+        if RAGService._cached_settings and (now - RAGService._cached_at < 30):
+            return RAGService._cached_settings
+
+        config = {
+            "model": settings.BEEKNOEE_LLM_MODEL,
+            "input_cost": settings.BEEKNOEE_INPUT_COST_PER_1M,
+            "output_cost": settings.BEEKNOEE_OUTPUT_COST_PER_1M,
+            "embed_model": settings.BEEKNOEE_EMBED_MODEL,
+            "embed_cost": settings.BEEKNOEE_EMBED_COST_PER_1M,
+        }
+
+        if not self.supabase:
+            return config
+
+        try:
+            res = self.supabase.table("system_settings").select("*").execute()
+            if res.data:
+                for row in res.data:
+                    key = row["key"]
+                    val = row["value"]
+                    if key == "BEEKNOEE_LLM_MODEL":
+                        config["model"] = val
+                    elif key == "BEEKNOEE_EMBED_MODEL":
+                        config["embed_model"] = val
+                    elif key == "BEEKNOEE_INPUT_COST_PER_1M":
+                        config["input_cost"] = float(val)
+                    elif key == "BEEKNOEE_OUTPUT_COST_PER_1M":
+                        config["output_cost"] = float(val)
+                    elif key == "BEEKNOEE_EMBED_COST_PER_1M":
+                        config["embed_cost"] = float(val)
+                RAGService._cached_settings = config
+                RAGService._cached_at = now
+        except Exception as e:
+            print(f"[{LOG_NAME}] Failed to fetch dynamic settings from database system_settings: {e}")
+
+        return config
 
     # ─── Context Retrieval ────────────────────────────────────────────────────
 
@@ -297,6 +348,22 @@ class RAGService:
                 sources=[],
             )
 
+        # Fetch active announcements to dynamically feed to chatbot context
+        announcements_str = ""
+        if self.supabase:
+            try:
+                ann_res = self.supabase.table("announcements").select("*").eq("status", "published").execute()
+                if ann_res.data:
+                    parts = []
+                    for idx, ann in enumerate(ann_res.data, 1):
+                        title = ann.get("title", "")
+                        content = ann.get("content", "")
+                        ann_type = ann.get("type", "general")
+                        parts.append(f"[Thông báo & Cảnh báo số {idx} - Loại: {ann_type} - Tiêu đề: {title}]\nNội dung: {content}")
+                    announcements_str = "\n\n---\n\n".join(parts)
+            except Exception as ann_err:
+                print(f"[{LOG_NAME}] Failed to fetch announcements for context: {ann_err}")
+
         chunks = self.retrieve_context(question_with_context)
         answer = ""
         confidence_score = 0.0
@@ -309,7 +376,7 @@ class RAGService:
             "estimated_cost_usd": 0.0,
         }
 
-        if not chunks:
+        if not chunks and not announcements_str:
             answer = self._no_info_response(language)
             confidence_score = 0.0
         else:
@@ -326,11 +393,17 @@ class RAGService:
                         source=chunk["metadata"].get("source"),
                     ))
 
-            confidence_score = chunks[0]["similarity"]
+            if chunks:
+                confidence_score = chunks[0]["similarity"]
+            else:
+                confidence_score = 0.90 # High confidence for matching active announcements
 
             if self.llm_client:
                 # Build context block
                 context_parts = []
+                if announcements_str:
+                    context_parts.append("[THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT ĐANG DIỄN RA TẠI DI TÍCH NÚI BÀ ĐEN]\n" + announcements_str)
+
                 for i, chunk in enumerate(chunks, 1):
                     title = chunk["metadata"].get("title", f"Tài liệu {i}")
                     context_parts.append(f"[Tài liệu {i} — {title}]\n{chunk['text']}")
@@ -342,10 +415,14 @@ class RAGService:
                 )
 
                 try:
+                    dyn_config = self._get_dynamic_settings()
                     answer, usage_data = _call_llm(
                         client=self.llm_client,
                         system_prompt=prompt,
                         user_question=question,
+                        model=dyn_config["model"],
+                        input_cost_per_1m=dyn_config["input_cost"],
+                        output_cost_per_1m=dyn_config["output_cost"],
                     )
                     # If LLM says "no info" → clear sources
                     no_info_markers = [

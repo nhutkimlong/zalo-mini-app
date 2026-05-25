@@ -36,5 +36,4 @@ class ItineraryResponse(ItineraryBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
-        from_attributes = True # support both orm_mode and from_attributes for Pydantic v2 compatibility
+        from_attributes = True
