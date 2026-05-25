@@ -290,30 +290,42 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
 // 2. Extract Operating Hours
 
 const parseOperatingSchedules = (articles: any[], lang: string): OperatingScheduleSection[] => {
-
   if (!articles || articles.length === 0) return [];
 
-
-
-  const article = articles.find((art: any) => {
-
+  // 1. Prioritize article with "giờ" / "lịch" / "schedule" / "operating" / "hour" in the title
+  let article = articles.find((art: any) => {
+    const title = (art.title || "").toLowerCase();
     const content = (art.content || "").trim();
-
     if (!content.startsWith("{")) return false;
-
+    
+    const hasKeywords = 
+      title.includes("giờ") || title.includes("gio") || 
+      title.includes("lịch") || title.includes("lich") || 
+      title.includes("schedule") || title.includes("operating") || title.includes("hour");
+      
+    if (!hasKeywords) return false;
+    
     try {
-
       const parsed = JSON.parse(content);
-
       return Array.isArray(parsed.schedules);
-
     } catch {
-
       return false;
-
     }
-
   });
+
+  // 2. Fallback to any JSON article with schedules if no title matches
+  if (!article) {
+    article = articles.find((art: any) => {
+      const content = (art.content || "").trim();
+      if (!content.startsWith("{")) return false;
+      try {
+        const parsed = JSON.parse(content);
+        return Array.isArray(parsed.schedules);
+      } catch {
+        return false;
+      }
+    });
+  }
 
 
 
