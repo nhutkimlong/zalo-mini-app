@@ -64,23 +64,22 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
 
 
 
-  const priceArticle = articles.find(art => {
-
+  // 1. Prioritize article with "giá vé" / "ticket" / "price" in the title
+  let priceArticle = articles.find(art => {
     const title = (art.title || "").toLowerCase();
-
-    const content = (art.content || "").toLowerCase();
-
     return (
-
       title.includes("giá vé") || title.includes("gia ve") ||
-
-      title.includes("ticket") || title.includes("price") ||
-
-      content.includes("tuyến cáp") || content.includes("giá vé")
-
+      title.includes("ticket") || title.includes("price")
     );
-
   });
+
+  // 2. Fallback to content matching if no title matches
+  if (!priceArticle) {
+    priceArticle = articles.find(art => {
+      const content = (art.content || "").toLowerCase();
+      return content.includes("tuyến cáp") || content.includes("giá vé") || content.includes("gia ve");
+    });
+  }
 
 
 
