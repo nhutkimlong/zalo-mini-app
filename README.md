@@ -181,14 +181,21 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 Không dùng `localhost`. `VITE_BASE_URL` trong `.env.production` phải là public HTTPS backend.
 
-Khi chạy lệnh build (`npm run build`) hoặc deploy (`npm run deploy:zalo`), hệ thống sẽ kích hoạt một plugin Vite tùy chỉnh (`zaloMiniAppPlugin` trong `vite.config.ts`) tại bước đóng gói (`closeBundle` hook). Plugin này tự động:
-1. Sao chép `app-config.json` vào thư mục `www/` (Zalo Portal yêu cầu file này ở gốc thư mục zip upload).
-2. Chuyển thẻ `<script type="module" crossorigin src="./assets/index.js"></script>` trong `www/index.html` thành `<script defer src="./assets/index.js"></script>` để tương thích tốt nhất với webview offline của Zalo (tránh lỗi màn hình trắng do không hỗ trợ ES Modules).
+Khi chạy lệnh deploy (`npm run deploy:zalo`), hệ thống sẽ kích hoạt một quy trình tự động hóa tích hợp sẵn (`scripts/deploy-testing.js`):
+1. **Plugin Vite** (`zaloMiniAppPlugin` trong `vite.config.ts`) tự động sao chép `app-config.json` vào thư mục `www/` và đổi thẻ `<script type="module">` thành `<script defer>` trong `index.html` để tương thích tốt nhất với webview offline của Zalo.
+2. **Kịch bản tự động hóa (`scripts/deploy-testing.js`)**:
+   - Tự động kiểm tra môi trường hợp lệ.
+   - Tự động giả lập phím để chọn chế độ **Testing** (phiên bản thử nghiệm) nhằm tránh lỗi điều hướng mũi tên trên một số terminal không hỗ trợ TTY.
+   - **Cách deploy có ghi chú:**
+     - **Gõ trực tiếp:** Chỉ cần chạy `npm run deploy:zalo` và gõ mô tả trực tiếp khi được hỏi.
+     - **Truyền nhanh:** Chạy lệnh kèm tham số mô tả:
+       ```bat
+       npm run deploy:zalo "Ghi chú phiên bản ở đây"
+       ```
 
-*Lưu ý*: Do `zmp-cli` tự chạy trình biên dịch Vite bằng API Node.js khi deploy, việc sử dụng plugin Vite là giải pháp duy nhất đảm bảo các bước đóng gói này luôn được thực thi (khác với các script npm thông thường sẽ bị Zalo CLI bỏ qua).
-
-Sau đó tiến hành deploy lên Zalo:
+Tiến hành deploy:
 ```bat
+cd mini-app
 npm run deploy:zalo
 ```
 
