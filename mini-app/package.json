@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "deploy:zalo": "node scripts/check-zalo-env.mjs && zmp deploy",
+    "deploy:zalo": "node scripts/deploy-testing.js",
     "preview": "vite preview"
   },
   "dependencies": {
