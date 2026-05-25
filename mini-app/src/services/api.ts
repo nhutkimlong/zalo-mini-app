@@ -120,7 +120,8 @@ class ApiClient {
       .from("tourist_places")
       .select("*")
       .eq("status", "published")
-      .order("created_at", { ascending: true });
+      .order("display_order", { ascending: true, nullsFirst: false })
+      .order("name", { ascending: true });
 
     if (category) query = query.eq("category", category);
 
@@ -134,7 +135,8 @@ class ApiClient {
       .from("tourist_places")
       .select("id,name,name_en,slug,short_description,short_description_en,image_url,audio_url,audio_url_en,audio_enabled,latitude,longitude,category,display_order")
       .eq("status", "published")
-      .order("created_at", { ascending: true });
+      .order("display_order", { ascending: true, nullsFirst: false })
+      .order("name", { ascending: true });
 
     if (error) throw new Error(error.message);
     return (data as MapPlace[]) ?? [];
