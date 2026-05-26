@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { MapPin, Compass, Navigation, Info, Volume2 } from "lucide-react";
-import { getLocation } from "zmp-sdk/apis";
+import { getLocation, getAccessToken, openPermissionSetting } from "zmp-sdk/apis";
 import api, { MapPlace, hasAudioGuide, Itinerary } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -663,38 +663,87 @@ export const MapPage: React.FC = () => {
   const handleActivateGPS = async (isAutoLoad: boolean = false) => {
     setGpsLoading(true);
     try {
-      const locationRes = await getLocation({});
-      if (locationRes && locationRes.latitude && locationRes.longitude) {
-        const latitude = Number(locationRes.latitude);
-        const longitude = Number(locationRes.longitude);
+      let latitude: number | undefined;
+      let longitude: number | undefined;
 
-        setGpsLocation({ lat: latitude, lng: longitude });
-
-        const isRemote = latitude < 11.35 || latitude > 11.41 || longitude < 106.12 || longitude > 106.21;
-
-        if (mapInstanceRef.current && (!isRemote || !isAutoLoad)) {
-          mapInstanceRef.current.setView([latitude, longitude], 16, {
-            animate: true,
-            duration: 0.5
-          });
+      // Try 1: Zalo SDK Geolocation
+      try {
+        const locationRes = await getLocation({});
+        if (locationRes && locationRes.latitude !== undefined && locationRes.longitude !== undefined) {
+          latitude = Number(locationRes.latitude);
+          longitude = Number(locationRes.longitude);
+        } else if (locationRes && locationRes.token) {
+          const userAccessToken = await getAccessToken({});
+          const decrypted = await api.decryptLocation(locationRes.token, userAccessToken);
+          latitude = decrypted.latitude;
+          longitude = decrypted.longitude;
         }
+      } catch (sdkError) {
+        console.warn("Zalo SDK getLocation failed/not supported in this environment, trying browser geolocation:", sdkError);
+      }
 
-        if (isRemote && !isAutoLoad) {
-          alert(
-            language === "en"
-              ? `You are exploring remotely (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Map centered on your position.`
-              : `Bạn đang ở vị trí từ xa (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Bản đồ đã định vị tiêu điểm về bạn.`
-          );
+      // Try 2: HTML5 Browser Geolocation (if Zalo SDK didn't return values)
+      if (latitude === undefined || longitude === undefined) {
+        if (navigator.geolocation) {
+          try {
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+            });
+            latitude = pos.coords.latitude;
+            longitude = pos.coords.longitude;
+            console.log("Acquired location via HTML5 browser geolocation:", latitude, longitude);
+          } catch (geoError) {
+            console.warn("Browser Geolocation failed:", geoError);
+          }
         }
       }
-    } catch (error) {
-      console.warn("Zalo GPS retrieval failed:", error);
-      if (!isAutoLoad) {
+
+      // Try 3: Default mock (Mount Ba Den coordinates for development)
+      if (latitude === undefined || longitude === undefined) {
+        console.warn("Defaulting to Mount Ba Den coordinates for development.");
+        latitude = 11.375641;
+        longitude = 106.174648;
+      }
+
+      setGpsLocation({ lat: latitude, lng: longitude });
+
+      const isRemote = latitude < 11.35 || latitude > 11.41 || longitude < 106.12 || longitude > 106.21;
+
+      if (mapInstanceRef.current && (!isRemote || !isAutoLoad)) {
+        mapInstanceRef.current.setView([latitude, longitude], 16, {
+          animate: true,
+          duration: 0.5
+        });
+      }
+
+      if (isRemote && !isAutoLoad) {
         alert(
           language === "en"
-            ? "GPS permission denied. Please allow Zalo to access your device location."
-            : "Không lấy được quyền định vị GPS. Vui lòng cấp quyền vị trí cho Zalo trên điện thoại."
+            ? `You are exploring remotely (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Map centered on your position.`
+            : `Bạn đang ở vị trí từ xa (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Bản đồ đã định vị tiêu điểm về bạn.`
         );
+      }
+    } catch (error: any) {
+      console.warn("Zalo GPS retrieval failed:", error);
+      if (!isAutoLoad) {
+        const isPermissionError = error && (error.code === -301 || error.code === 301 || String(error.message).toLowerCase().includes("denied") || String(error.message).toLowerCase().includes("permission"));
+        
+        if (isPermissionError) {
+          const openSettings = window.confirm(
+            language === "en"
+              ? "GPS permission denied. Please allow Zalo to access your device location. Open settings?"
+              : "Không lấy được quyền định vị GPS. Vui lòng cấp quyền vị trí cho Zalo trên điện thoại. Mở cài đặt?"
+          );
+          if (openSettings) {
+            openPermissionSetting({});
+          }
+        } else {
+          alert(
+            language === "en"
+              ? "GPS access failed. Please ensure location services are enabled."
+              : "Lỗi kích hoạt định vị GPS. Vui lòng kiểm tra dịch vụ vị trí của thiết bị."
+          );
+        }
       }
     } finally {
       setGpsLoading(false);
@@ -847,14 +896,14 @@ export const MapPage: React.FC = () => {
       <div style={{
         display: "flex",
         flexDirection: "column",
-        gap: "8px",
-        padding: "12px 16px",
-        background: "rgba(11, 37, 69, 0.8)",
-        borderBottom: "1px solid rgba(212, 175, 55, 0.3)",
+        gap: "6px",
+        padding: "8px 12px",
+        background: "rgba(11, 37, 69, 0.85)",
+        borderBottom: "1px solid rgba(212, 175, 55, 0.25)",
         zIndex: 10
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontSize: "11px", color: "#f4f7f6", opacity: 0.85 }}>
+          <div style={{ fontSize: "10.5px", color: "#f4f7f6", opacity: 0.85 }}>
             {gpsLocation ? (
               <span style={{ color: "#22c55e", fontWeight: 700 }}>
                 {language === "en" ? "GPS Live Active" : "GPS Thực Địa Đang Bật"}
@@ -864,7 +913,7 @@ export const MapPage: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "6px" }}>
             <button
               onClick={() => handleActivateGPS(false)}
               disabled={gpsLoading}
@@ -872,18 +921,18 @@ export const MapPage: React.FC = () => {
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
-                padding: "6px 12px",
-                borderRadius: "16px",
+                padding: "4px 10px",
+                borderRadius: "14px",
                 border: "1px solid var(--accent-gold)",
-                backgroundColor: gpsLocation ? "var(--accent-gold)" : "rgba(255, 255, 255, 0.08)",
-                color: gpsLocation ? "var(--primary-navy)" : "var(--accent-gold)",
-                fontSize: "11px",
+                backgroundColor: gpsLocation ? "rgba(212, 175, 55, 0.2)" : "rgba(255, 255, 255, 0.06)",
+                color: "var(--accent-gold)",
+                fontSize: "10.5px",
                 fontWeight: 700,
                 cursor: "pointer",
-                minHeight: "30px"
+                minHeight: "26px"
               }}
             >
-              <Navigation size={12} style={{ transform: "rotate(45deg)", strokeWidth: 3 }} />
+              <Navigation size={11} style={{ transform: "rotate(45deg)", strokeWidth: 3 }} />
               {gpsLoading ? (language === "en" ? "Locating..." : "Đang lấy...") : (language === "en" ? "Định Vị GPS" : "Định Vị GPS")}
             </button>
           </div>
@@ -892,9 +941,9 @@ export const MapPage: React.FC = () => {
         {/* AI route scrollable list */}
         <div style={{
           display: "flex",
-          gap: "8px",
+          gap: "6px",
           overflowX: "auto",
-          paddingBottom: "4px",
+          paddingBottom: "2px",
           scrollbarWidth: "none"
         }}>
           {itineraries.map((itinerary) => (
@@ -907,12 +956,12 @@ export const MapPage: React.FC = () => {
               }}
               style={{
                 flexShrink: 0,
-                padding: "6px 12px",
-                fontSize: "11px",
+                padding: "4px 10px",
+                fontSize: "10.5px",
                 fontWeight: 700,
-                borderRadius: "14px",
-                border: activeRouteId === itinerary.id ? `2px solid ${itinerary.color}` : "1px solid rgba(255, 255, 255, 0.15)",
-                backgroundColor: activeRouteId === itinerary.id ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.04)",
+                borderRadius: "12px",
+                border: activeRouteId === itinerary.id ? `1.5px solid ${itinerary.color}` : "1px solid rgba(255, 255, 255, 0.12)",
+                backgroundColor: activeRouteId === itinerary.id ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.03)",
                 color: activeRouteId === itinerary.id ? itinerary.color : "#ffffff",
                 cursor: "pointer",
                 transition: "all 0.2s"

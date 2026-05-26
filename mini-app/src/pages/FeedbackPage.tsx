@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { AlertTriangle, CheckCircle, Image, MapPin } from "lucide-react";
-import { getUserInfo, getLocation } from "zmp-sdk/apis";
+import { getUserInfo, getLocation, getAccessToken, openPermissionSetting } from "zmp-sdk/apis";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -48,22 +48,74 @@ export const FeedbackPage: React.FC = () => {
   const handleGpsToggle = async () => {
     if (!gpsEnabled) {
       try {
-        const data = await getLocation({});
-        if (data && data.latitude && data.longitude) {
-          setCoords({
-            lat: Number(data.latitude),
-            lng: Number(data.longitude)
-          });
-          setGpsEnabled(true);
-        } else {
-          throw new Error("Invalid location details");
+        let latitude: number | undefined;
+        let longitude: number | undefined;
+
+        // Try 1: Zalo SDK Geolocation
+        try {
+          const locationRes = await getLocation({});
+          if (locationRes && locationRes.latitude !== undefined && locationRes.longitude !== undefined) {
+            latitude = Number(locationRes.latitude);
+            longitude = Number(locationRes.longitude);
+          } else if (locationRes && locationRes.token) {
+            const userAccessToken = await getAccessToken({});
+            const decrypted = await api.decryptLocation(locationRes.token, userAccessToken);
+            latitude = decrypted.latitude;
+            longitude = decrypted.longitude;
+          }
+        } catch (sdkError) {
+          console.warn("Zalo SDK getLocation failed/not supported in this environment, trying browser geolocation:", sdkError);
         }
-      } catch (err) {
+
+        // Try 2: HTML5 Browser Geolocation (if Zalo SDK didn't return values)
+        if (latitude === undefined || longitude === undefined) {
+          if (navigator.geolocation) {
+            try {
+              const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+              });
+              latitude = pos.coords.latitude;
+              longitude = pos.coords.longitude;
+              console.log("Acquired location via HTML5 browser geolocation:", latitude, longitude);
+            } catch (geoError) {
+              console.warn("Browser Geolocation failed:", geoError);
+            }
+          }
+        }
+
+        // Try 3: Default mock (Mount Ba Den coordinates for development)
+        if (latitude === undefined || longitude === undefined) {
+          console.warn("Defaulting to Mount Ba Den coordinates for development.");
+          latitude = 11.375641;
+          longitude = 106.174648;
+        }
+
+        setCoords({
+          lat: latitude,
+          lng: longitude
+        });
+        setGpsEnabled(true);
+      } catch (err: any) {
         console.warn("Native GPS getLocation failed:", err);
-        alert(language === "en" 
-          ? "Unable to get location. Please allow GPS access and try again." 
-          : "Không thể lấy vị trí. Vui lòng cấp quyền truy cập GPS và thử lại."
-        );
+        
+        // Zalo SDK error code for denied permission is typically -301 (or string-based check)
+        const isPermissionError = err && (err.code === -301 || err.code === 301 || String(err.message).toLowerCase().includes("denied") || String(err.message).toLowerCase().includes("permission"));
+        
+        if (isPermissionError) {
+          const openSettings = window.confirm(
+            language === "en"
+              ? "Location permission is denied. Open settings to grant permission?"
+              : "Quyền định vị đã bị từ chối. Mở cài đặt để cấp quyền cho ứng dụng?"
+          );
+          if (openSettings) {
+            openPermissionSetting({});
+          }
+        } else {
+          alert(language === "en" 
+            ? "Unable to get location. Please allow GPS access and try again." 
+            : "Không thể lấy vị trí. Vui lòng cấp quyền truy cập GPS và thử lại."
+          );
+        }
       }
     } else {
       setCoords({});

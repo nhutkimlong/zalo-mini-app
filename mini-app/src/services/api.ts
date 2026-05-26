@@ -243,6 +243,14 @@ class ApiClient {
     });
     return { id: inserted.id, status: inserted.status };
   }
+
+  // ─── Zalo Location Decryption ───────────────────────────
+  async decryptLocation(token: string, userAccessToken: string): Promise<{ latitude: number; longitude: number }> {
+    return this.backendRequest<{ latitude: number; longitude: number }>("/api/zalo/decrypt-location", {
+      method: "POST",
+      body: JSON.stringify({ token, user_access_token: userAccessToken }),
+    });
+  }
 }
 
 export const api = new ApiClient();

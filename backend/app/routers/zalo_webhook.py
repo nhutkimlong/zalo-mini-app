@@ -1,11 +1,67 @@
 from fastapi import APIRouter, Request, Header, HTTPException
 from typing import Optional
 import json
+import requests
+from pydantic import BaseModel, Field
 from app.services.rag_service import rag_service
 from app.services.zalo_oa_service import zalo_oa_service
 from app.core.config import settings
 
 router = APIRouter(prefix="/api/zalo", tags=["Zalo OA Webhook"])
+
+class DecryptLocationRequest(BaseModel):
+    token: str = Field(..., description="Token vị trí từ SDK getLocation")
+    user_access_token: str = Field(..., description="User access token từ SDK getAccessToken")
+
+@router.post("/decrypt-location")
+async def decrypt_location(data: DecryptLocationRequest):
+    """
+    Giải mã token vị trí nhận từ Zalo Mini App sử dụng Zalo Graph API.
+    """
+    secret_key = settings.ZALO_OA_APP_SECRET
+    
+    if not secret_key:
+        raise HTTPException(
+            status_code=500,
+            detail="Cấu hình ZALO_OA_APP_SECRET bị thiếu hoặc trống."
+        )
+        
+    headers = {
+        "access_token": data.user_access_token,
+        "code": data.token,
+        "secret_key": secret_key
+    }
+    
+    try:
+        response = requests.get("https://graph.zalo.me/v2.0/me/info", headers=headers, timeout=10)
+        res_json = response.json()
+        
+        print(f"[Zalo Location Exchange Response]: {res_json}")
+        
+        if res_json.get("error", 0) == 0:
+            gps_data = res_json.get("data", {})
+            latitude = gps_data.get("latitude")
+            longitude = gps_data.get("longitude")
+            if latitude is not None and longitude is not None:
+                return {
+                    "latitude": float(latitude),
+                    "longitude": float(longitude),
+                    "provider": gps_data.get("provider", "gps")
+                }
+            else:
+                raise HTTPException(status_code=400, detail="Không tìm thấy tọa độ latitude/longitude trong phản hồi Zalo")
+        else:
+            detail_msg = res_json.get("message", f"Zalo API error code {res_json.get('error')}")
+            raise HTTPException(status_code=400, detail=f"Không thể giải mã vị trí: {detail_msg}")
+            
+    except requests.RequestException as re:
+        print(f"Request to Zalo Graph API failed: {re}")
+        raise HTTPException(status_code=502, detail="Không thể kết nối tới Zalo Server để giải mã vị trí")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error in decrypt_location: {e}")
+        raise HTTPException(status_code=500, detail=f"Lỗi xử lý định vị: {str(e)}")
 
 @router.post("/webhook")
 async def handle_zalo_webhook(
