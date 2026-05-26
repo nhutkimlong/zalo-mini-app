@@ -100,7 +100,7 @@ export const UsagePanel: React.FC<UsagePanelProps> = ({
             </h3>
           </div>
           <div className="admin-table-container">
-            <table className="admin-table">
+            <table className="admin-table" style={{ minWidth: "600px" }}>
               <thead>
                 <tr>
                   <th>Model AI</th>
@@ -138,7 +138,7 @@ export const UsagePanel: React.FC<UsagePanelProps> = ({
             </h3>
           </div>
           <div className="admin-table-container">
-            <table className="admin-table">
+            <table className="admin-table" style={{ minWidth: "800px" }}>
               <thead>
                 <tr>
                   <th>Ngày</th>

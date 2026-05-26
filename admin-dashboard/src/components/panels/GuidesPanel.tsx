@@ -53,7 +53,7 @@ export const GuidesPanel: React.FC<GuidesPanelProps> = ({
       </div>
 
       <div className="admin-table-container">
-        <table className="admin-table">
+        <table className="admin-table" style={{ minWidth: "900px" }}>
           <thead>
             <tr>
               <th style={{ width: "25%" }}>Tiêu đề hướng dẫn</th>

@@ -48,7 +48,7 @@ export const AnnouncementsPanel: React.FC<AnnouncementsPanelProps> = ({
       </div>
 
       <div className="admin-table-container">
-        <table className="admin-table">
+        <table className="admin-table" style={{ minWidth: "700px" }}>
           <thead>
             <tr>
               <th style={{ width: "15%" }}>Mức độ</th>

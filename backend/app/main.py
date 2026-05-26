@@ -64,6 +64,10 @@ def read_root():
         "api_documentation": "/docs" if settings.DEBUG else "hidden"
     }
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

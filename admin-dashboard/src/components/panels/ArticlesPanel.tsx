@@ -55,8 +55,8 @@ export const ArticlesPanel: React.FC<ArticlesPanelProps> = ({
         </div>
       </div>
 
-      <div className="admin-table-container hide-on-mobile">
-        <table className="admin-table">
+      <div className="admin-table-container">
+        <table className="admin-table" style={{ minWidth: "950px" }}>
           <thead>
             <tr>
               <th style={{ width: "25%" }}>Tiêu đề tri thức</th>
@@ -110,46 +110,6 @@ export const ArticlesPanel: React.FC<ArticlesPanelProps> = ({
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Giao diện thích ứng di động di động (Mobile Cards Layout) */}
-      <div className="mobile-card-list show-on-mobile">
-        {filtered.map((art) => (
-          <div className="mobile-card" key={art.id}>
-            <div className="mobile-card-row">
-              <span className="mobile-card-title">{art.title}</span>
-              <span>
-                {art.is_published ? (
-                  <span className="badge badge-success">Hoạt động</span>
-                ) : (
-                  <span className="badge badge-warning">Bản nháp</span>
-                )}
-              </span>
-            </div>
-            <div className="mobile-card-row">
-              <span className="badge badge-info" style={{ textTransform: "capitalize" }}>
-                {art.category.replace(/_/g, " ")}
-              </span>
-              <span style={{ fontSize: "11px", color: "var(--text-light)" }}>ID: #{art.id.slice(0, 8)}</span>
-            </div>
-            <div className="mobile-card-body">
-              {art.content}
-            </div>
-            <div className="mobile-card-actions">
-              <button className="btn btn-secondary" onClick={() => handleOpenEditArticle(art)}>
-                <Edit size={14} style={{ marginRight: "4px" }} /> Sửa
-              </button>
-              <button className="btn btn-danger" style={{ backgroundColor: "#DC2626" }} onClick={() => handleDeleteArticle(art.id)}>
-                <Trash2 size={14} style={{ marginRight: "4px" }} /> Xóa
-              </button>
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "24px", color: "var(--text-light)", fontSize: "13px" }}>
-            Không tìm thấy bài viết nào trong kho tri thức.
-          </div>
-        )}
       </div>
     </div>
   );

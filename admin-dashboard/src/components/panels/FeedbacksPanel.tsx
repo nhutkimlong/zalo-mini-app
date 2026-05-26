@@ -44,8 +44,8 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
         </div>
       </div>
 
-      <div className="admin-table-container hide-on-mobile">
-        <table className="admin-table">
+      <div className="admin-table-container">
+        <table className="admin-table" style={{ minWidth: "1100px" }}>
           <thead>
             <tr>
               <th>Mã số</th>
@@ -139,74 +139,6 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Giao diện thích ứng di động di động (Mobile Cards Layout) */}
-      <div className="mobile-card-list show-on-mobile">
-        {filtered.map((fb) => (
-          <div 
-            className="mobile-card" 
-            key={fb.id}
-            onClick={() => handleOpenResolveFeedback(fb)}
-            style={{ cursor: "pointer" }}
-          >
-            <div className="mobile-card-row">
-              <span className="mobile-card-title">{fb.reporter_name || "Khách ẩn danh"}</span>
-              <span>{getFeedbackBadge(fb.status)}</span>
-            </div>
-            <div className="mobile-card-row">
-              <span className="mobile-card-subtitle">📞 {fb.phone || "Không có SĐT"}</span>
-              <span>{getFeedbackTypeBadge(fb.report_type)}</span>
-            </div>
-            <div className="mobile-card-body">
-              {fb.image_url && (
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "11px", color: "var(--accent-gold)", fontWeight: 600 }}>
-                  <Camera size={12} /> Có hình ảnh đính kèm
-                </div>
-              )}
-              {fb.content}
-            </div>
-            {fb.admin_notes && (
-              <div style={{ fontSize: "12px", color: "var(--success)", fontWeight: 500, paddingLeft: "8px", borderLeft: "2px solid var(--success)", margin: "4px 0" }}>
-                <strong>Giải quyết:</strong> {fb.admin_notes}
-              </div>
-            )}
-            <div className="mobile-card-row" style={{ fontSize: "11px", color: "var(--text-light)", marginTop: "4px" }}>
-              <span>Mã số: #{fb.id}</span>
-              {fb.latitude && fb.longitude && (
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${fb.latitude},${fb.longitude}`} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  style={{ color: "var(--secondary-blue)", fontWeight: 600, textDecoration: "none" }}
-                >
-                  📍 Định vị GPS Map
-                </a>
-              )}
-            </div>
-            <div className="mobile-card-actions" onClick={(e) => e.stopPropagation()}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => handleOpenResolveFeedback(fb)}
-              >
-                Giải quyết
-              </button>
-              <button 
-                className="btn btn-danger"
-                style={{ backgroundColor: "#DC2626" }}
-                onClick={() => handleDeleteFeedback(fb.id)}
-              >
-                Xóa phản ánh
-              </button>
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "24px", color: "var(--text-light)", fontSize: "13px" }}>
-            Không tìm thấy phản ánh nào của du khách.
-          </div>
-        )}
       </div>
     </div>
   );
