@@ -110,10 +110,33 @@ async def handle_zalo_webhook(
             print(f"[Zalo OA message] From user {sender_id}: {message_text}")
             
             try:
+                # Tìm hoặc tạo người dùng trong bảng app_users
+                resolved_user_uuid = None
+                if settings.SUPABASE_URL and settings.SUPABASE_KEY and sender_id:
+                    try:
+                        from supabase import create_client as create_supabase_client
+                        db_client = create_supabase_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                        # 1. Kiểm tra xem user đã tồn tại chưa
+                        res = db_client.table("app_users").select("id").eq("zalo_user_id", sender_id).execute()
+                        if res.data:
+                            resolved_user_uuid = res.data[0]["id"]
+                        else:
+                            # 2. Đăng ký tự động user mới nếu chưa tồn tại
+                            new_user = {
+                                "zalo_user_id": sender_id,
+                                "name": "Khách Zalo OA",
+                                "role": "visitor"
+                            }
+                            insert_res = db_client.table("app_users").insert(new_user).execute()
+                            if insert_res.data:
+                                resolved_user_uuid = insert_res.data[0]["id"]
+                    except Exception as db_err:
+                        print(f"Error resolving Zalo OA user: {db_err}")
+
                 # 1. Ask RAG service using 'zalo_oa' channel
                 rag_result = rag_service.ask(
                     question=message_text,
-                    user_id=None,
+                    user_id=resolved_user_uuid,
                     channel="zalo_oa"
                 )
                 

@@ -180,7 +180,17 @@ export const ChatPage: React.FC = () => {
 
     try {
       // 3. Make RAG search with the message language
-      const response = await api.askAssistant(text, messageLanguage, abortControllerRef.current.signal, buildConversationHistory());
+      const response = await api.askAssistant(
+        text, 
+        messageLanguage, 
+        abortControllerRef.current.signal, 
+        buildConversationHistory(),
+        userProfile ? {
+          zalo_user_id: userProfile.id,
+          name: userProfile.name,
+          avatar_url: userProfile.avatar
+        } : undefined
+      );
 
       // 4. Update typing loader with official answer
       setMessages(prev => 

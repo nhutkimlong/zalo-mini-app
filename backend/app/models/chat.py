@@ -3,12 +3,18 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
+class UserInfo(BaseModel):
+    zalo_user_id: Optional[str] = Field(None, description="ID người dùng từ hệ thống Zalo")
+    name: Optional[str] = Field(None, description="Tên hiển thị của người dùng")
+    avatar_url: Optional[str] = Field(None, description="Đường dẫn ảnh đại diện")
+
 class ChatRequest(BaseModel):
     question: str = Field(..., description="Câu hỏi từ khách du lịch")
     user_id: Optional[UUID] = Field(None, description="ID của người dùng nếu có")
     channel: str = Field("mini_app", description="Kênh gửi câu hỏi ('mini_app' hoặc 'zalo_oa')")
     language: str = Field("vi", description="Ngôn ngữ phản hồi ('vi' hoặc 'en')")
     conversation_history: List[dict] = Field(default_factory=list, description="Lịch sử hội thoại gần nhất")
+    user_info: Optional[UserInfo] = Field(None, description="Thông tin chi tiết người dùng Zalo")
 
 
 class SourceCitation(BaseModel):

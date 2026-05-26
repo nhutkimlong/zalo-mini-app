@@ -176,7 +176,8 @@ class ApiClient {
     question: string,
     language: string = "vi",
     signal?: AbortSignal,
-    conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
+    conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [],
+    userInfo?: { zalo_user_id?: string; name?: string; avatar_url?: string }
   ): Promise<ChatResponse> {
     return this.backendRequest<ChatResponse>("/api/chat/", {
       method: "POST",
@@ -185,6 +186,7 @@ class ApiClient {
         channel: "mini_app",
         language,
         conversation_history: conversationHistory,
+        user_info: userInfo,
       }),
       signal,
     });
