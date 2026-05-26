@@ -95,6 +95,16 @@ export interface AdminChatLog {
   created_at: string;
 }
 
+export interface AdminUser {
+  id: string;
+  zalo_user_id: string;
+  name: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+  role: string;
+  created_at: string;
+}
+
 export interface AdminUsageRow {
   date?: string;
   model?: string;
@@ -357,6 +367,39 @@ class AdminApiClient {
 
   async resetChatLogs(): Promise<{ status: string; message: string }> {
     return await this.request<{ status: string; message: string }>("/api/admin/chat-logs", {
+      method: "DELETE"
+    });
+  }
+
+  // --- Login Auth ---
+  async login(password: string): Promise<{ token: string; status: string }> {
+    return await this.request<{ token: string; status: string }>("/api/admin/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ password })
+    });
+  }
+
+  // --- Users management (CRUD) ---
+  async getUsers(): Promise<AdminUser[]> {
+    return await this.request<AdminUser[]>("/api/admin/users");
+  }
+
+  async createUser(data: Omit<AdminUser, "id" | "created_at">): Promise<AdminUser> {
+    return await this.request<AdminUser>("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateUser(id: string, data: Partial<Omit<AdminUser, "id" | "created_at">>): Promise<AdminUser> {
+    return await this.request<AdminUser>(`/api/admin/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteUser(id: string): Promise<{ status: string; message: string }> {
+    return await this.request<{ status: string; message: string }>(`/api/admin/users/${id}`, {
       method: "DELETE"
     });
   }

@@ -16,6 +16,9 @@ import { PlaceModal } from "./components/modals/PlaceModal";
 import { ItineraryModal } from "./components/modals/ItineraryModal";
 import { AnnouncementModal } from "./components/modals/AnnouncementModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
+import { Login } from "./components/Login";
+import { UsersPanel } from "./components/panels/UsersPanel";
+import { UserModal } from "./components/modals/UserModal";
 
 import adminApi, { 
   AdminKnowledgeArticle, 
@@ -25,7 +28,8 @@ import adminApi, {
   AdminChatLog,
   AdminUsageSummary,
   AdminItineraryStep,
-  AdminItinerary
+  AdminItinerary,
+  AdminUser
 } from "./services/adminApi";
 
 const toSlug = (str: string): string => {
@@ -51,7 +55,12 @@ const toSlug = (str: string): string => {
 };
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" >("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users">("dashboard");
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return !!localStorage.getItem("admin_token");
+  });
 
   // State arrays
   const [articles, setArticles] = useState<AdminKnowledgeArticle[]>([]);
@@ -60,6 +69,7 @@ export const App: React.FC = () => {
   const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
   const [feedbacks, setFeedbacks] = useState<AdminFeedback[]>([]);
   const [chats, setChats] = useState<AdminChatLog[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [usageSummary, setUsageSummary] = useState<AdminUsageSummary | null>(null);
 
   // Selection & Modals State
@@ -70,7 +80,7 @@ export const App: React.FC = () => {
 
   // Modal Control
   const [modalType, setModalType] = useState<"add" | "edit" | "resolve" | null>(null);
-  const [modalResource, setModalResource] = useState<"article" | "place" | "announcement" | "feedback" | "itinerary" | null>(null);
+  const [modalResource, setModalResource] = useState<"article" | "place" | "announcement" | "feedback" | "itinerary" | "user" | null>(null);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [defaultCategory, setDefaultCategory] = useState<string | undefined>(undefined);
 
@@ -105,7 +115,8 @@ export const App: React.FC = () => {
         adminApi.getChatLogs(),
         adminApi.getUsageSummary(),
         adminApi.getItineraries(),
-        adminApi.getSettings()
+        adminApi.getSettings(),
+        adminApi.getUsers()
       ]);
 
       if (results[0].status === "fulfilled") setArticles(results[0].value);
@@ -130,6 +141,8 @@ export const App: React.FC = () => {
         setCfgEmbedModel(results[7].value.embed_model || "gemini-embedding-2");
         setCfgEmbedCost(results[7].value.embed_cost_per_1m || 0.20);
       }
+
+      if (results[8].status === "fulfilled") setUsers(results[8].value);
     } catch (e) {
       console.error("Failed to load backend administration data:", e);
     } finally {
@@ -138,7 +151,9 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
+    if (isAuthenticated) {
+      loadData();
+    }
 
     // Tự động lấy tỷ giá USD sang VND thời gian thực từ API công khai
     const fetchExchangeRate = async () => {
@@ -164,7 +179,66 @@ export const App: React.FC = () => {
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [isAuthenticated]);
+
+  const handleLoginSuccess = (token: string) => {
+    localStorage.setItem("admin_token", token);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?")) {
+      localStorage.removeItem("admin_token");
+      setIsAuthenticated(false);
+    }
+  };
+
+  // --- Users Submissions ---
+  const handleOpenAddUser = () => {
+    setSelectedItem(null);
+    setModalResource("user");
+    setModalType("add");
+  };
+
+  const handleOpenEditUser = (user: AdminUser) => {
+    setSelectedItem(user);
+    setModalResource("user");
+    setModalType("edit");
+  };
+
+  const handleSaveUser = async (data: {
+    zalo_user_id: string;
+    name: string;
+    phone?: string | null;
+    avatar_url?: string | null;
+    role: string;
+  }) => {
+    try {
+      if (selectedItem) {
+        const res = await adminApi.updateUser(selectedItem.id, data);
+        setUsers(users.map(u => u.id === res.id ? res : u));
+      } else {
+        const res = await adminApi.createUser(data);
+        setUsers([res, ...users]);
+      }
+      closeModal();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Lỗi khi lưu thông tin người dùng.");
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này? Nhật ký chat liên quan sẽ bị gỡ liên kết.")) {
+      try {
+        await adminApi.deleteUser(id);
+        setUsers(users.filter(u => u.id !== id));
+      } catch (err: any) {
+        console.error(err);
+        alert(err.message || "Lỗi khi xóa người dùng.");
+      }
+    }
+  };
 
   // --- Knowledge Articles Submissions ---
   const handleOpenAddArticle = (defaultCat?: string, defaultTitle?: string) => {
@@ -598,6 +672,10 @@ export const App: React.FC = () => {
     return value.split("/").pop() || value;
   };
 
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="admin-layout">
       {/* Slide-out Overlay for Mobile */}
@@ -616,6 +694,7 @@ export const App: React.FC = () => {
         newFeedbacks={newFeedbacks} 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -804,6 +883,17 @@ export const App: React.FC = () => {
                   exchangeRate={exchangeRate}
                 />
               )}
+
+              {activeTab === "users" && (
+                <UsersPanel
+                  users={users}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  handleOpenAddUser={handleOpenAddUser}
+                  handleOpenEditUser={handleOpenEditUser}
+                  handleDeleteUser={handleDeleteUser}
+                />
+              )}
             </>
           )}
         </div>
@@ -855,6 +945,15 @@ export const App: React.FC = () => {
               onClose={closeModal}
               onSave={handleSaveResolveFeedback}
               selectedItem={selectedItem}
+            />
+          )}
+
+          {modalResource === "user" && (
+            <UserModal
+              onClose={closeModal}
+              onSave={handleSaveUser}
+              selectedItem={selectedItem}
+              modalType={modalType === "resolve" ? null : modalType}
             />
           )}
         </div>

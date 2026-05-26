@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
-from app.routers import chat, feedback, places, announcements, knowledge, zalo_webhook, upload, translation, tts, itineraries, settings as settings_router
+from app.routers import chat, feedback, places, announcements, knowledge, zalo_webhook, upload, translation, tts, itineraries, settings as settings_router, auth, users
 
 app = FastAPI(
     title="Trợ lý du lịch số Khu du lịch quốc gia Núi Bà Đen",
@@ -55,6 +55,8 @@ app.include_router(translation.router)
 app.include_router(tts.router)
 app.include_router(itineraries.router)
 app.include_router(settings_router.router)
+app.include_router(auth.router)
+app.include_router(users.router)
 
 @app.get("/")
 def read_root():

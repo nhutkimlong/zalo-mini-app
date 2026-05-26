@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Supabase
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
+    ADMIN_PASSWORD: str = "admin123"
 
     # ─── Beeknoee AI (Primary provider) ──────────────────────────────────────
     BEEKNOEE_BASE_URL: str = "https://platform-api.beeknoee.com/v1"

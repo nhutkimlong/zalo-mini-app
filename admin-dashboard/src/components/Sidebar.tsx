@@ -7,16 +7,19 @@ import {
   Bell,
   AlertTriangle,
   MessageSquare,
-  DollarSign
+  DollarSign,
+  Users,
+  LogOut
 } from "lucide-react";
 
 interface SidebarProps {
-  activeTab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage";
-  setActiveTab: (tab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage") => void;
+  activeTab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users";
+  setActiveTab: (tab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users") => void;
   setSearchQuery: (q: string) => void;
   newFeedbacks: number;
   isOpen?: boolean;
   onClose?: () => void;
+  onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   newFeedbacks,
   isOpen = false,
   onClose,
+  onLogout,
 }) => {
   const handleNavClick = (tab: typeof activeTab) => {
     setActiveTab(tab);
@@ -63,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <nav>
+      <nav style={{ display: "flex", flexDirection: "column", height: "calc(100% - 70px)", justifyContent: "space-between" }}>
         <ul className="nav-list">
           <li
             className={`nav-item ${activeTab === "dashboard" ? "nav-item-active" : ""}`}
@@ -142,6 +146,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <DollarSign size={18} />
             <span>Chi Phí API</span>
+          </li>
+          <li
+            className={`nav-item ${activeTab === "users" ? "nav-item-active" : ""}`}
+            onClick={() => handleNavClick("users")}
+            style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", marginTop: "8px", paddingTop: "12px" }}
+          >
+            <Users size={18} />
+            <span>Quản Lý Thành Viên</span>
+          </li>
+        </ul>
+
+        <ul className="nav-list" style={{ marginTop: "auto", marginBottom: "20px" }}>
+          <li
+            className="nav-item nav-item-logout"
+            onClick={onLogout}
+            style={{ 
+              color: "#ff6b6b", 
+              backgroundColor: "rgba(217, 83, 79, 0.05)",
+              border: "1px solid rgba(217, 83, 79, 0.1)"
+            }}
+          >
+            <LogOut size={18} />
+            <span>Đăng xuất</span>
           </li>
         </ul>
       </nav>
