@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className={`sidebar ${isOpen ? "sidebar-open" : ""}`} style={{ position: "relative" }}>
+    <aside className={`sidebar ${isOpen ? "sidebar-open" : ""}`}>
       <button
         className="show-on-mobile btn btn-secondary"
         style={{
