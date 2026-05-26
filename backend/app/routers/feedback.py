@@ -1,4 +1,5 @@
 import uuid
+from urllib.parse import unquote
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from uuid import UUID
@@ -81,7 +82,33 @@ def update_feedback_status(feedback_id: UUID, update: FeedbackUpdate, db: Client
 @router.delete("/{feedback_id}")
 def delete_feedback(feedback_id: UUID, db: Client = Depends(get_db)):
     try:
+        # 1. Xóa phản ánh trong Database trước để lấy thông tin ảnh đính kèm (nếu có)
         response = db.table("feedback_reports").delete().eq("id", str(feedback_id)).execute()
-        return {"status": "success", "message": "Đã xóa phản ánh thành công"}
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phản ánh để xóa")
+            
+        deleted_feedback = response.data[0]
+        image_url = deleted_feedback.get("image_url")
+        
+        # 2. Xóa hình ảnh tương ứng trong Supabase Storage nếu có đính kèm
+        if image_url:
+            try:
+                # Đường dẫn dạng: https://.../storage/v1/object/public/baden_assets/images/...
+                marker = "public/baden_assets/"
+                if marker in image_url:
+                    file_path = image_url.split(marker)[-1]
+                    file_path = unquote(file_path) # Giải mã ký tự URL-encode (như %2F, %20, ...)
+                    
+                    # Thực hiện xóa khỏi storage bucket 'baden_assets'
+                    db.storage.from_("baden_assets").remove([file_path])
+                    print(f"Successfully deleted attached feedback image: {file_path}")
+            except Exception as storage_err:
+                # Chỉ in log lỗi chứ không trả về lỗi 500 cho client vì DB đã xóa thành công
+                print(f"Failed to delete attached feedback image from storage: {storage_err}")
+                
+        return {"status": "success", "message": "Đã xóa phản ánh và hình ảnh đính kèm thành công"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
