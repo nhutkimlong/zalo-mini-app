@@ -923,6 +923,61 @@ export const VisitInfoPage: React.FC = () => {
 
           )}
 
+          {/* App Info & Developer Compliance Section */}
+          <div className="glass-card" style={{ 
+            marginTop: "16px", 
+            marginBottom: "16px",
+            background: "linear-gradient(135deg, rgba(11, 37, 69, 0.03), rgba(19, 64, 116, 0.03))",
+            border: "1px dashed rgba(212, 175, 55, 0.4)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            fontSize: "12px",
+            color: "var(--dark-text)"
+          }}>
+            <h4 style={{ 
+              margin: 0, 
+              fontSize: "13px", 
+              fontWeight: 700, 
+              color: "var(--primary-navy)", 
+              borderBottom: "1px solid rgba(0,0,0,0.06)", 
+              paddingBottom: "4px" 
+            }}>
+              {language === "en" ? "Developer & App Information (Mục 5.5)" : "Thông tin Nhà phát triển & Ứng dụng (Mục 5.5)"}
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", opacity: 0.9 }}>
+              <div>
+                <strong>{language === "en" ? "Responsible Individual:" : "Cá nhân chịu trách nhiệm:"}</strong>{" "}
+                Trương Kim Long
+              </div>
+              <div>
+                <strong>{language === "en" ? "Contact Address:" : "Địa chỉ liên hệ:"}</strong>{" "}
+                Tây Ninh, Việt Nam
+              </div>
+              <div>
+                <strong>{language === "en" ? "Support Email:" : "Email hỗ trợ:"}</strong>{" "}
+                <a href="mailto:truongnklong@gmail.com" style={{ color: "var(--primary-navy)", fontWeight: 600, textDecoration: "none" }}>
+                  truongnklong@gmail.com
+                </a>
+              </div>
+              <div>
+                <strong>{language === "en" ? "Mini App Version:" : "Phiên bản Mini App:"}</strong> v1.0.0
+              </div>
+              <div>
+                <strong>{language === "en" ? "Service Description:" : "Mô tả dịch vụ:"}</strong>{" "}
+                {language === "en" 
+                  ? "Provides digital relocation map, automatic audio guides, cable car operating hours/ticket info, and AI assistant support at Ba Den Mountain." 
+                  : "Cung cấp bản đồ thực địa, thuyết minh di tích tự động (Audio Guide), tra cứu lịch vận hành/giá vé cáp treo và tư vấn qua Trợ lý ảo AI tại Núi Bà Đen."}
+              </div>
+              <div>
+                <strong>{language === "en" ? "Support & Complaint Channels:" : "Tiếp nhận hỗ trợ & khiếu nại:"}</strong>{" "}
+                {language === "en" 
+                  ? "Contact truongnklong@gmail.com or submit feedback via the app's Feedback feature." 
+                  : "Mọi ý kiến đóng góp, phản ánh khiếu nại gửi về email truongnklong@gmail.com hoặc gửi trực tiếp tại mục Phản Ánh trên ứng dụng."}
+              </div>
+            </div>
+          </div>
+
         </div>
 
       )}
