@@ -63,19 +63,42 @@ async def decrypt_location(data: DecryptLocationRequest):
         print(f"Unexpected error in decrypt_location: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi xử lý định vị: {str(e)}")
 
+def verify_zevent_signature(data: dict, api_key: str, signature: str) -> bool:
+    """
+    Verifies the signature of ZEvent webhook requests from Zalo Mini App.
+    Signature is calculated as sha256(content + API Key) where content is
+    the concatenated values of alphabetically sorted keys.
+    """
+    if not api_key:
+        return True
+    try:
+        import hashlib
+        keys = sorted(data.keys())
+        content = ""
+        for k in keys:
+            val = data[k]
+            if isinstance(val, (dict, list)):
+                val = json.dumps(val, separators=(',', ':'))
+            content += str(val)
+        computed_sig = hashlib.sha256((content + api_key).encode('utf-8')).hexdigest()
+        return computed_sig.lower() == signature.lower()
+    except Exception as e:
+        print(f"Error verifying ZEvent signature: {e}")
+        return False
+
 @router.post("/webhook")
 async def handle_zalo_webhook(
     request: Request,
-    x_zalo_signature: Optional[str] = Header(None, alias="X-Zalo-Signature")
+    x_zalo_signature: Optional[str] = Header(None, alias="X-Zalo-Signature"),
+    x_zevent_signature: Optional[str] = Header(None, alias="X-ZEvent-Signature")
 ):
     """
-    Webhook entry point for Zalo OA.
-    Listens for user chat events, runs semantic search RAG, and replies.
+    Webhook entry point for Zalo OA and Mini App.
+    Listens for user chat events (OA) or user revoke/data deletion events (Mini App).
     """
     body_bytes = await request.body()
     
     # Verify signature from Zalo Server
-    # Ensure webhook requests actually come securely from Zalo
     try:
         body_json = json.loads(body_bytes.decode("utf-8"))
     except json.JSONDecodeError:
@@ -84,7 +107,36 @@ async def handle_zalo_webhook(
     # Log incoming webhook for developer audits
     print(f"[Zalo Webhook Received]: {body_json}")
 
-    # Verify signature if present and webhook secret is set
+    # Extract event name (Zalo OA uses event_name, Mini App uses event)
+    event_name = body_json.get("event_name") or body_json.get("event")
+
+    # 1. Handle Zalo Mini App user revoke consent event
+    if event_name == "user.revoke.consent":
+        user_id = body_json.get("userId")
+        # Verify ZEvent signature if present and secret is configured
+        if x_zevent_signature and settings.ZALO_OA_APP_SECRET:
+            is_verified = verify_zevent_signature(
+                data=body_json,
+                api_key=settings.ZALO_OA_APP_SECRET,
+                signature=x_zevent_signature
+            )
+            if not is_verified:
+                print("[Warning] ZEvent webhook verification failed. Invalid signature.")
+                return {"status": "ignored", "reason": "invalid_signature"}
+        
+        if user_id:
+            print(f"[Zalo Webhook] Revoking consent and deleting data for user: {user_id}")
+            if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+                try:
+                    from supabase import create_client as create_supabase_client
+                    db_client = create_supabase_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                    res = db_client.table("app_users").delete().eq("zalo_user_id", user_id).execute()
+                    print(f"[Zalo Webhook] Successfully deleted user data: {res.data}")
+                except Exception as db_err:
+                    print(f"[Zalo Webhook] Error deleting user data: {db_err}")
+            return {"status": "ok", "message": "user data deleted"}
+
+    # 2. Handle Zalo OA signature verification for other events
     app_id = str(body_json.get("app_id", ""))
     if x_zalo_signature and settings.ZALO_OA_WEBHOOK_SECRET:
         is_verified = zalo_oa_service.verify_webhook_signature(
@@ -93,14 +145,10 @@ async def handle_zalo_webhook(
             signature=x_zalo_signature
         )
         if not is_verified:
-            print("[Warning] Webhook verification failed. Invalid signature.")
-            # We return 200 to prevent Zalo from blocking the webhook, but do not process
+            print("[Warning] Zalo OA Webhook verification failed. Invalid signature.")
             return {"status": "ignored", "reason": "invalid_signature"}
 
-    # Extract event data
-    event_name = body_json.get("event_name")
-    
-    # Process only text messages sent from user to OA
+    # 3. Process only text messages sent from user to OA
     if event_name == "user_send_text":
         sender_id = body_json.get("sender", {}).get("id")
         message_obj = body_json.get("message", {})
