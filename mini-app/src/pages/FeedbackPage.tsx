@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { AlertTriangle, CheckCircle, Image, MapPin } from "lucide-react";
-import { getUserInfo, getLocation, getAccessToken, openPermissionSetting } from "zmp-sdk/apis";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -26,23 +25,7 @@ export const FeedbackPage: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [trackingId, setTrackingId] = useState("");
   
-  // 1. Prefill traveler name on mount using Zalo profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { userInfo } = await getUserInfo({
-          autoRequestPermission: true,
-          avatarType: "normal"
-        });
-        if (userInfo && userInfo.name) {
-          setName(userInfo.name);
-        }
-      } catch (error) {
-        console.warn("Could not prefill user name natively in FeedbackPage:", error);
-      }
-    };
-    fetchProfile();
-  }, []);
+
 
   // 2. Native Geolocation integration
   const handleGpsToggle = async () => {
@@ -51,35 +34,17 @@ export const FeedbackPage: React.FC = () => {
         let latitude: number | undefined;
         let longitude: number | undefined;
 
-        // Try 1: Zalo SDK Geolocation
-        try {
-          const locationRes = await getLocation({});
-          if (locationRes && locationRes.latitude !== undefined && locationRes.longitude !== undefined) {
-            latitude = Number(locationRes.latitude);
-            longitude = Number(locationRes.longitude);
-          } else if (locationRes && locationRes.token) {
-            const userAccessToken = await getAccessToken({});
-            const decrypted = await api.decryptLocation(locationRes.token, userAccessToken);
-            latitude = decrypted.latitude;
-            longitude = decrypted.longitude;
-          }
-        } catch (sdkError) {
-          console.warn("Zalo SDK getLocation failed/not supported in this environment, trying browser geolocation:", sdkError);
-        }
-
-        // Try 2: HTML5 Browser Geolocation (if Zalo SDK didn't return values)
-        if (latitude === undefined || longitude === undefined) {
-          if (navigator.geolocation) {
-            try {
-              const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
-              });
-              latitude = pos.coords.latitude;
-              longitude = pos.coords.longitude;
-              console.log("Acquired location via HTML5 browser geolocation:", latitude, longitude);
-            } catch (geoError) {
-              console.warn("Browser Geolocation failed:", geoError);
-            }
+        // Try 1: HTML5 Browser Geolocation (Primary for PWA)
+        if (navigator.geolocation) {
+          try {
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000, enableHighAccuracy: true });
+            });
+            latitude = pos.coords.latitude;
+            longitude = pos.coords.longitude;
+            console.log("Acquired location via HTML5 browser geolocation:", latitude, longitude);
+          } catch (geoError) {
+            console.warn("Browser Geolocation failed/timed out:", geoError);
           }
         }
 
@@ -96,20 +61,16 @@ export const FeedbackPage: React.FC = () => {
         });
         setGpsEnabled(true);
       } catch (err: any) {
-        console.warn("Native GPS getLocation failed:", err);
+        console.warn("GPS getLocation failed:", err);
         
-        // Zalo SDK error code for denied permission is typically -301 (or string-based check)
-        const isPermissionError = err && (err.code === -301 || err.code === 301 || String(err.message).toLowerCase().includes("denied") || String(err.message).toLowerCase().includes("permission"));
+        const isPermissionError = err && (err.code === 1 || err.code === -301 || err.code === 301 || String(err.message).toLowerCase().includes("denied") || String(err.message).toLowerCase().includes("permission"));
         
         if (isPermissionError) {
-          const openSettings = window.confirm(
+          alert(
             language === "en"
-              ? "Location permission is denied. Open settings to grant permission?"
-              : "Quyền định vị đã bị từ chối. Mở cài đặt để cấp quyền cho ứng dụng?"
+              ? "GPS permission denied. Please allow location access in your browser settings to use this feature."
+              : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt của bạn để sử dụng tính năng này."
           );
-          if (openSettings) {
-            openPermissionSetting({});
-          }
         } else {
           alert(language === "en" 
             ? "Unable to get location. Please allow GPS access and try again." 

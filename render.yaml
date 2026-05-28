@@ -31,14 +31,7 @@ services:
         value: "2.50"
       - key: EMBEDDING_DIM
         value: "3072"
-      - key: ZALO_OA_APP_ID
-        sync: false
-      - key: ZALO_OA_APP_SECRET
-        sync: false
-      - key: ZALO_OA_WEBHOOK_SECRET
-        sync: false
-      - key: ZALO_OA_ACCESS_TOKEN
-        sync: false
+
 
   - type: static
     name: nui-ba-den-admin-dashboard
@@ -51,4 +44,22 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_BASE_URL
+        sync: false
+
+
+  - type: static
+    name: nui-ba-den-mini-app-pwa
+    rootDir: mini-app
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_BASE_URL
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
         sync: false

@@ -49,7 +49,7 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
     { key: "thai_do", label: "Thái độ phục vụ", color: "#10B981" },
     { key: "ha_tang", label: "Cơ sở hạ tầng", color: "#6366F1" },
     { key: "cheo_keo", label: "Chèo kéo du khách", color: "#EC4899" },
-    { key: "gop_y", label: "Góp ý xây dựng", color: "#8B5CF6" },
+    { key: "gop_y", label: "Góp ý xây dựng", color: "#0D9488" },
   ];
 
   const feedbackCounts = feedbackCategories.map(cat => {

@@ -1,8 +1,8 @@
-# Zalo Mini App Du Lich Nui Ba Den
+# Website PWA Du Lich Nui Ba Den
 
 He thong gom 3 phan:
 
-- `mini-app/`: Zalo Mini App cho du khach, React + Vite + zmp-ui/zmp-sdk.
+- `mini-app/`: Website PWA cho du khach, React + Vite + zmp-ui.
 - `backend/`: FastAPI API, RAG chatbot, TTS, upload, admin API, Beeknoee/OpenAI-compatible client.
 - `admin-dashboard/`: React Admin Dashboard de quan ly noi dung, phan anh, dia danh, chat logs, va chi phi model.
 
@@ -70,7 +70,7 @@ File local: `mini-app/.env`
 
 Mau local: `mini-app/.env.example`
 
-Mau deploy Zalo: `mini-app/.env.production.example`
+Mau production: `mini-app/.env.production.example`
 
 Mini App doc cac bien public Vite:
 
@@ -160,7 +160,7 @@ Build:
 npm run build
 ```
 
-Deploy len Zalo:
+Deploy len web/PWA:
 
 ```bat
 cd mini-app
@@ -170,34 +170,16 @@ copy .env.production.example .env.production
 Sua `mini-app/.env.production`:
 
 ```env
-APP_ID=your-zalo-mini-app-id
-ZMP_TOKEN=your-zmp-token
 VITE_BASE_URL=https://your-public-backend-domain
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-### Mini App Zalo
+### Mini App PWA
 
 Không dùng `localhost`. `VITE_BASE_URL` trong `.env.production` phải là public HTTPS backend.
 
-Khi chạy lệnh deploy (`npm run deploy:zalo`), hệ thống sẽ kích hoạt một quy trình tự động hóa tích hợp sẵn (`scripts/deploy-testing.js`):
-1. **Plugin Vite** (`zaloMiniAppPlugin` trong `vite.config.ts`) tự động sao chép `app-config.json` vào thư mục `www/` và đổi thẻ `<script type="module">` thành `<script defer>` trong `index.html` để tương thích tốt nhất với webview offline của Zalo.
-2. **Kịch bản tự động hóa (`scripts/deploy-testing.js`)**:
-   - Tự động kiểm tra môi trường hợp lệ.
-   - Tự động giả lập phím để chọn chế độ **Testing** (phiên bản thử nghiệm) nhằm tránh lỗi điều hướng mũi tên trên một số terminal không hỗ trợ TTY.
-   - **Cách deploy có ghi chú:**
-     - **Gõ trực tiếp:** Chỉ cần chạy `npm run deploy:zalo` và gõ mô tả trực tiếp khi được hỏi.
-     - **Truyền nhanh:** Chạy lệnh kèm tham số mô tả:
-       ```bat
-       npm run deploy:zalo "Ghi chú phiên bản ở đây"
-       ```
-
-Tiến hành deploy:
-```bat
-cd mini-app
-npm run deploy:zalo
-```
+Khi chạy lệnh build (`npm run build`), hệ thống sẽ tự động đóng gói ứng dụng web PWA vào thư mục `dist/` cùng với Service Worker (`sw.js`) và Web Manifest (`manifest.json`), sẵn sàng để đưa lên hosting.
 
 ## Admin Dashboard
 
@@ -309,13 +291,13 @@ startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 Can set env tren Render theo `backend/.env.example`.
 
-### Mini App Zalo
+### Mini App PWA
 
 Khong dung `localhost`. `VITE_BASE_URL` trong `.env.production` phai la public HTTPS backend.
 
 ```bat
 cd mini-app
-npm run deploy:zalo
+npm run build
 ```
 
 ### Admin Deploy
@@ -347,7 +329,7 @@ cd admin-dashboard
 npm run build
 ```
 
-Neu sua Supabase schema, xem `database/schema.sql`. Neu sua deploy backend, xem `render.yaml`. Neu sua Zalo deploy, xem `mini-app/.env.production.example`, `mini-app/scripts/check-zalo-env.mjs`, va `mini-app/package.json`.
+Neu sua Supabase schema, xem `database/schema.sql`. Neu sua deploy backend, xem `render.yaml`. Neu sua build, xem `mini-app/.env.production.example` va `mini-app/package.json`.
 
 ## AI Handoff Notes
 
@@ -358,7 +340,7 @@ Neu sua Supabase schema, xem `database/schema.sql`. Neu sua deploy backend, xem 
 - Do not hard-code Supabase URL/key in Mini App source; use Vite env.
 - Never put Supabase service role key in Mini App/Admin frontend env.
 - `backend/app/core/config.py` must keep reading `backend/.env` by absolute path.
-- Mini App deploy to Zalo uses `.env.production` at build time; Zalo does not provide runtime env.
+- Mini App PWA uses `.env.production` at build time.
 - Beeknoee usage cost is estimated from completion usage and stored in `chat_logs`.
 - Admin usage tab reads `/api/admin/usage-summary`.
 - Visit Info ticket/schedule data should be edited from Admin Visual Builder, not hard-coded in Mini App.

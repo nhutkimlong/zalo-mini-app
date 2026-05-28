@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { Bot, Send, AlertCircle, UserCircle, Trash2 } from "lucide-react";
-import { getUserInfo } from "zmp-sdk/apis";
 import api, { ChatResponse } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import logoImageUrl from "../assets/logo.png";
@@ -15,7 +14,7 @@ interface Message {
   isLoading?: boolean;
 }
 
-const CHAT_HISTORY_STORAGE_KEY = "zalo_mini_app_chat_history";
+const CHAT_HISTORY_STORAGE_KEY = "nui_ba_den_chat_history";
 
 export const ChatPage: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -58,16 +57,9 @@ export const ChatPage: React.FC = () => {
     }
   });
   const [inputValue, setInputValue] = useState("");
-  const [userProfile, setUserProfile] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  const getDisplayName = (profile: any) => {
-    const name = profile?.name?.trim();
-    if (!name || name.toLowerCase() === "user name") return undefined;
-    return name;
-  };
 
   const buildConversationHistory = () =>
     messages
@@ -123,27 +115,12 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     setMessages(prev => prev.map(m => m.id === "welcome" ? {
       ...m,
-      text: getWelcomeText(getDisplayName(userProfile))
+      text: getWelcomeText()
     } : m));
-  }, [language, userProfile]);
+  }, [language]);
 
   // Clean up on unmount
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { userInfo } = await getUserInfo({
-          autoRequestPermission: true,
-          avatarType: "normal"
-        });
-        if (userInfo) {
-          setUserProfile(userInfo);
-        }
-      } catch (error) {
-        console.warn("Native getUserInfo failed on ChatPage mount:", error);
-      }
-    };
-    fetchProfile();
-
     const preloaded = localStorage.getItem("preloaded_question");
     const preloadedLanguage = localStorage.getItem("preloaded_question_language");
     if (preloaded) {
@@ -184,12 +161,7 @@ export const ChatPage: React.FC = () => {
         text, 
         messageLanguage, 
         abortControllerRef.current.signal, 
-        buildConversationHistory(),
-        userProfile ? {
-          zalo_user_id: userProfile.id,
-          name: userProfile.name,
-          avatar_url: userProfile.avatar
-        } : undefined
+        buildConversationHistory()
       );
 
       // 4. Update typing loader with official answer

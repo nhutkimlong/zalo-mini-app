@@ -2,16 +2,49 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Chinh phục Núi Bà Đen</title>
-    <meta name="description" content="Trợ lý du lịch AI chính thức của Khu di tích quốc gia Núi Bà Đen - Hỗ trợ thông tin cáp treo, giờ mở cửa, và thông tin hành hương." />
-    <meta property="og:title" content="Chinh phục Núi Bà Đen" />
-    <meta property="og:description" content="Trợ lý du lịch AI chính thức của Khu di tích quốc gia Núi Bà Đen" />
+    <title>Chinh phục Núi Bà Đen - Trợ lý du lịch AI chính thức</title>
+    <meta name="description" content="Trợ lý du lịch AI chính thức của Khu di tích quốc gia Núi Bà Đen - Tây Ninh. Tra cứu thông tin vé cáp treo, giờ mở cửa, các địa điểm tâm linh hành hương và trò chuyện cùng trợ lý ảo thông minh." />
+    <meta name="keywords" content="núi bà đen, du lịch núi bà đen, cáp treo núi bà đen, trợ lý ai du lịch, hành hương núi bà đen, chùa bà tây ninh, tây ninh, chinh phục núi bà đen, tượng phật tây bổ đà sơn" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Khu di tích quốc gia Núi Bà Đen" />
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#06152a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Núi Bà Đen" />
+    <link rel="apple-touch-icon" href="./logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./logo.png" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Chinh phục Núi Bà Đen - Trợ lý du lịch AI chính thức" />
+    <meta property="og:description" content="Khám phá Núi Bà Đen với trợ lý AI thông minh: tra cứu vé cáp treo, thời tiết, sự kiện hành hương và thông tin du lịch chi tiết." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="./hero.webp" />
+    <meta property="og:site_name" content="Chinh phục Núi Bà Đen" />
+    <meta property="og:locale" content="vi_VN" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Chinh phục Núi Bà Đen - Trợ lý du lịch AI chính thức" />
+    <meta name="twitter:description" content="Khám phá Núi Bà Đen với trợ lý AI thông minh: tra cứu vé cáp treo, thời tiết, sự kiện hành hương và thông tin du lịch chi tiết." />
+    <meta name="twitter:image" content="./hero.webp" />
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((reg) => console.log("Service Worker registered:", reg.scope))
+            .catch((err) => console.warn("Service Worker registration failed:", err));
+        });
+      }
+    </script>
   </body>
 </html>

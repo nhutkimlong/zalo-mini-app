@@ -1,13 +1,13 @@
 @echo off
 setlocal EnableExtensions
-title ZALO MINI APP - LOCAL DEV SUITE
+title PWA WEBSITE - LOCAL DEV SUITE
 
 cd /d "%~dp0"
 cls
 
 echo ================================================================
-echo   ZALO MINI APP - LOCAL DEVELOPMENT SUITE
-echo   Docker removed. Backend, Mini App, and Admin run locally.
+echo   PWA WEBSITE - LOCAL DEVELOPMENT SUITE
+echo   Docker removed. Backend, PWA App, and Admin run locally.
 echo ================================================================
 echo.
 
@@ -47,7 +47,7 @@ if errorlevel 1 (
 echo [OK] Python found.
 
 call :ensure_env "%BACKEND_DIR%\.env" "%BACKEND_DIR%\.env.example" "Backend"
-call :ensure_env "%MINI_DIR%\.env" "%MINI_DIR%\.env.example" "Mini App"
+call :ensure_env "%MINI_DIR%\.env" "%MINI_DIR%\.env.example" "PWA App"
 call :ensure_env "%ADMIN_DIR%\.env" "%ADMIN_DIR%\.env.example" "Admin Dashboard"
 
 if not exist "%BACKEND_DIR%\venv\Scripts\python.exe" (
@@ -64,9 +64,9 @@ if not exist "%BACKEND_DIR%\venv\Scripts\python.exe" (
 echo [OK] Backend venv ready.
 
 if not exist "%MINI_DIR%\node_modules" (
-  echo [WARN] mini-app node_modules is missing. Choose option 4 to install dependencies.
+  echo [WARN] PWA App node_modules is missing. Choose option 4 to install dependencies.
 ) else (
-  echo [OK] Mini App dependencies found.
+  echo [OK] PWA App dependencies found.
 )
 
 if not exist "%ADMIN_DIR%\node_modules" (
@@ -113,7 +113,7 @@ if errorlevel 1 (
 popd
 
 echo.
-echo Installing Mini App dependencies...
+echo Installing PWA App dependencies...
 pushd "%MINI_DIR%"
 call npm install
 if errorlevel 1 (
@@ -153,7 +153,7 @@ if errorlevel 1 (
 popd
 
 echo.
-echo Building Mini App...
+echo Building PWA App...
 pushd "%MINI_DIR%"
 call npm run build
 if errorlevel 1 (
@@ -200,8 +200,8 @@ start "FastAPI Backend %BACKEND_PORT%" cmd /k "cd /d ""%BACKEND_DIR%"" && call v
 exit /b 0
 
 :start_mini
-echo Starting Zalo Mini App on port %MINI_PORT%...
-start "Zalo Mini App %MINI_PORT%" cmd /k "cd /d ""%MINI_DIR%"" && npm run dev -- --host 127.0.0.1 --port %MINI_PORT%"
+echo Starting PWA Website on port %MINI_PORT%...
+start "PWA Website %MINI_PORT%" cmd /k "cd /d ""%MINI_DIR%"" && npm run dev -- --host 127.0.0.1 --port %MINI_PORT%"
 exit /b 0
 
 :start_admin
@@ -216,12 +216,12 @@ echo   Services launched in separate command windows.
 echo ------------------------------------------------
 echo   Backend API       http://localhost:%BACKEND_PORT%
 echo   Backend Docs      http://localhost:%BACKEND_PORT%/docs
-echo   Zalo Mini App     http://localhost:%MINI_PORT%
+echo   PWA Website       http://localhost:%MINI_PORT%
 echo   Admin Dashboard   http://localhost:%ADMIN_PORT%
 echo.
 echo   Env files:
 echo   - backend\.env             server secrets and Beeknoee/Supabase
-echo   - mini-app\.env            public VITE_* and Zalo Mini App config
+echo   - mini-app\.env            public VITE_* and PWA Web config
 echo   - admin-dashboard\.env     public VITE_* admin config
 echo ================================================================
 echo.

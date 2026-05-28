@@ -1,0 +1,41 @@
+{
+  "name": "Chinh phục Núi Bà Đen",
+  "short_name": "Núi Bà Đen",
+  "description": "Trợ lý du lịch AI chính thức của Khu di tích quốc gia Núi Bà Đen - Hỗ trợ thông tin cáp treo, giờ mở cửa, và thông tin hành hương.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#06152a",
+  "theme_color": "#06152a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "./logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./adaptive-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./adaptive-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Bot, Compass, Info, FileText, Map, Bell, PhoneCall, ChevronRight } from "lucide-react";
-import { getUserInfo, openPhone } from "zmp-sdk/apis";
 import { Header, Page } from "zmp-ui";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -10,7 +9,6 @@ import logoImageUrl from "../assets/logo.png";
 
 export const HomePage: React.FC = () => {
   const [tickerAnns, setTickerAnns] = useState<Announcement[]>([]);
-  const [userProfile, setUserProfile] = useState<any>(null);
   const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
@@ -19,22 +17,6 @@ export const HomePage: React.FC = () => {
         setTickerAnns(anns);
       }
     });
-
-    // Get Zalo Native User Info on mount
-    const fetchProfile = async () => {
-      try {
-        const { userInfo } = await getUserInfo({
-          autoRequestPermission: true,
-          avatarType: "normal"
-        });
-        if (userInfo) {
-          setUserProfile(userInfo);
-        }
-      } catch (error) {
-        console.warn("Native getUserInfo failed on Home (likely running in standard browser):", error);
-      }
-    };
-    fetchProfile();
   }, []);
 
   return (
@@ -50,7 +32,7 @@ export const HomePage: React.FC = () => {
                 {language === "en" ? "BLACK LADY MOUNTAIN" : "NÚI BÀ ĐEN"}
               </h1>
               <span style={{ fontSize: "10px", color: "var(--cream-white)", opacity: 0.85, fontWeight: 600 }}>
-                {userProfile?.name ? (language === "vi" ? `Kính chào anh/chị ${userProfile.name}!` : `Welcome, Mr/Ms ${userProfile.name}!`) : (language === "vi" ? "Trợ Lý Du Lịch Số Quốc Gia" : "National Digital Tourism Assistant")}
+                {language === "vi" ? "Trợ Lý Du Lịch Số Quốc Gia" : "National Digital Tourism Assistant"}
               </span>
             </div>
           </div> as any
@@ -277,10 +259,6 @@ export const HomePage: React.FC = () => {
               <a
                 key={hotline.phone}
                 href={`tel:${hotline.phone}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  openPhone({ phoneNumber: hotline.phone });
-                }}
                 style={{
                   display: "flex",
                   flexDirection: "column",

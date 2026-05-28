@@ -1,6 +1,6 @@
 /* 
   Global Aesthetics and CSS variables
-  Mini App Zalo Chinh phục Núi Bà Đen
+  Website PWA Chinh phục Núi Bà Đen
 */
 
 @import "zmp-ui/zaui.css";
@@ -695,7 +695,7 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
 }
 
-/* --- Premium Zalo UI/UX Enhancements --- */
+/* --- Premium PWA UI/UX Enhancements --- */
 
 /* GPU Accelerated Micro Entrance Animations */
 .fade-in-up {

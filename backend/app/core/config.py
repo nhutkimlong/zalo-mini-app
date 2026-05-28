@@ -34,11 +34,7 @@ class Settings(BaseSettings):
     NINEROUTER_KEY: str = ""
     LLM_MODEL: str = "gemini-3.1-flash-lite"
 
-    # Zalo OA
-    ZALO_OA_APP_ID: str = ""
-    ZALO_OA_APP_SECRET: str = ""
-    ZALO_OA_WEBHOOK_SECRET: str = ""
-    ZALO_OA_ACCESS_TOKEN: str = ""
+
 
     class Config:
         env_file = str(ENV_FILE)

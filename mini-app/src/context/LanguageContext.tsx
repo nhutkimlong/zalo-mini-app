@@ -103,13 +103,13 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem("zalo_mini_app_lang");
+    const saved = localStorage.getItem("nui_ba_den_lang");
     return saved === "en" || saved === "vi" ? saved : "vi";
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem("zalo_mini_app_lang", lang);
+    localStorage.setItem("nui_ba_den_lang", lang);
   };
 
   const t = (key: string): string => {
