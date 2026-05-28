@@ -63,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <img src="/logo.png" alt="Logo" style={{ width: "36px", height: "36px", borderRadius: "8px", border: "1px solid var(--accent-gold)", objectFit: "cover" }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <h1 className="sidebar-title" style={{ fontSize: "16px", margin: 0 }}>BÀ ĐEN ADMIN</h1>
-          <span className="sidebar-subtitle" style={{ fontSize: "9px" }}>HỆ THỐNG TRỢ LÝ DU LỊCH SỐ</span>
+          <span className="sidebar-subtitle" style={{ fontSize: "9px" }}>HỆ THỐNG CHINH PHỤC NÚI BÀ ĐEN</span>
         </div>
       </div>
 

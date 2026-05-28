@@ -103,7 +103,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           color: "rgba(255, 255, 255, 0.6)",
           margin: "0 0 30px 0"
         }}>
-          Hệ thống Quản trị Trợ lý Du lịch Số
+          Hệ thống Quản trị Chinh phục Núi Bà Đen
         </p>
 
         <form onSubmit={handleSubmit} style={{ textAlign: "left" }}>

@@ -1,7 +1,7 @@
 {
-  "name": "truly-du-lich-so-ba-den",
+  "name": "troly-du-lich-so-ba-den",
   "version": "1.0.0",
-  "description": "Zalo Mini App - Trợ lý du lịch số Khu du lịch quốc gia Núi Bà Đen",
+  "description": "Zalo Mini App - Chinh phục Núi Bà Đen",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

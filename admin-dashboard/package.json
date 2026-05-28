@@ -1,7 +1,7 @@
 {
-  "name": "truly-du-lich-so-ba-den-admin",
+  "name": "troly-du-lich-so-ba-den-admin",
   "version": "1.0.0",
-  "description": "Admin Web Dashboard - Trợ lý du lịch số Khu du lịch quốc gia Núi Bà Đen",
+  "description": "Admin Web Dashboard - Chinh phục Núi Bà Đen",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
