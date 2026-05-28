@@ -38,10 +38,28 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ("serviceWorker" in navigator) {
+        // Store whether the page was already controlled by a service worker on load
+        const wasControlled = !!navigator.serviceWorker.controller;
+        let refreshing = false;
+
+        // Automatically reload the page when the new Service Worker takes control
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (!refreshing && wasControlled) {
+            refreshing = true;
+            console.log("[PWA] New version detected. Auto-reloading...");
+            window.location.reload();
+          }
+        });
+
         window.addEventListener("load", () => {
           navigator.serviceWorker
             .register("./sw.js")
-            .then((reg) => console.log("Service Worker registered:", reg.scope))
+            .then((reg) => {
+              console.log("Service Worker registered:", reg.scope);
+              
+              // Proactively query for service worker updates
+              reg.update();
+            })
             .catch((err) => console.warn("Service Worker registration failed:", err));
         });
       }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "nui-ba-den-pwa-v2";
+const CACHE_NAME = "nui-ba-den-pwa-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,9 @@ self.addEventListener("install", (event) => {
       console.log("[Service Worker] Caching app shell assets");
       return Promise.all(
         ASSETS.map((asset) => {
-          return cache.add(asset).catch((err) => {
+          // Force network fetch to bypass browser HTTP cache on install
+          const request = new Request(asset, { cache: "reload" });
+          return cache.add(request).catch((err) => {
             console.warn(`[Service Worker] Failed to cache asset: ${asset}`, err);
           });
         })
@@ -51,7 +53,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Handle static assets
+  // 1. Network-First for navigation requests (HTML shell)
+  if (event.request.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname === "/") {
+    event.respondWith(
+      // Force checking the network server by bypassing browser HTTP cache validation
+      fetch(new Request(event.request, { cache: "no-cache" }))
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            const cacheCopy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, cacheCopy);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline fallback
+          return caches.match("./index.html") || caches.match("./");
+        })
+    );
+    return;
+  }
+
+  // 2. Cache-First for standard static assets (js, css, images)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -73,12 +97,6 @@ self.addEventListener("fetch", (event) => {
             });
           }
           return networkResponse;
-        })
-        .catch(() => {
-          // Fallback for navigation requests
-          if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
         });
     })
   );
