@@ -1,6 +1,6 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
-import { App, ZMPRouter } from "zmp-ui";
+import { Route, Routes, BrowserRouter } from "react-router-dom";
+import { App } from "zmp-ui";
 import { LanguageProvider } from "./context/LanguageContext";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
@@ -17,7 +17,7 @@ export const MyApp: React.FC = () => {
   return (
     <App>
       <LanguageProvider>
-        <ZMPRouter>
+        <BrowserRouter>
           <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -31,7 +31,7 @@ export const MyApp: React.FC = () => {
               <Route path="/map" element={<MapPage />} />
             </Routes>
           </Layout>
-        </ZMPRouter>
+        </BrowserRouter>
       </LanguageProvider>
     </App>
   );
