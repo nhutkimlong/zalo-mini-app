@@ -8,14 +8,18 @@ const ASSETS = [
   "./adaptive-icon.png"
 ];
 
-// Install event: Cache assets
+// Install event: Cache assets individually to be resilient to single-asset failures
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("[Service Worker] Caching app shell assets");
-      return cache.addAll(ASSETS).catch((err) => {
-        console.warn("[Service Worker] Error pre-caching some assets:", err);
-      });
+      return Promise.all(
+        ASSETS.map((asset) => {
+          return cache.add(asset).catch((err) => {
+            console.warn(`[Service Worker] Failed to cache asset: ${asset}`, err);
+          });
+        })
+      );
     })
   );
   self.skipWaiting();
