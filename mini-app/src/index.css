@@ -450,6 +450,24 @@ body {
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
 }
 
+/* Fail-safe background extension: fills any iOS/PWA bottom safe area gap silently */
+.bottom-nav::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background-color: var(--cream-white);
+  pointer-events: none;
+}
+
+/* Force override of Zalo UI layout wrapper margins/paddings that could push fixed elements */
+.zaui-app, .zaui-page, .zaui-page-content {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 .nav-item {
   display: flex;
   flex-direction: column;
