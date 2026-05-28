@@ -31,11 +31,25 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   background-color: var(--light-bg);
   color: var(--dark-text);
   line-height: 1.5;
   font-size: 15px;
+  height: 100%;
+}
+
+#app, .zaui-app {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Scrollbar customizations */
@@ -52,9 +66,11 @@ body {
 
 /* Standard Premium Page Container */
 .page-container {
-  min-height: 100vh;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background-color: var(--light-bg);
-  padding-bottom: calc(80px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); /* Dynamic spacing for bottom nav and safe area */
+  padding-bottom: calc(90px + env(safe-area-inset-bottom, 16px)); /* Safe padding for bottom-nav & iOS Home Indicator */
   position: relative;
   overflow-x: hidden;
 }
@@ -423,8 +439,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(60px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); /* Safe area support for iOS home bar */
-  padding-bottom: var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  height: calc(60px + env(safe-area-inset-bottom, 12px)); /* Safe area support for iOS home bar */
+  padding-bottom: env(safe-area-inset-bottom, 12px);
   background-color: var(--cream-white);
   border-top: 1px solid rgba(11, 37, 69, 0.08);
   display: flex;
@@ -730,12 +746,7 @@ a,
   -webkit-tap-highlight-color: rgba(11, 37, 69, 0.08);
 }
 
-*:not(.ticker-text), *:not(.ticker-text)::before, *:not(.ticker-text)::after {
-  animation: none !important;
-  transition: none !important;
-  scroll-behavior: auto !important;
-}
-
+/* Custom active scale effects restored */
 button:active,
 a:active,
 .nav-item:active,
@@ -744,7 +755,8 @@ a:active,
 .send-btn-dark:active,
 .chips-slider-item:active,
 [role="button"]:active {
-  transform: none !important;
+  transform: scale(0.96);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Reduced Motion Mode Support */

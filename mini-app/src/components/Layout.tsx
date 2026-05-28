@@ -21,9 +21,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const showBottomNav = path !== "/chat" && path !== "/map";
 
   return (
-    <div className="page-container" style={showBottomNav ? {} : { paddingBottom: 0, height: "100vh", overflow: "hidden" }}>
+    <div className="page-container" style={showBottomNav ? {} : { paddingBottom: 0, height: "100dvh", overflow: "hidden" }}>
       {/* Dynamic Content */}
-      <main style={showBottomNav ? { minHeight: "calc(100vh - 60px)" } : { height: "100vh", overflow: "hidden" }}>
+      <main style={showBottomNav ? { minHeight: "calc(100dvh - 60px)" } : { height: "100dvh", overflow: "hidden" }}>
         {children}
       </main>
 

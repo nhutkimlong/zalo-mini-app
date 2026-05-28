@@ -12,7 +12,76 @@ interface Message {
   text: string;
   sources?: ChatResponse["sources"];
   isLoading?: boolean;
+  animate?: boolean;
 }
+
+const TypewriterText: React.FC<{ text: string; onType?: () => void; onComplete: () => void }> = ({ text, onType, onComplete }) => {
+  const tokens = React.useMemo(() => text.match(/\s+|\S+/g) || [], [text]);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const onCompleteRef = useRef(onComplete);
+  const onTypeRef = useRef(onType);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    onTypeRef.current = onType;
+  }, [onType]);
+
+  useEffect(() => {
+    let active = true;
+    const total = tokens.length;
+    
+    if (total === 0) {
+      onCompleteRef.current();
+      return;
+    }
+
+    const animate = () => {
+      if (!active) return;
+      if (visibleCount < total) {
+        const delay = total > 150 ? 15 : total > 80 ? 25 : 35;
+        setTimeout(() => {
+          if (active) {
+            setVisibleCount(prev => prev + 1);
+            if (onTypeRef.current) {
+              onTypeRef.current();
+            }
+          }
+        }, delay);
+      } else {
+        onCompleteRef.current();
+      }
+    };
+
+    animate();
+
+    return () => {
+      active = false;
+    };
+  }, [visibleCount, tokens]);
+
+  return (
+    <span style={{ whiteSpace: "pre-wrap" }}>
+      {tokens.map((token, index) => {
+        const isVisible = index < visibleCount;
+        return (
+          <span
+            key={index}
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transition: isVisible ? "opacity 0.15s ease-out" : "none",
+              display: token.match(/^\s+$/) ? "inline" : "inline-block",
+            }}
+          >
+            {token}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
 
 const CHAT_HISTORY_STORAGE_KEY = "nui_ba_den_chat_history";
 
@@ -170,7 +239,8 @@ export const ChatPage: React.FC = () => {
           ...m,
           text: response.answer,
           sources: response.sources,
-          isLoading: false
+          isLoading: false,
+          animate: true
         } : m)
       );
     } catch (error: any) {
@@ -182,7 +252,8 @@ export const ChatPage: React.FC = () => {
           text: messageLanguage === "en"
             ? "Hướng dẫn viên 4.0 is temporarily unavailable. Please try again later or contact the Management Board for support."
             : "Hướng dẫn viên 4.0 tạm thời không khả dụng. Quý khách vui lòng thử lại sau hoặc liên hệ Ban Quản lý qua số điện thoại (0276) 3823.378 để được hỗ trợ.",
-          isLoading: false
+          isLoading: false,
+          animate: true
         } : m)
       );
     }
@@ -334,8 +405,22 @@ export const ChatPage: React.FC = () => {
                       <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--accent-gold)" }}></div>
                     </div>
                   ) : (
-                    <div style={{ whiteSpace: "pre-line" }}>
-                      {msg.text}
+                    <div style={{ whiteSpace: "pre-wrap" }}>
+                      {msg.animate ? (
+                        <TypewriterText
+                          text={msg.text}
+                          onType={scrollToBottom}
+                          onComplete={() => {
+                            // Turn off animation flag once typed
+                            setMessages(prev =>
+                              prev.map(m => m.id === msg.id ? { ...m, animate: false } : m)
+                            );
+                            scrollToBottom();
+                          }}
+                        />
+                      ) : (
+                        msg.text
+                      )}
                     </div>
                   )}
 
