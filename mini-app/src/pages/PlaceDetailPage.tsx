@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
-import { Play, Pause, RotateCcw, Volume2, Bot, Tag } from "lucide-react";
-import api, { TouristPlace, getAudioGuideUrl, hasAudioGuide } from "../services/api";
+import { Play, Pause, RotateCcw, Volume2, Bot, Tag, Heart, MapPin, Check, AlertCircle, Sparkles } from "lucide-react";
+import api, { TouristPlace, getAudioGuideUrl, hasAudioGuide, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
 export const PlaceDetailPage: React.FC = () => {
@@ -19,16 +19,105 @@ export const PlaceDetailPage: React.FC = () => {
   const [duration, setDuration] = useState("--:--");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Favorites State
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+
+  // GPS Check-in State
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [distance, setDistance] = useState<number | null>(null); // in meters
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [checkinStatus, setCheckinStatus] = useState<"none" | "checking" | "success" | "too_far">("none");
+  const [checkinMessage, setCheckinMessage] = useState("");
+  const [stampsCount, setStampsCount] = useState(0);
+  const [rewardGranted, setRewardGranted] = useState(false);
+  const [alreadyStamped, setAlreadyStamped] = useState(false);
+
+  // 1. Fetch place by slug
   useEffect(() => {
     if (slug) {
       api.getPlaceBySlug(slug).then((data) => {
         setPlace(data);
         setLoading(false);
+      }).catch(err => {
+        console.error(err);
+        setLoading(false);
       });
     }
   }, [slug]);
 
-  // Handle active audio URL changes (VI/EN toggle)
+  // 2. Check Auth session & Favorites status & Stamp status on place load
+  const checkAuthAndData = async () => {
+    if (!place) return;
+    try {
+      const sessionRes = await supabase.auth.getSession();
+      if (sessionRes.data.session) {
+        setIsLoggedIn(true);
+        
+        // Check if favorited
+        const favs = await api.getMyFavorites();
+        setIsFavorited(favs.some(f => f.id === place.id));
+
+        // Check if already stamped
+        const stamps = await api.getMyStamps();
+        const hasStamp = stamps.some(s => s.place_slug === place.slug);
+        setAlreadyStamped(hasStamp);
+        if (hasStamp) {
+          setStampsCount(stamps.length);
+        }
+      }
+    } catch (err) {
+      console.warn("[Detail] Failed to check auth details:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (place) {
+      checkAuthAndData();
+      requestUserLocation();
+    }
+  }, [place]);
+
+  // 3. Request User GPS location & calculate distance
+  const requestUserLocation = () => {
+    if (!navigator.geolocation || !place) return;
+    setGpsLoading(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserCoords({ latitude, longitude });
+        
+        // Calculate distance
+        const dist = calculateDistance(latitude, longitude, place.latitude, place.longitude);
+        setDistance(dist);
+        setGpsLoading(false);
+      },
+      (error) => {
+        console.warn("[GPS] Location permission denied or unavailable:", error);
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  };
+
+  // Haversine distance calculator
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371000.0; // Earth radius in meters
+    const phi1 = (lat1 * Math.PI) / 180;
+    const phi2 = (lat2 * Math.PI) / 180;
+    const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(deltaPhi / 2.0) ** 2 +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2.0) ** 2;
+    const c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+    return R * c;
+  };
+
+  // 4. Handle active audio URL changes (VI/EN/KM toggle)
   useEffect(() => {
     if (!place) return () => {};
     
@@ -101,11 +190,10 @@ export const PlaceDetailPage: React.FC = () => {
         setIsPlaying(true);
       }).catch((e) => {
         console.error("Audio playback error:", e);
-        alert(language === "en" ? "Cannot play audio guide." : "Không thể phát âm thanh thuyết minh.");
+        alert(language === "en" ? "Cannot play audio guide." : language === "km" ? "មិនអាចចាក់សំឡេងណែនាំបានទេ។" : "Không thể phát âm thanh thuyết minh.");
       });
     }
   };
-
 
   const handleReset = () => {
     setProgress(0);
@@ -117,12 +205,61 @@ export const PlaceDetailPage: React.FC = () => {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!isLoggedIn) {
+      alert(language === "en" ? "Please log in first!" : language === "km" ? "សូមចូលគណនីជាមុនសិន!" : "Vui lòng đăng nhập tài khoản trước!");
+      navigate("/profile");
+      return;
+    }
+    if (!place) return;
+    
+    setFavLoading(true);
+    try {
+      const res = await api.toggleFavorite(place.id);
+      setIsFavorited(res.favorited);
+    } catch (err: any) {
+      console.error(err);
+      alert("Lỗi thả tim: " + err.message);
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+  const handleCheckin = async () => {
+    if (!isLoggedIn) {
+      alert(language === "en" ? "Please log in to check in and collect stamps!" : language === "km" ? "សូមចូលគណនីដើម្បី Check-in យកត្រា!" : "Vui lòng đăng nhập trước khi check-in nhận dấu ấn!");
+      navigate("/profile");
+      return;
+    }
+    if (!place || !userCoords) return;
+
+    setCheckinStatus("checking");
+    try {
+      const res = await api.checkinPlace(place.slug, userCoords.latitude, userCoords.longitude);
+      if (res.status === "success") {
+        setCheckinStatus("success");
+        setAlreadyStamped(true);
+        setStampsCount(res.total_stamps);
+        setRewardGranted(res.reward_granted);
+        setCheckinMessage(res.message);
+      } else {
+        setCheckinStatus("too_far");
+        setCheckinMessage(res.message);
+      }
+    } catch (err: any) {
+      setCheckinStatus("too_far");
+      setCheckinMessage(err.message || "Lỗi check-in GPS.");
+    }
+  };
+
   const handleAskAI = () => {
     if (place) {
-      const placeName = language === "en" && place.name_en ? place.name_en : place.name;
-      const question = language === "en" 
-        ? `Tell me about the history and details of ${placeName}`
-        : `Hãy kể sự tích và thông tin chi tiết về ${placeName}`;
+      const placeName = language === "km" && place.name_km ? place.name_km : language === "en" && place.name_en ? place.name_en : place.name;
+      const question = language === "km"
+        ? `សូមប្រាប់ខ្ញុំអំពីប្រវត្តិ និងព័ត៌មានលម្អិតរបស់ ${placeName}`
+        : language === "en" 
+          ? `Tell me about the history and details of ${placeName}`
+          : `Hãy kể sự tích và thông tin chi tiết về ${placeName}`;
       
       localStorage.setItem("preloaded_question", question);
       localStorage.setItem("preloaded_question_language", language);
@@ -132,29 +269,44 @@ export const PlaceDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ textAlign: "center", padding: "80px", color: "var(--light-text)", fontWeight: 600 }}>
-        {t("common.loading")}
-      </div>
+      <Page>
+        <Header title={t("nav.places")} showBackIcon={true} />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 120px)", color: "var(--primary-navy)" }}>
+          <div className="common-loading">{t("common.loading")}</div>
+        </div>
+      </Page>
     );
   }
 
   if (!place) {
     return (
-      <div style={{ textAlign: "center", padding: "80px" }}>
-        <h3>{t("common.no_data")}</h3>
-        <Link to="/places" style={{ color: "var(--primary-navy)", fontWeight: 700 }}>
-          {language === "en" ? "Back to list" : "Quay lại danh sách"}
-        </Link>
-      </div>
+      <Page>
+        <Header title={t("nav.places")} showBackIcon={true} />
+        <div style={{ textAlign: "center", padding: "80px" }}>
+          <h3>{t("common.no_data")}</h3>
+          <Link to="/places" style={{ color: "var(--primary-navy)", fontWeight: 700 }}>
+            {language === "en" ? "Back to list" : "Quay lại danh sách"}
+          </Link>
+        </div>
+      </Page>
     );
   }
 
-  const localizedName = language === "en" && place.name_en ? place.name_en : place.name;
-  const localizedDescription = language === "en" && place.full_description_en 
-    ? place.full_description_en 
-    : language === "en" && place.short_description_en 
-      ? place.short_description_en 
-      : place.full_description || place.short_description;
+  const localizedName = language === "km" && place.name_km
+    ? place.name_km
+    : language === "en" && place.name_en
+      ? place.name_en
+      : place.name;
+
+  const localizedDescription = language === "km" && place.full_description_km
+    ? place.full_description_km
+    : language === "km" && place.short_description_km
+      ? place.short_description_km
+      : language === "en" && place.full_description_en 
+        ? place.full_description_en 
+        : language === "en" && place.short_description_en 
+          ? place.short_description_en 
+          : place.full_description || place.short_description;
 
   const getCategoryName = (cat: string) => {
     switch (cat) {
@@ -168,7 +320,10 @@ export const PlaceDetailPage: React.FC = () => {
   return (
     <Page>
       {/* Header */}
-      <Header title={localizedName} showBackIcon={true} />
+      <Header 
+        title={localizedName} 
+        showBackIcon={true} 
+      />
 
       {/* Hero Image */}
       <div style={{ width: "100%", height: "220px", overflow: "hidden", position: "relative" }}>
@@ -180,6 +335,33 @@ export const PlaceDetailPage: React.FC = () => {
           loading="eager"
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
+
+        {/* Floating Heart Favorite Button */}
+        <button
+          onClick={handleToggleFavorite}
+          disabled={favLoading}
+          style={{ 
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "rgba(11, 37, 69, 0.75)", 
+            border: "1px solid var(--accent-gold)", 
+            cursor: "pointer", 
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: isFavorited ? "var(--alert-red)" : "var(--cream-white)",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+            zIndex: 10
+          }}
+          aria-label="Thả tim lưu địa danh"
+        >
+          <Heart size={20} fill={isFavorited ? "var(--alert-red)" : "transparent"} />
+        </button>
+
         <div style={{ 
           position: "absolute", 
           bottom: "16px", 
@@ -200,6 +382,100 @@ export const PlaceDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {/* GPS Check-in Area for Stamp Rally */}
+      <div style={{ padding: "16px 16px 0 16px" }}>
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontWeight: 800, fontSize: "14px" }}>
+              <MapPin size={18} style={{ color: "var(--accent-gold)" }} />
+              <span>{language === "en" ? "GPS Heritage Check-in" : language === "km" ? "Check-in បេតិកភណ្ឌ GPS" : "Check-in GPS Di Sản"}</span>
+            </div>
+            
+            {distance !== null && (
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--light-text)" }}>
+                Cách bạn: {distance < 1000 ? `${distance.toFixed(0)}m` : `${(distance / 1000).toFixed(1)}km`}
+              </span>
+            )}
+          </div>
+
+          {alreadyStamped ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981", fontSize: "13px", fontWeight: 700, backgroundColor: "rgba(16,185,129,0.08)", padding: "10px", borderRadius: "10px", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <Check size={18} style={{ strokeWidth: 3 }} />
+              <span>{t("place.checkin.already")} ({t("profile.stamps_collected").replace("{count}", stampsCount.toString())})</span>
+            </div>
+          ) : (
+            <>
+              {distance !== null && distance <= 100.0 ? (
+                <button
+                  onClick={handleCheckin}
+                  disabled={checkinStatus === "checking"}
+                  className="submit-btn"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px" }}
+                >
+                  <MapPin size={16} />
+                  <span>{checkinStatus === "checking" ? "..." : t("place.checkin.btn")}</span>
+                </button>
+              ) : (
+                <div style={{
+                  padding: "10px",
+                  border: "1.5px dashed rgba(11,37,69,0.2)",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(0,0,0,0.01)",
+                  fontSize: "12px",
+                  color: "var(--light-text)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  lineHeight: "1.4"
+                }}>
+                  <AlertCircle size={16} style={{ color: "var(--alert-orange)", flexShrink: 0 }} />
+                  <span>
+                    {gpsLoading ? (
+                      language === "en"
+                        ? "Detecting GPS position..."
+                        : language === "km"
+                          ? "កំពុងស្វែងរកទីតាំង GPS..."
+                          : "Đang xác định vị trí GPS của bạn..."
+                    ) : distance === null ? (
+                      language === "en" 
+                        ? "Unable to detect GPS position. Please allow location access." 
+                        : language === "km" 
+                          ? "មិនអាចរកទីតាំង GPS បានទេ។ សូមអនុញ្ញាតឲ្យបើក GPS។" 
+                          : "Không thể lấy vị trí GPS. Hãy kiểm tra cài đặt vị trí để check-in."
+                    ) : t("place.checkin.too_far").replace("{dist}", distance.toFixed(0))}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Success Check-in Pop-up Notification */}
+          {checkinStatus === "success" && (
+            <div className="fade-in-up" style={{ padding: "12px", backgroundColor: "rgba(16, 185, 129, 0.08)", color: "#10b981", borderRadius: "10px", border: "1.5px solid rgba(16, 185, 129, 0.3)", fontSize: "12.5px" }}>
+              <div style={{ fontWeight: 800, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", color: "#10b981" }}>
+                <Sparkles size={16} style={{ color: "var(--accent-gold)" }} />
+                <span>{t("place.checkin.success")}</span>
+              </div>
+              <p style={{ margin: "4px 0 0 0", opacity: 0.9, color: "var(--primary-navy)" }}>
+                {checkinMessage}
+              </p>
+              {rewardGranted && (
+                <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "8px", fontWeight: 700, fontSize: "12px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+                  <Sparkles size={14} style={{ color: "var(--accent-gold)" }} />
+                  <span>
+                    {language === "en" 
+                      ? "You have collected all heritage stamps! Memory unlocked!"
+                      : language === "km"
+                        ? "អ្នកបានប្រមូលត្រាបេតិកភណ្ឌទាំងអស់ហើយ! ការចងចាំត្រូវបានដោះសោ!"
+                        : "Bạn đã thu thập đủ toàn bộ dấu ấn di sản! Mở khóa kỷ niệm hành trình!"}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Audio Guide Player — only shown when place has audio_url */}
       {(() => {
         const audioUrl = getAudioGuideUrl(place, language);
@@ -210,10 +486,10 @@ export const PlaceDetailPage: React.FC = () => {
               <Volume2 size={20} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
               <div>
                 <h3 style={{ fontSize: "14px", fontWeight: 700, margin: 0 }}>
-                  {language === "en" ? "Automated Audio Guide" : "Thuyết minh số tự động (Audio Guide)"}
+                  {language === "en" ? "Automated Audio Guide" : language === "km" ? "មគ្គុទ្ទេសក៍សំឡេងស្វ័យប្រវត្ត" : "Thuyết minh số tự động (Audio Guide)"}
                 </h3>
                 <p style={{ fontSize: "11px", opacity: 0.8, margin: 0 }}>
-                  {language === "en" ? "Listen to the historical narration of this attraction" : "Nghe diễn giải câu chuyện lịch sử di tích"}
+                  {language === "en" ? "Listen to the historical narration of this attraction" : language === "km" ? "ស្តាប់ការនិទានប្រវត្តិនៃទីកន្លែងទាក់ទាញនេះ" : "Nghe diễn giải câu chuyện lịch sử di tích"}
                 </p>
               </div>
             </div>
@@ -264,7 +540,7 @@ export const PlaceDetailPage: React.FC = () => {
                 onClick={handlePlayPause}
                 aria-label={isPlaying ? (language === "en" ? "Stop" : "Dừng") : (language === "en" ? "Play Narration" : "Nghe thuyết minh")}
               >
-                {isPlaying ? (language === "en" ? "Playing..." : "Đang phát...") : (language === "en" ? "Play Narration" : "Phát Thuyết Minh")}
+                {isPlaying ? (language === "en" ? "Playing..." : "Đang phát...") : (language === "en" ? "Play Narration" : language === "km" ? "ចាក់សំឡេង" : "Phát Thuyết Minh")}
               </button>
             </div>
           </div>
@@ -272,10 +548,10 @@ export const PlaceDetailPage: React.FC = () => {
       })()}
 
       {/* Description Text details */}
-      <div style={{ padding: "0 16px 20px 16px" }}>
+      <div style={{ padding: "16px 16px 20px 16px" }}>
         <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <h2 style={{ fontSize: "16px", color: "var(--primary-navy)", fontWeight: 700, borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-            {language === "en" ? "History & Narration" : "Lịch sử & Diễn giải di tích"}
+            {language === "en" ? "History & Narration" : language === "km" ? "ប្រវត្តិ និងការអធិប្បាយ" : "Lịch sử & Diễn giải di tích"}
           </h2>
           <p style={{ fontSize: "14px", lineHeight: "1.6", color: "var(--dark-text)", whiteSpace: "pre-line" }}>
             {localizedDescription}
@@ -302,7 +578,13 @@ export const PlaceDetailPage: React.FC = () => {
             }}
           >
             <Bot size={16} />
-            <span>{language === "en" ? "Ask AI Assistant about this" : "Hỏi Trợ lý AI về điểm này"}</span>
+            <span>
+              {language === "km" 
+                ? `សួរជំនួយការ AI អំពីចំណុចនេះ` 
+                : language === "en" 
+                  ? "Ask AI Assistant about this" 
+                  : "Hỏi Trợ lý AI về điểm này"}
+            </span>
           </button>
         </div>
       </div>

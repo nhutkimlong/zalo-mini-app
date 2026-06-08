@@ -6,14 +6,18 @@ from datetime import datetime
 class PlaceCreate(BaseModel):
     name: str = Field(..., description="Tên điểm tham quan")
     name_en: Optional[str] = Field(None, description="English name")
+    name_km: Optional[str] = Field(None, description="Khmer name")
     slug: str = Field(..., description="Đường dẫn tĩnh duy nhất")
     short_description: Optional[str] = Field(None, description="Mô tả ngắn gọn")
     short_description_en: Optional[str] = Field(None, description="English short description")
+    short_description_km: Optional[str] = Field(None, description="Khmer short description")
     full_description: Optional[str] = Field(None, description="Mô tả đầy đủ chi tiết")
     full_description_en: Optional[str] = Field(None, description="English full description")
+    full_description_km: Optional[str] = Field(None, description="Khmer full description")
     image_url: Optional[str] = Field(None, description="Ảnh đại diện điểm tham quan")
     audio_url: Optional[str] = Field(None, description="Đường dẫn audio thuyết minh di tích")
     audio_url_en: Optional[str] = Field(None, description="English audio URL")
+    audio_url_km: Optional[str] = Field(None, description="Khmer audio URL")
     audio_enabled: bool = Field(False, description="Bật tính năng âm thanh cho di tích")
     latitude: Optional[float] = Field(None, description="Vĩ độ")
     longitude: Optional[float] = Field(None, description="Kinh độ")
@@ -24,14 +28,18 @@ class PlaceCreate(BaseModel):
 class PlaceUpdate(BaseModel):
     name: Optional[str] = None
     name_en: Optional[str] = None
+    name_km: Optional[str] = None
     slug: Optional[str] = None
     short_description: Optional[str] = None
     short_description_en: Optional[str] = None
+    short_description_km: Optional[str] = None
     full_description: Optional[str] = None
     full_description_en: Optional[str] = None
+    full_description_km: Optional[str] = None
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     audio_url_en: Optional[str] = None
+    audio_url_km: Optional[str] = None
     audio_enabled: Optional[bool] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -43,14 +51,18 @@ class PlaceResponse(BaseModel):
     id: UUID
     name: str
     name_en: Optional[str] = None
+    name_km: Optional[str] = None
     slug: str
     short_description: Optional[str] = None
     short_description_en: Optional[str] = None
+    short_description_km: Optional[str] = None
     full_description: Optional[str] = None
     full_description_en: Optional[str] = None
+    full_description_km: Optional[str] = None
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     audio_url_en: Optional[str] = None
+    audio_url_km: Optional[str] = None
     audio_enabled: Optional[bool] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None

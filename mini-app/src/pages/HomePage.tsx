@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Compass, Info, FileText, Map, Bell, PhoneCall, ChevronRight } from "lucide-react";
+import { Bot, Compass, Info, FileText, Map, Bell, PhoneCall, ChevronRight, Sun, Cloud, CloudRain, Wind, Thermometer, Activity } from "lucide-react";
 import { Header, Page } from "zmp-ui";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -10,6 +10,7 @@ import logoImageUrl from "../assets/logo.png";
 export const HomePage: React.FC = () => {
   const [tickerAnns, setTickerAnns] = useState<Announcement[]>([]);
   const { language, setLanguage, t } = useLanguage();
+  const [realtime, setRealtime] = useState<any>(null);
 
   useEffect(() => {
     api.getAnnouncements().then((anns) => {
@@ -17,7 +18,43 @@ export const HomePage: React.FC = () => {
         setTickerAnns(anns);
       }
     });
+
+    api.getRealtimeStatus().then((status) => {
+      setRealtime(status);
+    }).catch((err) => console.warn("[Realtime] Failed to fetch status:", err));
   }, []);
+
+  const getWeatherIcon = (status: string) => {
+    switch (status) {
+      case "sunny":
+        return <Sun size={24} style={{ color: "#f59e0b" }} />;
+      case "cloudy":
+        return <Cloud size={24} style={{ color: "#94a3b8" }} />;
+      case "rainy":
+        return <CloudRain size={24} style={{ color: "#3b82f6" }} />;
+      case "windy":
+        return <Wind size={24} style={{ color: "#14b8a6" }} />;
+      default:
+        return <Sun size={24} style={{ color: "#f59e0b" }} />;
+    }
+  };
+
+  const getQueueBadgeColor = (level: string) => {
+    switch (level) {
+      case "low":
+        return "#10b981"; // Green
+      case "medium":
+        return "#f59e0b"; // Yellow/Orange
+      case "high":
+        return "#ef4444"; // Red
+      default:
+        return "#10b981";
+    }
+  };
+
+  const getQueueLabel = (level: string) => {
+    return t(`realtime.queue.${level}`);
+  };
 
   return (
     <Page>
@@ -29,10 +66,14 @@ export const HomePage: React.FC = () => {
             <img src={logoImageUrl} alt="Logo" width={36} height={36} style={{ borderRadius: "8px", border: "1px solid var(--accent-gold)", objectFit: "cover" }} />
             <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
               <h1 style={{ color: "var(--accent-gold)", margin: 0, fontSize: "16px", fontWeight: 800, letterSpacing: "0.5px" }}>
-                {language === "en" ? "BLACK LADY MOUNTAIN" : "NÚI BÀ ĐEN"}
+                {language === "km" ? "ភ្នំបាដេន" : language === "en" ? "BLACK LADY MOUNTAIN" : "NÚI BÀ ĐEN"}
               </h1>
               <span style={{ fontSize: "10px", color: "var(--cream-white)", opacity: 0.85, fontWeight: 600 }}>
-                {language === "vi" ? "Trợ Lý Du Lịch Số Quốc Gia" : "National Digital Tourism Assistant"}
+                {language === "km" 
+                  ? "ជំនួយការទេសចរណ៍ឌីជីថលជាតិ" 
+                  : language === "en" 
+                    ? "National Digital Tourism Assistant" 
+                    : "Trợ Lý Du Lịch Số Quốc Gia"}
               </span>
             </div>
           </div> as any
@@ -49,7 +90,7 @@ export const HomePage: React.FC = () => {
         borderBottom: "1px solid rgba(212, 175, 55, 0.2)",
       }}>
         <div style={{ fontSize: "12px", color: "var(--cream-white)", opacity: 0.8 }}>
-          {language === "vi" ? "Chọn ngôn ngữ & thông báo:" : "Select language & notifications:"}
+          {language === "km" ? "ជ្រើសរើសភាសា & ព្រឹត្តិការណ៍៖" : language === "en" ? "Select language & notifications:" : "Chọn ngôn ngữ & thông báo:"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {/* Bell Icon */}
@@ -96,17 +137,17 @@ export const HomePage: React.FC = () => {
             <button
               onClick={() => setLanguage("vi")}
               style={{
-                padding: "6px 12px",
+                padding: "4px 8px",
                 borderRadius: "18px",
                 border: "none",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: 700,
                 backgroundColor: language === "vi" ? "var(--accent-gold)" : "transparent",
                 color: language === "vi" ? "var(--primary-navy)" : "var(--cream-white)",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                minHeight: "36px",
-                minWidth: "44px",
+                minHeight: "28px",
+                minWidth: "36px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center"
@@ -117,23 +158,44 @@ export const HomePage: React.FC = () => {
             <button
               onClick={() => setLanguage("en")}
               style={{
-                padding: "6px 12px",
+                padding: "4px 8px",
                 borderRadius: "18px",
                 border: "none",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: 700,
                 backgroundColor: language === "en" ? "var(--accent-gold)" : "transparent",
                 color: language === "en" ? "var(--primary-navy)" : "var(--cream-white)",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                minHeight: "36px",
-                minWidth: "44px",
+                minHeight: "28px",
+                minWidth: "36px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center"
               }}
             >
               EN
+            </button>
+            <button
+              onClick={() => setLanguage("km")}
+              style={{
+                padding: "4px 8px",
+                borderRadius: "18px",
+                border: "none",
+                fontSize: "11px",
+                fontWeight: 700,
+                backgroundColor: language === "km" ? "var(--accent-gold)" : "transparent",
+                color: language === "km" ? "var(--primary-navy)" : "var(--cream-white)",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                minHeight: "28px",
+                minWidth: "36px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              KM
             </button>
           </div>
         </div>
@@ -142,8 +204,12 @@ export const HomePage: React.FC = () => {
       {/* Hero Scenic Banner */}
       <div className="home-banner" style={{ backgroundImage: `url("${heroImageUrl}")` }}>
         <div className="banner-content">
-          <div className="banner-title">{language === "vi" ? "KHU DU LỊCH QUỐC GIA NÚI BÀ ĐEN" : "BLACK LADY MOUNTAIN NATIONAL TOURIST AREA"}</div>
-          <div className="banner-sub">{language === "vi" ? "Huyền thoại linh thiêng - Nóc nhà Nam Bộ 986m" : "Sacred Legend - The Roof of Southern Vietnam 986m"}</div>
+          <div className="banner-title">
+            {language === "km" ? "តំបន់ទេសចរណ៍ជាតិភ្នំបាដេន" : language === "en" ? "BLACK LADY MOUNTAIN NATIONAL TOURIST AREA" : "KHU DU LỊCH QUỐC GIA NÚI BÀ ĐEN"}
+          </div>
+          <div className="banner-sub">
+            {language === "km" ? "រឿងព្រេងស័ក្តិសិទ្ធិ - ដំបូលនៃភាគខាងត្បូងវៀតណាម ៩៨៦ម" : language === "en" ? "Sacred Legend - The Roof of Southern Vietnam 986m" : "Huyền thoại linh thiêng - Nóc nhà Nam Bộ 986m"}
+          </div>
         </div>
       </div>
 
@@ -160,7 +226,7 @@ export const HomePage: React.FC = () => {
             {tickerAnns.map((ann, idx) => (
               <span key={ann.id ?? idx}>
                 <span style={{ fontWeight: 700, color: "var(--alert-red)" }}>[HOT]</span>{" "}
-                {language === "en" && ann.title_en ? ann.title_en : ann.title}
+                {language === "km" && ann.title_km ? ann.title_km : language === "en" && ann.title_en ? ann.title_en : ann.title}
                 {idx < tickerAnns.length - 1 && (
                   <span style={{ margin: "0 16px", opacity: 0.4 }}>·</span>
                 )}
@@ -170,11 +236,92 @@ export const HomePage: React.FC = () => {
         </Link>
       )}
 
+      {/* Real-time Field Widget (WOW Premium UI!) */}
+      {realtime && (
+        <div style={{ padding: "12px 16px 4px 16px" }}>
+          <div className="glass-card fade-in-up stagger-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", border: "1px solid rgba(212,175,55,0.25)" }}>
+            
+            {/* Weather widget */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderRight: "1px solid rgba(11,37,69,0.1)", paddingRight: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--primary-navy)", fontWeight: 750, fontSize: "12px" }}>
+                <Thermometer size={14} style={{ color: "var(--accent-gold)" }} />
+                <span>{t("realtime.weather")}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+                {getWeatherIcon(realtime.weather_status)}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--primary-navy)" }}>{realtime.weather_temp}°C</span>
+                  <span style={{ fontSize: "11px", color: "var(--light-text)", textTransform: "capitalize" }}>
+                    {realtime.weather_status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cable Car Queues widget */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--primary-navy)", fontWeight: 750, fontSize: "12px" }}>
+                <Activity size={14} style={{ color: "var(--accent-gold)" }} />
+                <span>{t("realtime.cable_status")}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", marginTop: "2px" }}>
+                
+                {/* Peak Line */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 600 }}>{language === "en" ? "Peak Route" : language === "km" ? "កំពូលភ្នំ" : "Tuyến Đỉnh"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span 
+                      style={{ 
+                        display: "inline-block", 
+                        width: "6px", 
+                        height: "6px", 
+                        borderRadius: "50%", 
+                        backgroundColor: getQueueBadgeColor(realtime.cable_peak_queue) 
+                      }} 
+                    />
+                    <span style={{ fontWeight: 700, color: getQueueBadgeColor(realtime.cable_peak_queue) }}>
+                      {getQueueLabel(realtime.cable_peak_queue)}
+                    </span>
+                    <span style={{ color: "var(--light-text)", fontSize: "10px" }}>
+                      ({t("realtime.wait_time").replace("{time}", realtime.cable_peak_wait_time.toString())})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Temple Line */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 600 }}>{language === "en" ? "Temple Route" : language === "km" ? "វត្តទួល" : "Tuyến Chùa"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span 
+                      style={{ 
+                        display: "inline-block", 
+                        width: "6px", 
+                        height: "6px", 
+                        borderRadius: "50%", 
+                        backgroundColor: getQueueBadgeColor(realtime.cable_temple_queue) 
+                      }} 
+                    />
+                    <span style={{ fontWeight: 700, color: getQueueBadgeColor(realtime.cable_temple_queue) }}>
+                      {getQueueLabel(realtime.cable_temple_queue)}
+                    </span>
+                    <span style={{ color: "var(--light-text)", fontSize: "10px" }}>
+                      ({t("realtime.wait_time").replace("{time}", realtime.cable_temple_wait_time.toString())})
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Interactive AI Chat Call-to-Action Card (WOW Factor!) */}
-      <div style={{ padding: "16px 16px 8px 16px" }}>
+      <div style={{ padding: "12px 16px 8px 16px" }}>
         <Link
           to="/chat"
-          className="glass-card fade-in-up"
+          className="glass-card fade-in-up stagger-2"
           style={{
             background: "linear-gradient(135deg, rgba(11, 37, 69, 0.95), rgba(19, 64, 116, 0.95))",
             color: "var(--cream-white)",
@@ -201,8 +348,16 @@ export const HomePage: React.FC = () => {
                 <Bot size={20} aria-hidden="true" />
               </div>
               <div>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--accent-gold)" }}>{language === "vi" ? "Hỏi Trợ lý Du lịch AI" : "Ask AI Tour Guide"}</h3>
-                <p style={{ fontSize: "12px", opacity: 0.85, margin: 0 }}>{language === "vi" ? "Cung cấp thông tin hỗ trợ du khách.❤️" : "Provides visitor support information.❤️"}</p>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--accent-gold)" }}>
+                  {language === "km" ? "សួរនាំជំនួយការទេសចរណ៍ AI" : language === "en" ? "Ask AI Tour Guide" : "Hỏi Trợ lý Du lịch AI"}
+                </h3>
+                <p style={{ fontSize: "12px", opacity: 0.85, margin: 0 }}>
+                  {language === "km" 
+                    ? "ផ្តល់ព័ត៌មានគាំទ្រភ្ញៀវទេសចរ។" 
+                    : language === "en" 
+                      ? "Provides visitor support information." 
+                      : "Cung cấp thông tin hỗ trợ du khách."}
+                </p>
               </div>
             </div>
             <ChevronRight size={20} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
@@ -212,49 +367,69 @@ export const HomePage: React.FC = () => {
 
       {/* Grid Navigation Cards */}
       <div className="menu-grid">
-        <Link to="/info" className="menu-card">
+        <Link to="/info" className="menu-card fade-in-up stagger-3">
           <div className="menu-icon-container">
             <Info size={24} />
           </div>
           <span>{t("nav.info")}</span>
         </Link>
 
-        <Link to="/places" className="menu-card">
+        <Link to="/places" className="menu-card fade-in-up stagger-4">
           <div className="menu-icon-container">
             <Compass size={24} />
           </div>
           <span>{t("nav.places")}</span>
         </Link>
 
-        <Link to="/digital-guide" className="menu-card">
+        <Link to="/digital-guide" className="menu-card fade-in-up stagger-4">
           <div className="menu-icon-container">
             <FileText size={24} />
           </div>
-          <span>{language === "vi" ? "Thuyết minh số" : "Digital Guide"}</span>
+          <span>{language === "km" ? "មគ្គុទ្ទេសក៍ឌីជីថល" : language === "en" ? "Digital Guide" : "Thuyết minh số"}</span>
         </Link>
 
-        <Link to="/map" className="menu-card">
+        <Link to="/map" className="menu-card fade-in-up stagger-5">
           <div className="menu-icon-container">
             <Map size={24} />
           </div>
-          <span>{language === "vi" ? "Bản đồ số" : "Digital Map"}</span>
+          <span>{language === "km" ? "ផែនទីឌីជីថល" : language === "en" ? "Digital Map" : "Bản đồ số"}</span>
         </Link>
       </div>
 
       {/* Hotline Call Buttons */}
       <div style={{ padding: "0 16px 16px 16px" }}>
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div className="glass-card fade-in-up stagger-5" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <div>
-            <h4 style={{ fontSize: "14px", fontWeight: 700, margin: "0 0 4px 0" }}>{language === "vi" ? "Đường dây nóng hỗ trợ du khách" : "Tourist Support Hotlines"}</h4>
-            <p style={{ fontSize: "12px", color: "var(--light-text)", margin: 0 }}>{language === "vi" ? "Chạm để gọi nhanh đúng bộ phận hỗ trợ" : "Tap to call the right support team"}</p>
+            <h4 style={{ fontSize: "14px", fontWeight: 700, margin: "0 0 4px 0" }}>
+              {language === "km" ? "ខ្សែទូរស័ព្ទទាន់ហេតុការណ៍គាំទ្រ" : language === "en" ? "Tourist Support Hotlines" : "Đường dây nóng hỗ trợ du khách"}
+            </h4>
+            <p style={{ fontSize: "12px", color: "var(--light-text)", margin: 0 }}>
+              {language === "km" ? "ប៉ះដើម្បីទូរស័ព្ទទៅផ្នែកគាំទ្រដែលត្រឹមត្រូវ" : language === "en" ? "Tap to call the right support team" : "Chạm để gọi nhanh đúng bộ phận hỗ trợ"}
+            </p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             {[
-              { label: language === "vi" ? "An ninh, trật tự" : "Security", phone: "02763823378", display: "0276.3823.378" },
-              { label: language === "vi" ? "Dịch vụ du lịch" : "Tourism service", phone: "02763823757", display: "0276.3823.757" },
-              { label: language === "vi" ? "Cứu nạn, cứu hộ" : "Rescue", phone: "02763875678", display: "0276.387.5678" },
-              { label: language === "vi" ? "PCCC" : "Fire safety", phone: "02763822015", display: "0276.3822.015" }
+              { 
+                label: language === "vi" ? "An ninh, trật tự" : language === "km" ? "សន្តិសុខ សណ្តាប់ធ្នាប់" : "Security", 
+                phone: "02763823378", 
+                display: "0276.3823.378" 
+              },
+              { 
+                label: language === "vi" ? "Dịch vụ du lịch" : language === "km" ? "សេវាកម្មទេសចរណ៍" : "Tourism service", 
+                phone: "02763823757", 
+                display: "0276.3823.757" 
+              },
+              { 
+                label: language === "vi" ? "Cứu nạn, cứu hộ" : language === "km" ? "សង្គ្រោះបន្ទាន់" : "Rescue", 
+                phone: "02763875678", 
+                display: "0276.387.5678" 
+              },
+              { 
+                label: language === "vi" ? "PCCC" : language === "km" ? "ពន្លត់អគ្គីភ័យ" : "Fire safety", 
+                phone: "02763822015", 
+                display: "0276.3822.015" 
+              }
             ].map((hotline) => (
               <a
                 key={hotline.phone}

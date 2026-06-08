@@ -195,12 +195,15 @@ def _usage_number(log: dict, key: str) -> float:
         return 0.0
 
 
-def _format_chat_log(log: dict) -> dict:
+def _format_chat_log(log: dict, user_map: dict = None) -> dict:
     source_ids = log.get("source_article_ids") or []
     if isinstance(source_ids, list) and source_ids:
         matched_chunks = ", ".join(str(item) for item in source_ids)
     else:
         matched_chunks = log.get("matched_chunks") or "No matched source"
+
+    u_id = log.get("user_id")
+    u_name = user_map.get(str(u_id)) if (user_map and u_id) else None
 
     return {
         "id": str(log.get("id")),
@@ -215,20 +218,33 @@ def _format_chat_log(log: dict) -> dict:
         "total_tokens": int(_usage_number(log, "total_tokens")),
         "estimated_cost_usd": float(_usage_number(log, "estimated_cost_usd")),
         "created_at": log.get("created_at"),
+        "user_id": str(u_id) if u_id else None,
+        "user_name": u_name
     }
 
 
 @router.get("/chat-logs")
-def get_chat_logs(db: Client = Depends(get_db)):
+def get_chat_logs(user_id: Optional[str] = None, db: Client = Depends(get_db)):
     """Return recent chatbot conversations for the Admin audit table."""
     try:
-        response = db.table("chat_logs") \
-            .select("*") \
-            .order("created_at", desc=True) \
-            .limit(100) \
-            .execute()
+        query = db.table("chat_logs").select("*")
+        if user_id:
+            query = query.eq("user_id", user_id)
+        response = query.order("created_at", desc=True).limit(100).execute()
         logs = response.data or []
-        return [_format_chat_log(log) for log in logs]
+
+        # Map user_id to user_name
+        user_ids = list(set(log.get("user_id") for log in logs if log.get("user_id")))
+        user_map = {}
+        if user_ids:
+            try:
+                u_res = db.table("app_users").select("id, name").in_("id", user_ids).execute()
+                for u in u_res.data or []:
+                    user_map[str(u["id"])] = u.get("name")
+            except Exception as user_err:
+                print(f"[ChatLogs] Failed to fetch users for log mapping: {user_err}")
+
+        return [_format_chat_log(log, user_map) for log in logs]
     except Exception as e:
         print(f"Chat logs query error: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi truy vấn nhật ký hội thoại: {str(e)}")

@@ -34,7 +34,7 @@ export const AnnouncementsPanel: React.FC<AnnouncementsPanelProps> = ({
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <input
             type="text"
-            placeholder="Tìm bản tin..."
+            placeholder="Tìm bản tin…"
             className="form-input"
             style={{ width: "240px", padding: "6px 12px" }}
             value={searchQuery}

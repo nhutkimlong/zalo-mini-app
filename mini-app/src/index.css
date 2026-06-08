@@ -84,6 +84,7 @@ body {
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:active {
@@ -208,7 +209,14 @@ body {
   box-shadow: var(--shadow-sm);
   color: var(--primary-navy);
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.menu-card:hover {
+  border-color: var(--accent-gold-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .menu-card:active {
@@ -721,6 +729,7 @@ body {
 }
 
 .pulse-gold-border {
+  animation: pulse-gold 2s infinite;
 }
 
 @keyframes pulse-gold {
@@ -733,6 +742,7 @@ body {
 
 /* GPU Accelerated Micro Entrance Animations */
 .fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeInUp {
@@ -798,3 +808,13 @@ a:active,
     transition: none !important;
   }
 }
+
+@keyframes fadeInToken {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+

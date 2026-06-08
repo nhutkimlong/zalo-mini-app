@@ -12,6 +12,7 @@ import DigitalGuidePage from "./pages/DigitalGuidePage";
 import FeedbackPage from "./pages/FeedbackPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import MapPage from "./pages/MapPage";
+import ProfilePage from "./pages/ProfilePage";
 
 export const MyApp: React.FC = () => {
   return (
@@ -29,6 +30,7 @@ export const MyApp: React.FC = () => {
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/announcements" element={<AnnouncementsPage />} />
               <Route path="/map" element={<MapPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Routes>
           </Layout>
         </BrowserRouter>

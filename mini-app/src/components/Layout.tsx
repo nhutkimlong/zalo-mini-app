@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Bot, Compass, AlertTriangle } from "lucide-react";
+import { Home, Bot, Compass, AlertTriangle, User } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 
 interface LayoutProps {
@@ -48,6 +48,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Link to="/feedback" className={`nav-item ${isLinkActive("/feedback") ? "nav-item-active" : ""}`} aria-label={t("nav.feedback")}>
             <AlertTriangle size={22} aria-hidden="true" />
             <span>{t("nav.feedback")}</span>
+          </Link>
+
+          <Link to="/profile" className={`nav-item ${isLinkActive("/profile") ? "nav-item-active" : ""}`} aria-label={t("nav.profile")}>
+            <User size={22} aria-hidden="true" />
+            <span>{t("nav.profile")}</span>
           </Link>
         </nav>
       )}

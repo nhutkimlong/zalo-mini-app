@@ -37,6 +37,8 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str] = None
     role: str
     created_at: datetime
+    favorites_count: Optional[int] = 0
+    link_type: Optional[str] = "Zalo Mini App"
 
     class Config:
         from_attributes = True
@@ -45,7 +47,26 @@ class UserResponse(BaseModel):
 def get_users(db: Client = Depends(get_db)):
     try:
         res = db.table("app_users").select("*").order("created_at", desc=True).execute()
-        return res.data or []
+        users = res.data or []
+        
+        # Query user_favorites to count saved places per user
+        fav_counts = {}
+        try:
+            fav_res = db.table("user_favorites").select("user_id").execute()
+            fav_data = fav_res.data or []
+            for fav in fav_data:
+                u_id = fav.get("user_id")
+                if u_id:
+                    fav_counts[str(u_id)] = fav_counts.get(str(u_id), 0) + 1
+        except Exception as fav_err:
+            print(f"[Users] Failed to fetch favorites count: {fav_err}")
+            
+        for u in users:
+            uid_str = str(u["id"])
+            u["favorites_count"] = fav_counts.get(uid_str, 0)
+            u["link_type"] = "Zalo Mini App" if u.get("zalo_user_id") else "Email / Supabase"
+            
+        return users
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi tải danh sách người dùng: {str(e)}")
 

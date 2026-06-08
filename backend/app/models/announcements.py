@@ -6,16 +6,20 @@ from datetime import datetime
 class AnnouncementCreate(BaseModel):
     title: str = Field(..., description="Tiêu đề thông báo")
     title_en: Optional[str] = Field(None, description="English title")
+    title_km: Optional[str] = Field(None, description="Khmer title")
     content: str = Field(..., description="Nội dung chi tiết thông báo")
     content_en: Optional[str] = Field(None, description="English content")
+    content_km: Optional[str] = Field(None, description="Khmer content")
     type: str = Field("general", description="Loại thông báo ('general', 'emergency', 'weather', 'festival')")
     status: str = Field("published", description="Trạng thái ('draft', 'published', 'archived')")
 
 class AnnouncementUpdate(BaseModel):
     title: Optional[str] = None
     title_en: Optional[str] = None
+    title_km: Optional[str] = None
     content: Optional[str] = None
     content_en: Optional[str] = None
+    content_km: Optional[str] = None
     type: Optional[str] = None
     status: Optional[str] = None
 
@@ -23,8 +27,10 @@ class AnnouncementResponse(BaseModel):
     id: UUID
     title: str
     title_en: Optional[str] = None
+    title_km: Optional[str] = None
     content: str
     content_en: Optional[str] = None
+    content_km: Optional[str] = None
     type: str
     status: str
     published_at: datetime

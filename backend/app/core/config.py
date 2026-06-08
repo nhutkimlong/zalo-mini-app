@@ -5,7 +5,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 ENV_FILE = BACKEND_DIR / ".env"
 
 class Settings(BaseSettings):
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
 

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { Bot, Send, AlertCircle, UserCircle, Trash2 } from "lucide-react";
-import api, { ChatResponse } from "../services/api";
+import api, { ChatResponse, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import logoImageUrl from "../assets/logo.png";
 
@@ -64,21 +64,17 @@ const TypewriterText: React.FC<{ text: string; onType?: () => void; onComplete: 
 
   return (
     <span style={{ whiteSpace: "pre-wrap" }}>
-      {tokens.map((token, index) => {
-        const isVisible = index < visibleCount;
-        return (
-          <span
-            key={index}
-            style={{
-              opacity: isVisible ? 1 : 0,
-              transition: isVisible ? "opacity 0.15s ease-out" : "none",
-              display: token.match(/^\s+$/) ? "inline" : "inline-block",
-            }}
-          >
-            {token}
-          </span>
-        );
-      })}
+      {tokens.slice(0, visibleCount).map((token, index) => (
+        <span
+          key={index}
+          style={{
+            display: token.match(/^\s+$/) ? "inline" : "inline-block",
+            animation: "fadeInToken 0.08s ease-out forwards",
+          }}
+        >
+          {token}
+        </span>
+      ))}
     </span>
   );
 };
@@ -86,10 +82,14 @@ const TypewriterText: React.FC<{ text: string; onType?: () => void; onComplete: 
 const CHAT_HISTORY_STORAGE_KEY = "nui_ba_den_chat_history";
 
 export const ChatPage: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
+  const [profile, setProfile] = useState<any>(null);
   
   const getWelcomeText = (name?: string) => {
-    if (language === "en") {
+    if (language === "km") {
+      const greeting = name ? `សួស្តីបង ${name}!` : "សួស្តីបង!";
+      return `${greeting} ខ្ញុំជាជំនួយការទេសចរណ៍ AI របស់ភ្នំបាដេន។ តើខ្ញុំអាចជួយអ្វីដល់បងនៅថ្ងៃនេះបានទេ?`;
+    } else if (language === "en") {
       const greeting = name ? `Hello ${name}!` : "Hello!";
       return `${greeting} I am your AI Travel Assistant. How can I help you today?`;
     } else {
@@ -98,10 +98,10 @@ export const ChatPage: React.FC = () => {
     }
   };
 
-  const createWelcomeMessage = (): Message => ({
+  const createWelcomeMessage = (userName?: string): Message => ({
     id: "welcome",
     sender: "assistant",
-    text: getWelcomeText()
+    text: getWelcomeText(userName)
   });
 
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -125,6 +125,7 @@ export const ChatPage: React.FC = () => {
       return [createWelcomeMessage()];
     }
   });
+  
   const [inputValue, setInputValue] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -145,25 +146,33 @@ export const ChatPage: React.FC = () => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
-    setMessages([createWelcomeMessage()]);
+    setMessages([createWelcomeMessage(profile?.name)]);
     setInputValue("");
   };
 
-  const SUGGESTED_QUESTIONS = language === "en" 
+  const SUGGESTED_QUESTIONS = language === "km"
     ? [
-        "How much are cable car tickets?",
-        "What are the operating hours?",
-        "What is the dress code for the temple?",
-        "How do I travel from Ho Chi Minh City?",
-        "What is the legend of Black Lady?"
+        "តើសំបុត្រឡានកាបមានតម្លៃប៉ុន្មាន?",
+        "តើម៉ោងបើកដំណើរការម៉ោងប៉ុន្មាន?",
+        "តើមានបទប្បញ្ញត្តិសម្លៀកបំពាក់ចូលវត្តយ៉ាងដូចម្តេច?",
+        "តើធ្វើដំណើរពីទីក្រុងហូជីមិញដោយរបៀបណា?",
+        "តើរឿងព្រេងរបស់លោកយាយ Bà Đen យ៉ាងដូចម្តេច?"
       ]
-    : [
-        "Giá vé cáp treo hiện nay thế nào?",
-        "Giờ hoạt động của khu du lịch?",
-        "Quy định trang phục vào chùa?",
-        "Di chuyển từ TP.HCM bằng cách nào?",
-        "Sự tích Bà Đen (Linh Sơn Thánh Mẫu)?"
-      ];
+    : language === "en" 
+      ? [
+          "How much are cable car tickets?",
+          "What are the operating hours?",
+          "What is the dress code for the temple?",
+          "How do I travel from Ho Chi Minh City?",
+          "What is the legend of Black Lady?"
+        ]
+      : [
+          "Giá vé cáp treo hiện nay thế nào?",
+          "Giờ hoạt động của khu du lịch?",
+          "Quy định trang phục vào chùa?",
+          "Di chuyển từ TP.HCM bằng cách nào?",
+          "Sự tích Bà Đen (Linh Sơn Thánh Mẫu)?"
+        ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
@@ -180,15 +189,34 @@ export const ChatPage: React.FC = () => {
     localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(stableMessages));
   }, [messages]);
 
+  // Fetch profile to personalize greetings
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        api.getMyProfile().then(prof => {
+          setProfile(prof);
+          // Update welcome message if no user message has been sent yet
+          setMessages(prev => {
+            const hasUserMsgs = prev.some(m => m.sender === "user");
+            if (!hasUserMsgs) {
+              return prev.map(m => m.id === "welcome" ? createWelcomeMessage(prof.name) : m);
+            }
+            return prev;
+          });
+        }).catch(err => console.warn("[ChatPage] Profile lookup failed:", err));
+      }
+    });
+  }, []);
+
   // Update welcome message if language changes
   useEffect(() => {
     setMessages(prev => prev.map(m => m.id === "welcome" ? {
       ...m,
-      text: getWelcomeText()
+      text: getWelcomeText(profile?.name)
     } : m));
-  }, [language]);
+  }, [language, profile]);
 
-  // Clean up on unmount
+  // Handle preloaded question on mount
   useEffect(() => {
     const preloaded = localStorage.getItem("preloaded_question");
     const preloadedLanguage = localStorage.getItem("preloaded_question_language");
@@ -196,14 +224,14 @@ export const ChatPage: React.FC = () => {
       localStorage.removeItem("preloaded_question");
       localStorage.removeItem("preloaded_question_language");
       setTimeout(() => {
-        handleSendMessage(preloaded, preloadedLanguage === "en" || preloadedLanguage === "vi" ? preloadedLanguage : language);
+        handleSendMessage(preloaded, preloadedLanguage === "en" || preloadedLanguage === "vi" || preloadedLanguage === "km" ? preloadedLanguage as any : language);
       }, 400);
     }
 
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, []);
+  }, [profile]); // Triggers when profile is loaded to ensure personalization is active
 
   const handleSendMessage = async (text: string, messageLanguage = language) => {
     if (!text.trim()) return;
@@ -225,12 +253,13 @@ export const ChatPage: React.FC = () => {
     setMessages(prev => [...prev, { id: assistantMessageId, sender: "assistant", text: "", isLoading: true }]);
 
     try {
-      // 3. Make RAG search with the message language
+      // 3. Make RAG search with message language and personalization
       const response = await api.askAssistant(
         text, 
         messageLanguage, 
         abortControllerRef.current.signal, 
-        buildConversationHistory()
+        buildConversationHistory(),
+        profile ? { name: profile.name, avatar_url: profile.avatar_url } : undefined
       );
 
       // 4. Update typing loader with official answer
@@ -249,9 +278,11 @@ export const ChatPage: React.FC = () => {
       setMessages(prev =>
         prev.map(m => m.id === assistantMessageId ? {
           ...m,
-          text: messageLanguage === "en"
-            ? "Hướng dẫn viên 4.0 is temporarily unavailable. Please try again later or contact the Management Board for support."
-            : "Hướng dẫn viên 4.0 tạm thời không khả dụng. Quý khách vui lòng thử lại sau hoặc liên hệ Ban Quản lý qua số điện thoại (0276) 3823.378 để được hỗ trợ.",
+          text: messageLanguage === "km"
+            ? "ជំនួយការទេសចរណ៍ AI បច្ចុប្បន្នមិនទាន់ដំណើរការ។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ ឬទាក់ទងគណៈគ្រប់គ្រងតាមរយៈលេខទូរស័ព្ទ (0276) 3823.378 សម្រាប់ជំនួយ។"
+            : messageLanguage === "en"
+              ? "AI Assistant is temporarily unavailable. Please try again later or contact the Management Board for support."
+              : "Trợ lý AI tạm thời không khả dụng. Quý khách vui lòng thử lại sau hoặc liên hệ Ban Quản lý qua số điện thoại (0276) 3823.378 để được hỗ trợ.",
           isLoading: false,
           animate: true
         } : m)
@@ -268,13 +299,13 @@ export const ChatPage: React.FC = () => {
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <Bot size={20} style={{ color: "var(--accent-gold)" }} />
             <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--cream-white)" }}>
-              {language === "vi" ? "Trợ lý AI" : "AI Assistant"}
+              {language === "vi" ? "Trợ lý AI" : language === "en" ? "AI Assistant" : "ជំនួយការ AI"}
             </span>
           </div> as any
         }
       />
         
-      {/* Control bar: Language Selector & Trash */}
+      {/* Control bar: Clear History */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -284,7 +315,7 @@ export const ChatPage: React.FC = () => {
         borderBottom: "1px solid rgba(212, 175, 55, 0.2)",
       }}>
         <div style={{ fontSize: "12px", color: "var(--cream-white)", opacity: 0.8 }}>
-          {language === "vi" ? "Công cụ hỗ trợ:" : "Assistant tools:"}
+          {language === "km" ? "ឧបករណ៍ជំនួយ៖" : language === "en" ? "Assistant tools:" : "Công cụ hỗ trợ:"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button
@@ -302,27 +333,12 @@ export const ChatPage: React.FC = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: 0
+              padding: 0,
+              cursor: "pointer"
             }}
           >
             <Trash2 size={15} />
           </button>
-
-          {/* Bilingual Selector Pill (Zero-Emoji Mandate!) */}
-          <div className="lang-toggle-pill">
-            <button 
-              onClick={() => setLanguage("vi")}
-              className={`lang-toggle-btn ${language === "vi" ? "active" : ""}`}
-            >
-              VI
-            </button>
-            <button 
-              onClick={() => setLanguage("en")}
-              className={`lang-toggle-btn ${language === "en" ? "active" : ""}`}
-            >
-              EN
-            </button>
-          </div>
         </div>
       </div>
 
@@ -355,7 +371,7 @@ export const ChatPage: React.FC = () => {
                     />
                   </div>
                   <h2 style={{ fontSize: "16px", color: "var(--accent-gold)", fontWeight: 800, margin: "0 0 8px 0", letterSpacing: "0.5px" }}>
-                    {language === "vi" ? "TRỢ LÝ DU LỊCH AI" : "AI TRAVEL ASSISTANT"}
+                    {language === "vi" ? "TRỢ LÝ DU LỊCH AI" : language === "en" ? "AI TRAVEL ASSISTANT" : "ជំនួយការទេសចរណ៍ AI"}
                   </h2>
                   <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.85)", lineHeight: 1.6, whiteSpace: "pre-line", textAlign: "left", padding: "0 4px" }}>
                     {msg.text}
@@ -450,7 +466,7 @@ export const ChatPage: React.FC = () => {
                         }}
                       >
                         <AlertCircle size={12} style={{ strokeWidth: 2.5 }} />
-                        <span>{language === "en" ? "Report" : "Phản ánh"}</span>
+                        <span>{language === "en" ? "Report" : language === "km" ? "រាយការណ៍" : "Phản ánh"}</span>
                       </Link>
                     </div>
                   )}
@@ -481,7 +497,7 @@ export const ChatPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Suggested Quick Prompt Chips slider - Kinetic slider sticky above bottom bar */}
+      {/* Suggested Quick Prompt Chips slider */}
       <div style={{ zIndex: 98, backgroundColor: "rgba(6, 21, 42, 0.65)" }}>
         {!hasUserMessage && (
           <div className="chips-slider-container">

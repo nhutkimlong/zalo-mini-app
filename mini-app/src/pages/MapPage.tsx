@@ -93,6 +93,7 @@ export const MapPage: React.FC = () => {
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [userStamps, setUserStamps] = useState<string[]>([]);
 
   // GPS Location state variables
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -139,7 +140,7 @@ export const MapPage: React.FC = () => {
     };
   }, []);
 
-  // 2. Fetch Places and Itineraries from Supabase
+  // 2. Fetch Places, Itineraries, and Stamps
   useEffect(() => {
     let mounted = true;
 
@@ -153,6 +154,14 @@ export const MapPage: React.FC = () => {
       if (mounted) setItineraries(data);
     }).catch((err) => {
       console.error("Load map itineraries failed", err);
+    });
+
+    void api.getMyStamps().then((data) => {
+      if (mounted && data) {
+        setUserStamps(data.map((item) => item.place_slug));
+      }
+    }).catch((err) => {
+      console.warn("Load user stamps for map failed", err);
     });
 
     return () => {
@@ -506,8 +515,12 @@ export const MapPage: React.FC = () => {
         dot.style.removeProperty("--route-color");
         dot.innerHTML = "";
       }
+
+      // 3. Toggle Stamp Rally checked-in status
+      const isStamped = userStamps.includes(place.slug);
+      dot.classList.toggle("is-stamped", isStamped);
     });
-  }, [activeRoute, selectedPlace?.slug, places, leafletLoaded]);
+  }, [activeRoute, selectedPlace?.slug, places, leafletLoaded, userStamps]);
 
   // 6. Language support tooltip updates
   useEffect(() => {
@@ -515,7 +528,11 @@ export const MapPage: React.FC = () => {
     places.forEach((place) => {
       const marker = markersRef.current[place.slug];
       if (!marker) return;
-      const label = language === "en" ? (place.name_en || place.name) : place.name;
+      const label = language === "km" && place.name_km 
+        ? place.name_km 
+        : language === "en" && place.name_en 
+          ? place.name_en 
+          : place.name;
       marker.setTooltipContent(label);
     });
   }, [language, places, leafletLoaded]);
@@ -851,6 +868,12 @@ export const MapPage: React.FC = () => {
           transform: scale(1.1);
         }
 
+        .marker-inner-dot.is-stamped {
+          background-color: var(--accent-gold) !important;
+          border: 2px solid #22c55e !important;
+          box-shadow: 0 0 14px var(--accent-gold), 0 0 4px #22c55e !important;
+        }
+
         .marker-inner-dot.is-in-route span {
           color: var(--primary-navy);
           font-size: 10px;
@@ -864,7 +887,7 @@ export const MapPage: React.FC = () => {
       <Header
         title={
           <span style={{ color: "var(--accent-gold)", fontWeight: 800 }}>
-            {language === "en" ? "Real Geolocation Map" : "Bản Đồ Số Thực Địa"}
+            {language === "km" ? "ផែនទីឌីជីថលពិតប្រាកដ" : language === "en" ? "Real Geolocation Map" : "Bản Đồ Số Thực Địa"}
           </span> as any
         }
         showBackIcon={true}
@@ -884,10 +907,10 @@ export const MapPage: React.FC = () => {
           <div style={{ fontSize: "10.5px", color: "#f4f7f6", opacity: 0.85 }}>
             {gpsLocation ? (
               <span style={{ color: "#22c55e", fontWeight: 700 }}>
-                {language === "en" ? "GPS Live Active" : "GPS Thực Địa Đang Bật"}
+                {language === "km" ? "ប្រព័ន្ធ GPS កំពុងដំណើរការ" : language === "en" ? "GPS Live Active" : "GPS Thực Địa Đang Bật"}
               </span>
             ) : (
-              language === "en" ? "GPS Target: Mount Ba Den" : "Tiêu điểm: Núi Bà Đen"
+              language === "km" ? "គោលដៅ: ភ្នំ Ba Den" : language === "en" ? "GPS Target: Mount Ba Den" : "Tiêu điểm: Núi Bà Đen"
             )}
           </div>
 
@@ -911,7 +934,9 @@ export const MapPage: React.FC = () => {
               }}
             >
               <Navigation size={11} style={{ transform: "rotate(45deg)", strokeWidth: 3 }} />
-              {gpsLoading ? (language === "en" ? "Locating..." : "Đang lấy...") : (language === "en" ? "Định Vị GPS" : "Định Vị GPS")}
+              {gpsLoading 
+                ? (language === "km" ? "កំពុងស្វែងរក..." : language === "en" ? "Locating..." : "Đang lấy...") 
+                : (language === "km" ? "កំណត់ទីតាំង GPS" : language === "en" ? "GPS Locate" : "Định Vị GPS")}
             </button>
           </div>
         </div>
@@ -946,7 +971,7 @@ export const MapPage: React.FC = () => {
               }}
             >
               <Compass size={12} style={{ marginRight: "4px", display: "inline-block", verticalAlign: "middle" }} />
-              {language === "en" ? (itinerary.name_en || itinerary.name) : itinerary.name} ({language === "en" ? (itinerary.duration_en || itinerary.duration) : itinerary.duration})
+              {language === "km" ? (itinerary.name_km || itinerary.name) : language === "en" ? (itinerary.name_en || itinerary.name) : itinerary.name} ({language === "km" ? (itinerary.duration_km || itinerary.duration) : language === "en" ? (itinerary.duration_en || itinerary.duration) : itinerary.duration})
             </button>
           ))}
         </div>
@@ -971,7 +996,7 @@ export const MapPage: React.FC = () => {
           }}>
             <Compass size={40} style={{ animation: "spin 2s linear infinite", marginBottom: "12px" }} />
             <p style={{ fontSize: "13px", fontWeight: 700 }}>
-              {language === "en" ? "Loading Leaflet Map Tiles..." : "Đang tải bản đồ số..."}
+              {language === "km" ? "កំពុងទាញយកផែនទីឌីជីថល..." : language === "en" ? "Loading Leaflet Map Tiles..." : "Đang tải bản đồ số..."}
             </p>
           </div>
         )}
@@ -1042,7 +1067,7 @@ export const MapPage: React.FC = () => {
               boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
             }}
           >
-            {language === "en" ? "Center" : "Thu Nhỏ"}
+            {language === "km" ? "ទម្រង់ដើម" : language === "en" ? "Center" : "Thu Nhỏ"}
           </button>
         </div>
       </div>
@@ -1088,7 +1113,7 @@ export const MapPage: React.FC = () => {
 
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent-gold)", margin: "0 0 2px 0" }}>
-                  {language === "en" && selectedPlace.name_en ? selectedPlace.name_en : selectedPlace.name}
+                  {language === "km" && selectedPlace.name_km ? selectedPlace.name_km : language === "en" && selectedPlace.name_en ? selectedPlace.name_en : selectedPlace.name}
                 </h3>
                 <p style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.7)", margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "4px" }}>
                   <MapPin size={10} style={{ stroke: "var(--accent-gold)" }} />
@@ -1106,7 +1131,7 @@ export const MapPage: React.FC = () => {
                   WebkitBoxOrient: "vertical",
                   lineHeight: "1.3"
                 }}>
-                  {language === "en" && selectedPlace.short_description_en ? selectedPlace.short_description_en : selectedPlace.short_description}
+                  {language === "km" && selectedPlace.short_description_km ? selectedPlace.short_description_km : language === "en" && selectedPlace.short_description_en ? selectedPlace.short_description_en : selectedPlace.short_description}
                 </p>
               </div>
             </div>
@@ -1132,7 +1157,7 @@ export const MapPage: React.FC = () => {
                 }}
               >
                 <Info size={14} />
-                <span>{language === "en" ? "View Details" : "Lịch Sử Di Tích"}</span>
+                <span>{language === "km" ? "មើលព័ត៌មានលម្អិត" : language === "en" ? "View Details" : "Lịch Sử Di Tích"}</span>
               </button>
 
               {hasAudioGuide(selectedPlace, language) && (
@@ -1156,7 +1181,7 @@ export const MapPage: React.FC = () => {
                   }}
                 >
                   <Volume2 size={14} />
-                  <span>{language === "en" ? "Audio Guide" : "Phát Thuyết Minh"}</span>
+                  <span>{language === "km" ? "ស្តាប់ការអធិប្បាយ" : language === "en" ? "Audio Guide" : "Phát Thuyết Minh"}</span>
                 </button>
               )}
             </div>
@@ -1165,10 +1190,10 @@ export const MapPage: React.FC = () => {
           <div>
             <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "4px", marginBottom: "6px" }}>
               <h3 style={{ fontSize: "13.5px", fontWeight: 700, color: activeRoute.color, margin: "0 0 2px 0" }}>
-                {language === "en" ? (activeRoute.name_en || activeRoute.name) : activeRoute.name}
+                {language === "km" ? (activeRoute.name_km || activeRoute.name) : language === "en" ? (activeRoute.name_en || activeRoute.name) : activeRoute.name}
               </h3>
               <p style={{ fontSize: "10.5px", color: "var(--cream-white)", opacity: 0.8, margin: 0 }}>
-                {language === "en" ? "AI recommended travel steps:" : "Lộ trình đề xuất di chuyển chi tiết:"}
+                {language === "km" ? "ជំហានធ្វើដំណើរដែលណែនាំដោយ AI:" : language === "en" ? "AI recommended travel steps:" : "Lộ trình đề xuất di chuyển chi tiết:"}
               </p>
             </div>
 
@@ -1192,7 +1217,7 @@ export const MapPage: React.FC = () => {
                     {idx + 1}
                   </span>
                   <p style={{ margin: 0, color: "var(--cream-white)", opacity: 0.9, lineHeight: "1.35" }}>
-                    {language === "en" ? step.en : step.vi}
+                    {language === "km" && step.km ? step.km : language === "en" ? step.en : step.vi}
                   </p>
                 </div>
               ))}
@@ -1212,9 +1237,11 @@ export const MapPage: React.FC = () => {
           }}>
             <Compass size={13} style={{ stroke: "var(--accent-gold)", animation: "spin 12s linear infinite" }} />
             <span>
-              {language === "en"
-                ? "Select a marker or an AI Itinerary to view route."
-                : "Chạm địa danh hoặc chọn Lộ trình AI để xem chi tiết."}
+              {language === "km"
+                ? "សូមប៉ះទីកន្លែង ឬជ្រើសរើសផ្លូវ AI ដើម្បីមើលព័ត៌មានលម្អិត។"
+                : language === "en"
+                  ? "Select a marker or an AI Itinerary to view route."
+                  : "Chạm địa danh hoặc chọn Lộ trình AI để xem chi tiết."}
             </span>
           </div>
         )}

@@ -14,14 +14,18 @@ export interface TouristPlace {
   id: string;
   name: string;
   name_en?: string;
+  name_km?: string;
   slug: string;
   short_description: string;
   short_description_en?: string;
+  short_description_km?: string;
   full_description: string;
   full_description_en?: string;
+  full_description_km?: string;
   image_url: string;
   audio_url?: string | null;
   audio_url_en?: string | null;
+  audio_url_km?: string | null;
   audio_enabled?: boolean;
   latitude: number;
   longitude: number;
@@ -29,27 +33,37 @@ export interface TouristPlace {
   display_order?: number;
 }
 
-export type MapPlace = Omit<TouristPlace, "full_description" | "full_description_en">;
+export type MapPlace = Omit<TouristPlace, "full_description" | "full_description_en" | "full_description_km">;
 
-type AudioGuidePlace = Pick<TouristPlace, "audio_url" | "audio_url_en" | "audio_enabled">;
+type AudioGuidePlace = Pick<TouristPlace, "audio_url" | "audio_url_en" | "audio_url_km" | "audio_enabled">;
 
 export const hasAudioGuide = (place: AudioGuidePlace, language: string) => {
-  const url = language === "en" && place.audio_url_en ? place.audio_url_en : place.audio_url;
+  const url = language === "km" && place.audio_url_km 
+    ? place.audio_url_km 
+    : language === "en" && place.audio_url_en 
+      ? place.audio_url_en 
+      : place.audio_url;
   const hasUrl = !!url && url.trim().toLowerCase() !== "none";
   return place.audio_enabled === true && hasUrl;
 };
 
 export const getAudioGuideUrl = (place: AudioGuidePlace, language: string) => {
   if (!hasAudioGuide(place, language)) return null;
-  return language === "en" && place.audio_url_en ? place.audio_url_en : place.audio_url ?? null;
+  return language === "km" && place.audio_url_km 
+    ? place.audio_url_km 
+    : language === "en" && place.audio_url_en 
+      ? place.audio_url_en 
+      : place.audio_url ?? null;
 };
 
 export interface Announcement {
   id: string;
   title: string;
   title_en?: string;
+  title_km?: string;
   content: string;
   content_en?: string;
+  content_km?: string;
   type: "general" | "emergency" | "weather" | "festival";
   published_at: string;
 }
@@ -68,14 +82,17 @@ export interface ChatResponse {
 export interface ItineraryStep {
   vi: string;
   en: string;
+  km?: string;
 }
 
 export interface Itinerary {
   id: string;
   name: string;
   name_en?: string;
+  name_km?: string;
   duration: string;
   duration_en?: string;
+  duration_km?: string;
   color: string;
   place_slugs: string[];
   steps: ItineraryStep[];
@@ -96,6 +113,8 @@ export interface KnowledgeArticle {
   updated_at: string;
   title_en?: string;
   content_en?: string;
+  title_km?: string;
+  content_km?: string;
 }
 
 // ─── API Client ───────────────────────────────────────────────────────────────
@@ -108,7 +127,25 @@ class ApiClient {
 
   private async backendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.backendUrl}${path}`;
-    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+    
+    // Inject Supabase Auth session JWT if available
+    let token: string | undefined;
+    try {
+      const sessionRes = await supabase.auth.getSession();
+      token = sessionRes.data.session?.access_token;
+    } catch (err) {
+      console.warn("[API] Failed to get session:", err);
+    }
+
+    const headers: Record<string, string> = { 
+      "Content-Type": "application/json", 
+      ...(options.headers as Record<string, string> || {}) 
+    };
+    
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(url, { ...options, headers });
     if (!response.ok) throw new Error(`Backend error: ${response.status}`);
     return response.json();
@@ -133,7 +170,7 @@ class ApiClient {
   async getMapPlaces(): Promise<MapPlace[]> {
     const { data, error } = await supabase
       .from("tourist_places")
-      .select("id,name,name_en,slug,short_description,short_description_en,image_url,audio_url,audio_url_en,audio_enabled,latitude,longitude,category,display_order")
+      .select("id,name,name_en,name_km,slug,short_description,short_description_en,short_description_km,image_url,audio_url,audio_url_en,audio_url_km,audio_enabled,latitude,longitude,category,display_order")
       .eq("status", "published")
       .order("display_order", { ascending: true, nullsFirst: false })
       .order("name", { ascending: true });
@@ -246,6 +283,76 @@ class ApiClient {
     return { id: inserted.id, status: inserted.status };
   }
 
+  // ─── Option B: Real-time Status ────────────────────────
+  async getRealtimeStatus(): Promise<{
+    weather_auto: boolean;
+    weather_status: string;
+    weather_temp: number;
+    cable_peak_queue: string;
+    cable_peak_wait_time: number;
+    cable_temple_queue: string;
+    cable_temple_wait_time: number;
+  }> {
+    return this.backendRequest<any>("/api/tourism/realtime");
+  }
+
+  // ─── User Profile ──────────────────────────────────────
+  async getMyProfile(): Promise<any> {
+    return this.backendRequest<any>("/api/users/me");
+  }
+
+  async updateMyProfile(profileData: { name?: string; phone?: string; avatar_url?: string }): Promise<any> {
+    return this.backendRequest<any>("/api/users/me", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  // ─── Favorites ─────────────────────────────────────────
+  async getMyFavorites(): Promise<TouristPlace[]> {
+    return this.backendRequest<TouristPlace[]>("/api/users/favorites");
+  }
+
+  async toggleFavorite(placeId: string): Promise<{ favorited: boolean; message: string }> {
+    return this.backendRequest<{ favorited: boolean; message: string }>("/api/users/favorites/toggle", {
+      method: "POST",
+      body: JSON.stringify({ place_id: placeId }),
+    });
+  }
+
+  // ─── Stamp Rally & Rewards ─────────────────────────────
+  async getMyStamps(): Promise<Array<{ place_slug: string; created_at: string; verified_via: string }>> {
+    return this.backendRequest<any[]>("/api/tourism/stamps");
+  }
+
+  async getAllStamps(): Promise<Array<{ place_slug: string; created_at: string }>> {
+    return this.backendRequest<any[]>("/api/tourism/stamps/all");
+  }
+
+  async checkinPlace(placeSlug: string, latitude: number, longitude: number): Promise<{
+    status: "success" | "too_far";
+    message: string;
+    distance_meters: number;
+    total_stamps: number;
+    reward_granted: boolean;
+  }> {
+    return this.backendRequest<any>("/api/tourism/checkin", {
+      method: "POST",
+      body: JSON.stringify({ place_slug: placeSlug, latitude, longitude, verified_via: "gps" }),
+    });
+  }
+
+  async getMyRewards(): Promise<Array<{
+    id: string;
+    reward_code: string;
+    title: string;
+    title_en?: string;
+    title_km?: string;
+    status: "unused" | "used";
+    created_at: string;
+  }>> {
+    return this.backendRequest<any[]>("/api/tourism/rewards");
+  }
 }
 
 export const api = new ApiClient();

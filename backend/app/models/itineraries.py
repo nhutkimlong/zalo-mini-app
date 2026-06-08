@@ -6,12 +6,15 @@ from datetime import datetime
 class ItineraryStep(BaseModel):
     vi: str
     en: str
+    km: Optional[str] = None
 
 class ItineraryBase(BaseModel):
     name: str
     name_en: Optional[str] = None
+    name_km: Optional[str] = None
     duration: str
     duration_en: Optional[str] = None
+    duration_km: Optional[str] = None
     color: str
     place_slugs: List[str] = []
     steps: List[ItineraryStep] = []
@@ -23,8 +26,10 @@ class ItineraryCreate(ItineraryBase):
 class ItineraryUpdate(BaseModel):
     name: Optional[str] = None
     name_en: Optional[str] = None
+    name_km: Optional[str] = None
     duration: Optional[str] = None
     duration_en: Optional[str] = None
+    duration_km: Optional[str] = None
     color: Optional[str] = None
     place_slugs: Optional[List[str]] = None
     steps: Optional[List[ItineraryStep]] = None

@@ -37,8 +37,8 @@ export const AnnouncementsPage: React.FC = () => {
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       result = result.filter((ann) => {
-        const title = (language === "en" && ann.title_en ? ann.title_en : ann.title).toLowerCase();
-        const content = (language === "en" && ann.content_en ? ann.content_en : ann.content).toLowerCase();
+        const title = (language === "km" && ann.title_km ? ann.title_km : language === "en" && ann.title_en ? ann.title_en : ann.title).toLowerCase();
+        const content = (language === "km" && ann.content_km ? ann.content_km : language === "en" && ann.content_en ? ann.content_en : ann.content).toLowerCase();
         return title.includes(query) || content.includes(query);
       });
     }
@@ -61,7 +61,7 @@ export const AnnouncementsPage: React.FC = () => {
           bg: "rgba(217, 83, 79, 0.1)",
           color: "var(--alert-red)",
           border: "1px solid rgba(217, 83, 79, 0.3)",
-          text: language === "en" ? "Emergency" : "Khẩn cấp",
+          text: language === "km" ? "អាសន្ន" : language === "en" ? "Emergency" : "Khẩn cấp",
           icon: <ShieldAlert size={14} className="ann-icon-red" />
         };
       case "weather":
@@ -69,7 +69,7 @@ export const AnnouncementsPage: React.FC = () => {
           bg: "rgba(240, 173, 78, 0.1)",
           color: "var(--alert-orange)",
           border: "1px solid rgba(240, 173, 78, 0.3)",
-          text: language === "en" ? "Weather" : "Thời tiết",
+          text: language === "km" ? "អាកាសធាតុ" : language === "en" ? "Weather" : "Thời tiết",
           icon: <CloudLightning size={14} className="ann-icon-orange" />
         };
       case "festival":
@@ -77,7 +77,7 @@ export const AnnouncementsPage: React.FC = () => {
           bg: "rgba(212, 175, 55, 0.1)",
           color: "var(--accent-gold-dark)",
           border: "1px solid rgba(212, 175, 55, 0.3)",
-          text: language === "en" ? "Festival" : "Lễ hội",
+          text: language === "km" ? "ពិធីបុណ្យ" : language === "en" ? "Festival" : "Lễ hội",
           icon: <Calendar size={14} className="ann-icon-gold" />
         };
       default:
@@ -85,7 +85,7 @@ export const AnnouncementsPage: React.FC = () => {
           bg: "rgba(19, 64, 116, 0.1)",
           color: "var(--secondary-blue)",
           border: "1px solid rgba(19, 64, 116, 0.2)",
-          text: language === "en" ? "Notice" : "Thông báo",
+          text: language === "km" ? "សេចក្តីជូនដំណឹង" : language === "en" ? "Notice" : "Thông báo",
           icon: <Info size={14} className="ann-icon-blue" />
         };
     }
@@ -94,7 +94,7 @@ export const AnnouncementsPage: React.FC = () => {
   const formatDate = (dateString: string) => {
     try {
       const d = new Date(dateString);
-      const atString = language === "en" ? "at" : "lúc";
+      const atString = language === "km" ? "នៅម៉ោង" : language === "en" ? "at" : "lúc";
       return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
         .toString()
         .padStart(2, "0")}/${d.getFullYear()} ${atString} ${d
@@ -131,12 +131,14 @@ export const AnnouncementsPage: React.FC = () => {
         }}
       >
         <h2 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px 0", color: "var(--accent-gold)" }}>
-          {language === "en" ? "Official Information Portal" : "Cổng thông tin chính thức"}
+          {language === "km" ? "ច្រកទ្វារព័ត៌មានផ្លូវការ" : language === "en" ? "Official Information Portal" : "Cổng thông tin chính thức"}
         </h2>
         <p style={{ fontSize: "12px", opacity: 0.9, margin: 0 }}>
-          {language === "en"
-            ? "Real-time updates on cable car maintenance schedules, cultural festivals, and weather safety from the Management Board."
-            : "Cập nhật nhanh nhất lịch trình bảo trì, lễ hội tâm linh và thông tin thời tiết an toàn từ Ban Quản lý Khu du lịch."}
+          {language === "km"
+            ? "ការធ្វើបច្ចុប្បន្នភាពតាមពេលវេលាជាក់ស្តែងអំពីកាលវិភាគថែទាំកាប៊ីនឡាន ពិធីបុណ្យវប្បធម៌ និងសុវត្ថិភាពអាកាសធាតុពីគណៈគ្រប់គ្រង។"
+            : language === "en"
+              ? "Real-time updates on cable car maintenance schedules, cultural festivals, and weather safety from the Management Board."
+              : "Cập nhật nhanh nhất lịch trình bảo trì, lễ hội tâm linh và thông tin thời tiết an toàn từ Ban Quản lý Khu du lịch."}
         </p>
       </div>
 
@@ -147,7 +149,7 @@ export const AnnouncementsPage: React.FC = () => {
           <input
             type="text"
             className="feedback-input"
-            placeholder={language === "en" ? "Search announcements..." : "Tìm kiếm thông báo..."}
+            placeholder={language === "km" ? "ស្វែងរកសេចក្តីជូនដំណឹង..." : language === "en" ? "Search announcements..." : "Tìm kiếm thông báo..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: "40px" }}
@@ -186,28 +188,28 @@ export const AnnouncementsPage: React.FC = () => {
             className={`tab-btn ${selectedType === "emergency" ? "tab-btn-active" : ""}`}
             style={{ minWidth: "90px", padding: "8px" }}
           >
-            {language === "en" ? "Emergency" : "Khẩn cấp"}
+            {language === "km" ? "អាសន្ន" : language === "en" ? "Emergency" : "Khẩn cấp"}
           </button>
           <button 
             onClick={() => setSelectedType("weather")}
             className={`tab-btn ${selectedType === "weather" ? "tab-btn-active" : ""}`}
             style={{ minWidth: "90px", padding: "8px" }}
           >
-            {language === "en" ? "Weather" : "Thời tiết"}
+            {language === "km" ? "អាកាសធាតុ" : language === "en" ? "Weather" : "Thời tiết"}
           </button>
           <button 
             onClick={() => setSelectedType("festival")}
             className={`tab-btn ${selectedType === "festival" ? "tab-btn-active" : ""}`}
             style={{ minWidth: "80px", padding: "8px" }}
           >
-            {language === "en" ? "Festival" : "Lễ hội"}
+            {language === "km" ? "ពិធីបុណ្យ" : language === "en" ? "Festival" : "Lễ hội"}
           </button>
           <button 
             onClick={() => setSelectedType("general")}
             className={`tab-btn ${selectedType === "general" ? "tab-btn-active" : ""}`}
             style={{ minWidth: "85px", padding: "8px" }}
           >
-            {language === "en" ? "Notice" : "Thông tin"}
+            {language === "km" ? "សេចក្តីជូនដំណឹង" : language === "en" ? "Notice" : "Thông tin"}
           </button>
         </div>
       </div>
@@ -230,15 +232,15 @@ export const AnnouncementsPage: React.FC = () => {
           >
             <Bell size={32} style={{ stroke: "rgba(11, 37, 69, 0.2)", marginBottom: "12px" }} />
             <p style={{ margin: 0, fontWeight: 600 }}>
-              {language === "en" ? "No matching announcements found" : "Không tìm thấy thông báo nào phù hợp"}
+              {language === "km" ? "រកមិនឃើញសេចក្តីជូនដំណឹងដែលត្រូវគ្នាទេ" : language === "en" ? "No matching announcements found" : "Không tìm thấy thông báo nào phù hợp"}
             </p>
           </div>
         ) : (
           filteredAnns.map((ann, index) => {
             const badge = getBadgeStyle(ann.type);
             const isExpanded = expandedId === ann.id;
-            const titleText = language === "en" && ann.title_en ? ann.title_en : ann.title;
-            const contentText = language === "en" && ann.content_en ? ann.content_en : ann.content;
+            const titleText = language === "km" && ann.title_km ? ann.title_km : language === "en" && ann.title_en ? ann.title_en : ann.title;
+            const contentText = language === "km" && ann.content_km ? ann.content_km : language === "en" && ann.content_en ? ann.content_en : ann.content;
 
             return (
               <div 

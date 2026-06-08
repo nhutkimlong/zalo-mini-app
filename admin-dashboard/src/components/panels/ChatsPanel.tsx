@@ -24,7 +24,9 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
     ? chats
     : chats.filter(c => 
         c.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        c.answer.toLowerCase().includes(searchQuery.toLowerCase())
+        c.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.user_name && c.user_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (c.user_id && c.user_id.toLowerCase().includes(searchQuery.toLowerCase()))
       );
 
   const displayed = filtered.slice(0, visibleCount);
@@ -35,7 +37,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <input
             type="text"
-            placeholder="Tìm hội thoại..."
+            placeholder="Tìm hội thoại…"
             className="form-input"
             style={{ width: "240px", padding: "6px 12px" }}
             value={searchQuery}
@@ -58,10 +60,11 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
       </div>
 
       <div className="admin-table-container">
-        <table className="admin-table" style={{ minWidth: "1400px" }}>
+        <table className="admin-table" style={{ minWidth: "1500px" }}>
           <thead>
             <tr>
               <th>Đường truyền</th>
+              <th>Du khách / Thành viên</th>
               <th>Câu hỏi của du khách</th>
               <th>Phản hồi của AI</th>
               <th>Độ tương đồng</th>
@@ -85,6 +88,20 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                       <span className="badge badge-info">Zalo Mini App</span>
                     ) : (
                       <span className="badge badge-success">Zalo OA Chatbot</span>
+                    )}
+                  </td>
+                  <td style={{ fontWeight: 600, color: "var(--cream-white)" }}>
+                    {c.user_name ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span>{c.user_name}</span>
+                        {c.user_id && (
+                          <span style={{ fontSize: "10px", opacity: 0.5, fontFamily: "monospace" }}>
+                            ID: {c.user_id.substring(0, 8)}…
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ color: "var(--text-light)", fontStyle: "italic" }}>Ẩn danh</span>
                     )}
                   </td>
                   <td style={{ fontWeight: 600 }}>{c.question}</td>

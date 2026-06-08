@@ -57,19 +57,17 @@ export interface OperatingScheduleSection {
 // 0. Parse Dynamic Tickets and Sections - NO HARDCODED DEFAULTS, data must come from DB
 
 const parseTickets = (articles: any[], lang: string): TicketSection[] => {
-
   // No fallback: return empty array if no articles loaded yet
-
   if (!articles || articles.length === 0) return [];
 
-
-
-  // 1. Prioritize article with "giá vé" / "ticket" / "price" in the title
+  // 1. Prioritize article with "giá vé" / "ticket" / "price" / "សំបុត្រ" in the title
   let priceArticle = articles.find(art => {
     const title = (art.title || "").toLowerCase();
+    const titleKm = (art.title_km || "").toLowerCase();
     return (
       title.includes("giá vé") || title.includes("gia ve") ||
-      title.includes("ticket") || title.includes("price")
+      title.includes("ticket") || title.includes("price") ||
+      titleKm.includes("សំបុត្រ") || titleKm.includes("តម្លៃ")
     );
   });
 
@@ -77,231 +75,145 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
   if (!priceArticle) {
     priceArticle = articles.find(art => {
       const content = (art.content || "").toLowerCase();
-      return content.includes("tuyến cáp") || content.includes("giá vé") || content.includes("gia ve");
+      const contentKm = (art.content_km || "").toLowerCase();
+      return content.includes("tuyến cáp") || content.includes("giá vé") || content.includes("gia ve") || contentKm.includes("កាប៊ីន") || contentKm.includes("សំបុត្រ");
     });
   }
 
+  if (!priceArticle) return [];
+  const content = (lang === "km" && priceArticle.content_km) 
+    ? priceArticle.content_km.trim() 
+    : (lang === "en" && priceArticle.content_en) 
+      ? priceArticle.content_en.trim() 
+      : priceArticle.content ? priceArticle.content.trim() : "";
 
-
-  if (!priceArticle || !priceArticle.content) return [];
-
-
-
-  const content = priceArticle.content.trim();
-
-
+  if (!content) return [];
 
   // Primary path: JSON format (set by Admin visual builder)
-
   if (content.startsWith("[") || content.startsWith("{")) {
-
     try {
-
       const parsed = JSON.parse(content);
-
       const ticketSections = Array.isArray(parsed) ? parsed : parsed.tickets;
 
       if (Array.isArray(ticketSections) && ticketSections.length > 0) {
-
         return ticketSections.map(section => ({
-
-          title: (lang === "en" && section.titleEn) ? section.titleEn : (section.title || ""),
-
+          title: (lang === "km" && section.titleKm) ? section.titleKm : (lang === "en" && section.titleEn) ? section.titleEn : (section.title || ""),
           items: (section.items || []).map((item: any) => ({
-
-            name: (lang === "en" && item.nameEn) ? item.nameEn : (item.name || ""),
-
+            name: (lang === "km" && item.nameKm) ? item.nameKm : (lang === "en" && item.nameEn) ? item.nameEn : (item.name || ""),
             price: (() => {
-
-              const p = (lang === "en" && item.priceEn) ? item.priceEn : (item.price || "");
-
+              const p = (lang === "km" && item.priceKm) ? item.priceKm : (lang === "en" && item.priceEn) ? item.priceEn : (item.price || "");
+              if (lang === "km" && p.toLowerCase().includes("miễn phí")) return "ឥតគិតថ្លៃ";
               if (lang === "en" && p.toLowerCase().includes("miễn phí")) return "Free";
-
               return p;
-
             })(),
-
-            priceOneway: (lang === "en" && item.priceOnewayEn)
-
-              ? item.priceOnewayEn
-
-              : (item.priceOneway || undefined)
-
+            priceOneway: (lang === "km" && item.priceOnewayKm)
+              ? item.priceOnewayKm
+              : (lang === "en" && item.priceOnewayEn)
+                ? item.priceOnewayEn
+                : (item.priceOneway || undefined)
           }))
-
         }));
-
       }
-
     } catch (e) {
-
       console.warn("[parseTickets] JSON parse failed, trying plain-text fallback", e);
-
     }
-
   }
 
-
-
   // Fallback path: plain-text parsing (legacy format)
-
   const lines = content.split("\n");
-
   const sections: TicketSection[] = [];
-
   let currentSection: TicketSection | null = null;
 
-
-
   for (const line of lines) {
-
     const trimmed = line.trim();
-
     if (!trimmed) continue;
 
-
-
     const sectionMatch =
-
       trimmed.match(/^\[(.*?)\]/) ||
-
       trimmed.match(/^(?:\d+\.|\*)\s*(.*?)(?::|$)/);
 
-
-
     if (
-
       sectionMatch &&
-
       (trimmed.startsWith("[") ||
-
         trimmed.toLowerCase().includes("tuyến") ||
-
-        trimmed.toLowerCase().includes("combo"))
-
+        trimmed.toLowerCase().includes("combo") ||
+        trimmed.toLowerCase().includes("ខ្សែ") ||
+        trimmed.toLowerCase().includes("សំបុត្រ"))
     ) {
-
       let title = sectionMatch[1].trim();
-
       const lowerTitle = title.toLowerCase();
 
       if (lowerTitle.includes("vân sơn") || lowerTitle.includes("van son")) {
-
-        title = lang === "en" ? "Van Son Cable Route (To the Peak)" : "Tuyến cáp Vân Sơn (Lên Định núi)";
-
+        title = lang === "km" ? "ខ្សែរថយន្តកាប៊ីន Vân Sơn (ឡើងលើកំពូលភ្នំ)" : lang === "en" ? "Van Son Cable Route (To the Peak)" : "Tuyến cáp Vân Sơn (Lên Đỉnh núi)";
       } else if (lowerTitle.includes("chùa hang") || lowerTitle.includes("chua hang")) {
-
-        title = lang === "en" ? "Chua Hang Cable Route (To Ba Temple)" : "Tuyến cáp Chùa Hang (Lên Chùa Bà)";
-
+        title = lang === "km" ? "ខ្សែរថយន្តកាប៊ីន Chùa Hang (ឡើងវត្តលោកយាយ)" : lang === "en" ? "Chua Hang Cable Route (To Ba Temple)" : "Tuyến cáp Chùa Hang (Lên Chùa Bà)";
       } else if (lowerTitle.includes("combo")) {
-
-        title = lang === "en" ? "Combo All Lines" : "Vé Combo Cáp Treo";
-
+        title = lang === "km" ? "សំបុត្ររួម Combo" : lang === "en" ? "Combo All Lines" : "Vé Combo Cáp Treo";
       }
-
       currentSection = { title, items: [] };
-
       sections.push(currentSection);
-
       continue;
-
     }
 
-
-
     if (trimmed.startsWith("-") || trimmed.startsWith("*") || /^\d+\./.test(trimmed)) {
-
       const cleanLine = trimmed.replace(/^[-*]\s*/, "").replace(/^\d+\.\s*/, "");
-
       const parts = cleanLine.split(":");
 
       if (parts.length >= 2) {
-
         const name = parts[0].trim();
-
         const pricePart = parts.slice(1).join(":").trim();
-
         let price = pricePart;
-
         let priceOneway: string | undefined;
 
-
-
-        const onewayRegex = /(?:một chiều|one-way)\s*[:\-]?\s*(\d{1,3}(?:\.\d{3})+|\d{5,6})/i;
-
+        const onewayRegex = /(?:một chiều|one-way|មួយផ្លូវ)\s*[:\-]?\s*(\d{1,3}(?:\.\d{3})+|\d{5,6})/i;
         const onewayMatch = pricePart.match(onewayRegex);
-
         if (onewayMatch) {
-
-          priceOneway = onewayMatch[1] + " VNĐ";
-
-          price = pricePart.split(/một chiều/i)[0].split(/one-way/i)[0].trim();
-
+          priceOneway = onewayMatch[1] + (lang === "km" ? " រៀល" : " VNĐ");
+          price = pricePart.split(/một chiều/i)[0].split(/one-way/i)[0].split(/មួយផ្លូវ/i)[0].trim();
         }
-
-
 
         const priceMatch = price.match(/(\d{1,3}(?:\.\d{3})+|\d{5,6})/);
-
         if (priceMatch) {
-
-          price = priceMatch[0] + " VNĐ";
-
-        } else if (/miễn phí|free|mien phi/i.test(price)) {
-
-          price = lang === "en" ? "Free" : "Miễn phí";
-
+          price = priceMatch[0] + (lang === "km" ? " រៀល" : " VNĐ");
+        } else if (/miễn phí|free|mien phi|ឥតគិតថ្លៃ/i.test(price)) {
+          price = lang === "km" ? "ឥតគិតថ្លៃ" : lang === "en" ? "Free" : "Miễn phí";
         }
-
-
 
         if (name && price) {
-
           if (!currentSection) {
-
-            currentSection = { title: lang === "en" ? "Cable Car Tickets" : "Vé cáp treo", items: [] };
-
+            currentSection = { title: lang === "km" ? "សំបុត្រកាប៊ីនឡាន" : lang === "en" ? "Cable Car Tickets" : "Vé cáp treo", items: [] };
             sections.push(currentSection);
-
           }
-
           currentSection.items.push({ name, price, priceOneway });
-
         }
-
       }
-
     }
-
   }
 
-
-
   return sections;
-
 };
 
-
-
-
-
-
-
 // 2. Extract Operating Hours
-
 const parseOperatingSchedules = (articles: any[], lang: string): OperatingScheduleSection[] => {
   if (!articles || articles.length === 0) return [];
 
-  // 1. Prioritize article with "giờ" / "lịch" / "schedule" / "operating" / "hour" in the title
+  // 1. Prioritize article with "giờ" / "lịch" / "schedule" / "operating" / "hour" / "ម៉ោង" in the title
   let article = articles.find((art: any) => {
     const title = (art.title || "").toLowerCase();
-    const content = (art.content || "").trim();
+    const titleKm = (art.title_km || "").toLowerCase();
+    const content = (lang === "km" && art.content_km) 
+      ? art.content_km.trim() 
+      : (lang === "en" && art.content_en) 
+        ? art.content_en.trim() 
+        : art.content ? art.content.trim() : "";
+        
     if (!content.startsWith("{")) return false;
     
     const hasKeywords = 
       title.includes("giờ") || title.includes("gio") || 
       title.includes("lịch") || title.includes("lich") || 
-      title.includes("schedule") || title.includes("operating") || title.includes("hour");
+      title.includes("schedule") || title.includes("operating") || title.includes("hour") ||
+      titleKm.includes("ម៉ោង") || titleKm.includes("ប្រតិបត្តិការ");
       
     if (!hasKeywords) return false;
     
@@ -316,7 +228,11 @@ const parseOperatingSchedules = (articles: any[], lang: string): OperatingSchedu
   // 2. Fallback to any JSON article with schedules if no title matches
   if (!article) {
     article = articles.find((art: any) => {
-      const content = (art.content || "").trim();
+      const content = (lang === "km" && art.content_km) 
+        ? art.content_km.trim() 
+        : (lang === "en" && art.content_en) 
+          ? art.content_en.trim() 
+          : art.content ? art.content.trim() : "";
       if (!content.startsWith("{")) return false;
       try {
         const parsed = JSON.parse(content);
@@ -327,46 +243,33 @@ const parseOperatingSchedules = (articles: any[], lang: string): OperatingSchedu
     });
   }
 
+  if (!article) return [];
+  const content = (lang === "km" && article.content_km) 
+    ? article.content_km.trim() 
+    : (lang === "en" && article.content_en) 
+      ? article.content_en.trim() 
+      : article.content ? article.content.trim() : "";
 
-
-  if (!article?.content) return [];
-
-
+  if (!content) return [];
 
   try {
-
-    const parsed = JSON.parse(article.content);
-
+    const parsed = JSON.parse(content);
     if (!Array.isArray(parsed.schedules)) return [];
 
     return parsed.schedules
-
       .map((section: any) => ({
-
-        title: (lang === "en" && section.titleEn) ? section.titleEn : (section.title || ""),
-
+        title: (lang === "km" && section.titleKm) ? section.titleKm : (lang === "en" && section.titleEn) ? section.titleEn : (section.title || ""),
         items: (section.items || []).map((item: any) => ({
-
-          label: (lang === "en" && item.labelEn) ? item.labelEn : (item.label || ""),
-
-          hours: (lang === "en" && item.hoursEn) ? item.hoursEn : (item.hours || ""),
-
-          note: (lang === "en" && item.noteEn) ? item.noteEn : (item.note || "")
-
+          label: (lang === "km" && item.labelKm) ? item.labelKm : (lang === "en" && item.labelEn) ? item.labelEn : (item.label || ""),
+          hours: (lang === "km" && item.hoursKm) ? item.hoursKm : (lang === "en" && item.hoursEn) ? item.hoursEn : (item.hours || ""),
+          note: (lang === "km" && item.noteKm) ? item.noteKm : (lang === "en" && item.noteEn) ? item.noteEn : (item.note || "")
         })).filter((item: OperatingScheduleItem) => item.label || item.hours || item.note)
-
       }))
-
       .filter((section: OperatingScheduleSection) => section.title || section.items.length > 0);
-
   } catch (e) {
-
     console.warn("[parseOperatingSchedules] JSON parse failed", e);
-
     return [];
-
   }
-
 };
 
 // 2. Parse plain-text content from DB into structured list items
@@ -502,45 +405,27 @@ export const VisitInfoPage: React.FC = () => {
 
 
       {/* Tabs Switcher */}
-
       <div className="custom-tabs">
-
         <button 
-
           className={`tab-btn ${activeTab === "tickets" ? "tab-btn-active" : ""}`}
-
           onClick={() => setActiveTab("tickets")}
-
         >
-
-          {language === "en" ? "Tickets & Hours" : "Lịch & Vé"}
-
+          {language === "km" ? "សំបុត្រ & ម៉ោង" : language === "en" ? "Tickets & Hours" : "Lịch & Vé"}
         </button>
 
         <button 
-
           className={`tab-btn ${activeTab === "travel" ? "tab-btn-active" : ""}`}
-
           onClick={() => setActiveTab("travel")}
-
         >
-
-          {language === "en" ? "Transport" : "Di chuyển"}
-
+          {language === "km" ? "ការធ្វើដំណើរ" : language === "en" ? "Transport" : "Di chuyển"}
         </button>
 
         <button 
-
           className={`tab-btn ${activeTab === "rules" ? "tab-btn-active" : ""}`}
-
           onClick={() => setActiveTab("rules")}
-
         >
-
-          {language === "en" ? "Rules" : "Nội quy"}
-
+          {language === "km" ? "បទប្បញ្ញត្តិ" : language === "en" ? "Rules" : "Nội quy"}
         </button>
-
       </div>
 
 
@@ -570,75 +455,47 @@ export const VisitInfoPage: React.FC = () => {
             ))
 
           ) : parsedSections.length === 0 ? (
-
             /* Empty state */
-
             <div className="glass-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-
               <Ticket size={36} style={{ color: "var(--accent-gold)", opacity: 0.5, marginBottom: "12px" }} />
-
               <p style={{ color: "var(--light-text)", fontSize: "14px", margin: 0 }}>
-
-                {language === "en" ? "Ticket information is being updated. Please check back soon." : "Thông tin vé đang được cập nhật. Vui lòng quay lại sau."}
-
+                {language === "km" ? "ព័ត៌មានសំបុត្រកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Ticket information is being updated. Please check back soon." : "Thông tin vé đang được cập nhật. Vui lòng quay lại sau."}
               </p>
-
             </div>
-
           ) : (
-
             parsedSections.map((section, sIdx) => {
-
               const hasOneway = section.items.some(item => !!item.priceOneway);
-
               return (
-
                 <div className="glass-card" key={sIdx}>
-
                   <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-
                     <Ticket size={18} style={{ color: "var(--accent-gold)" }} />
-
                     <span>{section.title}</span>
-
                   </h3>
 
                   <table style={{ width: "100%", fontSize: "13.5px", borderCollapse: "collapse" }}>
-
                     <thead>
-
                       <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.1)", textAlign: "left", color: "var(--light-text)" }}>
-
-                        <th style={{ padding: "6px 0" }}>{language === "en" ? "Visitor Category" : "Đối tượng"}</th>
-
-                        <th style={{ padding: "6px 0" }}>{hasOneway ? (language === "en" ? "Round-trip" : "Giá khứ hồi") : (language === "en" ? "Round-trip Price" : "Giá vé khứ hồi")}</th>
-
+                        <th style={{ padding: "6px 0" }}>{language === "km" ? "ប្រភេទភ្ញៀវទេសចរ" : language === "en" ? "Visitor Category" : "Đối tượng"}</th>
+                        <th style={{ padding: "6px 0" }}>
+                          {language === "km" 
+                            ? "តម្លៃសំបុត្រទៅមក" 
+                            : hasOneway 
+                              ? (language === "en" ? "Round-trip" : "Giá khứ hồi") 
+                              : (language === "en" ? "Round-trip Price" : "Giá vé khứ hồi")}
+                        </th>
                         {hasOneway && (
-
-                          <th style={{ padding: "6px 0" }}>{language === "en" ? "One-way" : "Một chiều"}</th>
-
+                          <th style={{ padding: "6px 0" }}>{language === "km" ? "មួយផ្លូវ" : language === "en" ? "One-way" : "Một chiều"}</th>
                         )}
-
                       </tr>
-
                     </thead>
-
                     <tbody>
-
                       {section.items.map((item, iIdx) => {
-
-                        const isFree = item.price.toLowerCase().includes("miễn phí") || item.price.toLowerCase().includes("free") || item.price.toLowerCase().includes("mien phi");
-
+                        const isFree = item.price.toLowerCase().includes("miễn phí") || item.price.toLowerCase().includes("free") || item.price.toLowerCase().includes("mien phi") || item.price.toLowerCase().includes("ឥតគិតថ្លៃ");
                         return (
-
                           <tr key={iIdx} style={iIdx > 0 ? { borderTop: "1px solid rgba(0,0,0,0.05)" } : {}}>
-
                             <td style={{ padding: "8px 0", fontWeight: 600 }}>{item.name}</td>
-
                             <td style={{ padding: "8px 0", color: isFree ? "green" : "var(--alert-red)", fontWeight: 700 }}>
-
                               {item.price}
-
                             </td>
 
                             {hasOneway && (
@@ -672,57 +529,32 @@ export const VisitInfoPage: React.FC = () => {
 
 
           {/* Giờ hoạt động */}
-
           <div className="glass-card" style={{ background: "rgba(11, 37, 69, 0.02)" }}>
-
             <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "10px" }}>
-
               <Clock size={18} style={{ color: "var(--accent-gold)" }} />
-
-              <span>{language === "en" ? "Latest Cable Car Operating Hours" : "Lịch vận hành cáp treo mới nhất"}</span>
-
+              <span>{language === "km" ? "ម៉ោងដំណើរការខ្សែរថយន្តកាប៊ីនចុងក្រោយបង្អស់" : language === "en" ? "Latest Cable Car Operating Hours" : "Lịch vận hành cáp treo mới nhất"}</span>
             </h3>
 
-                        {scheduleSections.length === 0 ? (
-
+            {scheduleSections.length === 0 ? (
               <p style={{ color: "var(--light-text)", fontSize: "13px", margin: 0 }}>
-
-                {language === "en" ? "Operating hours are being updated. Please check back soon." : "Lich hoat dong dang duoc cap nhat. Vui long quay lai sau."}
-
+                {language === "km" ? "ម៉ោងប្រតិបត្តិការកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Operating hours are being updated. Please check back soon." : "Lịch hoạt động đang được cập nhật. Vui lòng quay lại sau."}
               </p>
-
             ) : (
-
               <ul style={{ paddingLeft: "18px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px" }}>
-
                 {scheduleSections.map((section, sIdx) => (
-
                   <li key={sIdx}>
-
                     <strong>{section.title}</strong>
-
                     <div style={{ paddingLeft: "8px", marginTop: "2px", display: "flex", flexDirection: "column", gap: "2px" }}>
-
                       {section.items.map((item, iIdx) => (
-
                         <span key={iIdx}>
-
                           • {item.label}{item.label && item.hours ? ": " : ""}<b>{item.hours}</b>{item.note ? ` ${item.note}` : ""}
-
                         </span>
-
                       ))}
-
                     </div>
-
                   </li>
-
                 ))}
-
               </ul>
-
             )}
-
           </div>
 
 
@@ -736,191 +568,100 @@ export const VisitInfoPage: React.FC = () => {
 
 
       {/* Tab 2 Content: Travel Guides - rendered from DB */}
-
       {activeTab === "travel" && (
-
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-
           {ticketsLoading ? (
-
             [1, 2].map(i => (
-
               <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
-
                 <div style={{ height: "18px", width: "55%", background: "rgba(0,0,0,0.08)", borderRadius: "6px", marginBottom: "14px" }} />
-
                 {[1,2,3].map(j => <div key={j} style={{ height: "11px", width: `${90 - j*10}%`, background: "rgba(0,0,0,0.06)", borderRadius: "4px", marginBottom: "7px" }} />)}
-
               </div>
-
             ))
-
           ) : travelArticles.length === 0 ? (
-
             <div className="glass-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-
               <Navigation size={36} style={{ color: "var(--accent-gold)", opacity: 0.5, marginBottom: "12px" }} />
-
               <p style={{ color: "var(--light-text)", fontSize: "14px", margin: 0 }}>
-
-                {language === "en" ? "Travel guide is being updated. Please check back soon." : "Hướng dẫn di chuyển đang được cập nhật. Vui lòng quay lại sau."}
-
+                {language === "km" ? "ការណែនាំអំពីការធ្វើដំណើរកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Travel guide is being updated. Please check back soon." : "Hướng dẫn di chuyển đang được cập nhật. Vui lòng quay lại sau."}
               </p>
-
             </div>
-
           ) : (
-
             travelArticles.map((art, aIdx) => {
-
-              const content = (language === "en" && art.content_en) ? art.content_en : (art.content || "");
-
+              const content = (language === "km" && art.content_km) ? art.content_km : (language === "en" && art.content_en) ? art.content_en : (art.content || "");
               const items = parseArticleContent(content);
-
               return (
-
                 <div className="glass-card" key={art.id || aIdx}>
-
                   <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-
                     <Navigation size={18} style={{ color: "var(--accent-gold)" }} />
-
-                    <span>{language === "en" ? (art.title_en || art.title) : art.title}</span>
-
+                    <span>{language === "km" ? (art.title_km || art.title) : language === "en" ? (art.title_en || art.title) : art.title}</span>
                   </h3>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13.5px" }}>
-
                     {items.map((item, idx) => (
-
                       item.isHeading ? (
-
                         <div key={idx} style={{ fontWeight: 700, color: "var(--primary-navy)", marginTop: idx > 0 ? "8px" : "0", borderLeft: "3px solid var(--accent-gold)", paddingLeft: "8px" }}>
-
                           {item.text}
-
                         </div>
-
                       ) : (
-
                         <div key={idx} style={{ display: "flex", gap: "6px", paddingLeft: item.level > 0 ? "14px" : "0", color: "var(--dark-text)" }}>
-
                           <span style={{ color: "var(--accent-gold)", flexShrink: 0, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
-
                           <span>{item.text}</span>
-
                         </div>
-
                       )
-
                     ))}
-
                   </div>
-
                 </div>
-
               );
-
             })
-
           )}
-
         </div>
-
       )}
 
-
-
       {/* Tab 3 Content: Rules & Etiquette - rendered from DB */}
-
       {activeTab === "rules" && (
-
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-
           {ticketsLoading ? (
-
             [1, 2].map(i => (
-
               <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
-
                 <div style={{ height: "18px", width: "55%", background: "rgba(0,0,0,0.08)", borderRadius: "6px", marginBottom: "14px" }} />
-
                 {[1,2,3,4].map(j => <div key={j} style={{ height: "11px", width: `${95 - j*8}%`, background: "rgba(0,0,0,0.06)", borderRadius: "4px", marginBottom: "7px" }} />)}
-
               </div>
-
             ))
-
           ) : rulesArticles.length === 0 ? (
-
             <div className="glass-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-
               <ShieldCheck size={36} style={{ color: "var(--accent-gold)", opacity: 0.5, marginBottom: "12px" }} />
-
               <p style={{ color: "var(--light-text)", fontSize: "14px", margin: 0 }}>
-
-                {language === "en" ? "Rules & etiquette information is being updated." : "Thông tin nội quy đang được cập nhật. Vui lòng quay lại sau."}
-
+                {language === "km" ? "ព័ត៌មានបទប្បញ្ញត្តិកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Rules & etiquette information is being updated." : "Thông tin nội quy đang được cập nhật. Vui lòng quay lại sau."}
               </p>
-
             </div>
-
           ) : (
-
             rulesArticles.map((art, aIdx) => {
-
-              const content = (language === "en" && art.content_en) ? art.content_en : (art.content || "");
-
+              const content = (language === "km" && art.content_km) ? art.content_km : (language === "en" && art.content_en) ? art.content_en : (art.content || "");
               const items = parseArticleContent(content);
-
               return (
-
                 <div className="glass-card" key={art.id || aIdx} style={{ borderLeft: "4px solid var(--accent-gold)" }}>
-
                   <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-
                     <ShieldCheck size={18} style={{ color: "var(--accent-gold)" }} />
-
-                    <span>{language === "en" ? (art.title_en || art.title) : art.title}</span>
-
+                    <span>{language === "km" ? (art.title_km || art.title) : language === "en" ? (art.title_en || art.title) : art.title}</span>
                   </h3>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13.5px" }}>
-
                     {items.map((item, idx) => (
-
                       item.isHeading ? (
-
                         <div key={idx} style={{ fontWeight: 700, color: "var(--primary-navy)", marginTop: idx > 0 ? "10px" : "0", display: "flex", alignItems: "center", gap: "6px" }}>
-
                           <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--accent-gold)", display: "inline-block", flexShrink: 0 }} />
-
                           {item.text}
-
                         </div>
-
                       ) : (
-
                         <div key={idx} style={{ display: "flex", gap: "8px", paddingLeft: item.level > 0 ? "12px" : "4px", color: "var(--dark-text)", lineHeight: 1.5 }}>
-
                           <span style={{ color: item.level > 0 ? "var(--accent-gold)" : "var(--primary-navy)", flexShrink: 0, fontWeight: 600, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
-
                           <span>{item.text}</span>
-
                         </div>
-
                       )
-
                     ))}
-
                   </div>
-
                 </div>
-
               );
-
             })
-
           )}
 
           {/* App Info & Developer Compliance Section */}
@@ -943,52 +684,49 @@ export const VisitInfoPage: React.FC = () => {
               borderBottom: "1px solid rgba(0,0,0,0.06)", 
               paddingBottom: "4px" 
             }}>
-              {language === "en" ? "Developer & App Information (Mục 5.5)" : "Thông tin Nhà phát triển & Ứng dụng (Mục 5.5)"}
+              {language === "km" ? "ព័ត៌មានអ្នកអភិវឌ្ឍន៍ & កម្មវិធី" : language === "en" ? "Developer & App Information (Mục 5.5)" : "Thông tin Nhà phát triển & Ứng dụng (Mục 5.5)"}
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", opacity: 0.9 }}>
               <div>
-                <strong>{language === "en" ? "Responsible Individual:" : "Cá nhân chịu trách nhiệm:"}</strong>{" "}
+                <strong>{language === "km" ? "បុគ្គលទទួលខុសត្រូវ:" : language === "en" ? "Responsible Individual:" : "Cá nhân chịu trách nhiệm:"}</strong>{" "}
                 Trương Kim Long
               </div>
               <div>
-                <strong>{language === "en" ? "Contact Address:" : "Địa chỉ liên hệ:"}</strong>{" "}
+                <strong>{language === "km" ? "អាសយដ្ឋានទំនាក់ទំនង:" : language === "en" ? "Contact Address:" : "Địa chỉ liên hệ:"}</strong>{" "}
                 Tây Ninh, Việt Nam
               </div>
               <div>
-                <strong>{language === "en" ? "Support Email:" : "Email hỗ trợ:"}</strong>{" "}
+                <strong>{language === "km" ? "អ៊ីមែលគាំទ្រ:" : language === "en" ? "Support Email:" : "Email hỗ trợ:"}</strong>{" "}
                 <a href="mailto:truongnklong@gmail.com" style={{ color: "var(--primary-navy)", fontWeight: 600, textDecoration: "none" }}>
                   truongnklong@gmail.com
                 </a>
               </div>
               <div>
-                <strong>{language === "en" ? "Mini App Version:" : "Phiên bản Mini App:"}</strong> v1.0.0
+                <strong>{language === "km" ? "កំណែកម្មវិធី Mini App:" : language === "en" ? "Mini App Version:" : "Phiên bản Mini App:"}</strong> v1.0.0
               </div>
               <div>
-                <strong>{language === "en" ? "Service Description:" : "Mô tả dịch vụ:"}</strong>{" "}
-                {language === "en" 
-                  ? "Provides digital relocation map, automatic audio guides, cable car operating hours/ticket info, and AI assistant support at Ba Den Mountain." 
-                  : "Cung cấp bản đồ thực địa, thuyết minh di tích tự động (Audio Guide), tra cứu lịch vận hành/giá vé cáp treo và tư vấn qua Trợ lý ảo AI tại Núi Bà Đen."}
+                <strong>{language === "km" ? "ការពិពណ៌នាសេវាកម្ម:" : language === "en" ? "Service Description:" : "Mô tả dịch vụ:"}</strong>{" "}
+                {language === "km"
+                  ? "ផ្តល់នូវផែនទីទីតាំងជាក់ស្តែង ការណែនាំជាសំឡេងស្វ័យប្រវត្ត ព័ត៌មានម៉ោងដំណើរការ/តម្លៃសំបុត្រ និងជំនួយការ AI នៅលើភ្នំ Ba Den។"
+                  : language === "en" 
+                    ? "Provides digital relocation map, automatic audio guides, cable car operating hours/ticket info, and AI assistant support at Ba Den Mountain." 
+                    : "Cung cấp bản đồ thực địa, thuyết minh di tích tự động (Audio Guide), tra cứu lịch vận hành/giá vé cáp treo và tư vấn qua Trợ lý ảo AI tại Núi Bà Đen."}
               </div>
               <div>
-                <strong>{language === "en" ? "Support & Complaint Channels:" : "Tiếp nhận hỗ trợ & khiếu nại:"}</strong>{" "}
-                {language === "en" 
-                  ? "Contact truongnklong@gmail.com or submit feedback via the app's Feedback feature." 
-                  : "Mọi ý kiến đóng góp, phản ánh khiếu nại gửi về email truongnklong@gmail.com hoặc gửi trực tiếp tại mục Phản Ánh trên ứng dụng."}
+                <strong>{language === "km" ? "បណ្តាញទទួលការគាំទ្រ & បណ្តឹងតវ៉ា:" : language === "en" ? "Support & Complaint Channels:" : "Tiếp nhận hỗ trợ & khiếu nại:"}</strong>{" "}
+                {language === "km"
+                  ? "ទាក់ទង truongnklong@gmail.com ឬផ្ញើមតិកែលម្អតាមរយៈមុខងារ Feedback នៅក្នុងកម្មវិធី។"
+                  : language === "en" 
+                    ? "Contact truongnklong@gmail.com or submit feedback via the app's Feedback feature." 
+                    : "Mọi ý kiến đóng góp, phản ánh khiếu nại gửi về email truongnklong@gmail.com hoặc gửi trực tiếp tại mục Phản Ánh trên ứng dụng."}
               </div>
             </div>
           </div>
-
         </div>
-
       )}
-
     </Page>
-
   );
-
 };
-
-
 
 export default VisitInfoPage;
 

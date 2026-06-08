@@ -13,20 +13,26 @@ export interface AdminKnowledgeArticle {
   updated_at: string;
   title_en?: string;
   content_en?: string;
+  title_km?: string;
+  content_km?: string;
 }
 
 export interface AdminPlace {
   id: string;
   name: string;
   name_en?: string;
+  name_km?: string;
   slug: string;
   short_description: string;
   short_description_en?: string;
+  short_description_km?: string;
   full_description: string;
   full_description_en?: string;
+  full_description_km?: string;
   image_url: string;
   audio_url?: string | null;
   audio_url_en?: string | null;
+  audio_url_km?: string | null;
   audio_enabled?: boolean;
   latitude: number;
   longitude: number;
@@ -37,14 +43,17 @@ export interface AdminPlace {
 export interface AdminItineraryStep {
   vi: string;
   en: string;
+  km?: string;
 }
 
 export interface AdminItinerary {
   id: string;
   name: string;
   name_en?: string;
+  name_km?: string;
   duration: string;
   duration_en?: string;
+  duration_km?: string;
   color: string;
   place_slugs: string[];
   steps: AdminItineraryStep[];
@@ -57,8 +66,10 @@ export interface AdminAnnouncement {
   id: string;
   title: string;
   title_en?: string;
+  title_km?: string;
   content: string;
   content_en?: string;
+  content_km?: string;
   type: "general" | "emergency" | "weather" | "festival";
   published_at: string;
 }
@@ -72,7 +83,7 @@ export interface AdminFeedback {
   image_url?: string;
   latitude?: number;
   longitude?: number;
-  status: "new" | "in_progress" | "resolved";
+  status: "new" | "in_progress" | "resolved" | "spam";
   admin_notes?: string;
   internal_note?: string;
   assigned_unit?: string;
@@ -93,6 +104,8 @@ export interface AdminChatLog {
   total_tokens?: number;
   estimated_cost_usd?: number;
   created_at: string;
+  user_id?: string | null;
+  user_name?: string | null;
 }
 
 export interface AdminUser {
@@ -103,6 +116,8 @@ export interface AdminUser {
   avatar_url?: string | null;
   role: string;
   created_at: string;
+  favorites_count?: number;
+  link_type?: string;
 }
 
 export interface AdminUsageRow {
@@ -203,10 +218,17 @@ class AdminApiClient {
     }
   }
 
-  async translateText(text: string, targetLang: "vi" | "en" = "en"): Promise<{ translated_text: string }> {
+  async translateText(text: string, targetLang: "vi" | "en" | "km" | "both" = "en"): Promise<{ translated_text: string }> {
     return await this.request<{ translated_text: string }>("/api/admin/translate", {
       method: "POST",
       body: JSON.stringify({ text, target_lang: targetLang })
+    });
+  }
+
+  async generateTts(text: string, lang: string = "vi"): Promise<{ url: string; audio?: string; format?: string; cached?: boolean }> {
+    return await this.request<{ url: string; audio?: string; format?: string; cached?: boolean }>("/api/admin/tts", {
+      method: "POST",
+      body: JSON.stringify({ text, lang })
     });
   }
 
@@ -258,6 +280,38 @@ class AdminApiClient {
       method: "PUT",
       body: JSON.stringify(data)
     });
+  }
+
+  // --- Real-time Tourism & Field Settings ---
+  async getRealtimeStatus(): Promise<{
+    weather_auto: boolean;
+    weather_status: string;
+    weather_temp: number;
+    cable_peak_queue: string;
+    cable_peak_wait_time: number;
+    cable_temple_queue: string;
+    cable_temple_wait_time: number;
+  }> {
+    return await this.request<any>("/api/tourism/realtime");
+  }
+
+  async updateRealtimeStatus(data: {
+    weather_auto: boolean;
+    weather_status: string;
+    weather_temp: number;
+    cable_peak_queue: string;
+    cable_peak_wait_time: number;
+    cable_temple_queue: string;
+    cable_temple_wait_time: number;
+  }): Promise<{ status: string; message: string }> {
+    return await this.request<{ status: string; message: string }>("/api/tourism/realtime", {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async getAllStamps(): Promise<Array<{ place_slug: string; created_at: string }>> {
+    return await this.request<any[]>("/api/tourism/stamps/all");
   }
 
   // --- Places (CRUD) ---

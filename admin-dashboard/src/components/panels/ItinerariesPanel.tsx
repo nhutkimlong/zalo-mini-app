@@ -32,7 +32,7 @@ export const ItinerariesPanel: React.FC<ItinerariesPanelProps> = ({
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <input
             type="text"
-            placeholder="Tìm lộ trình..."
+            placeholder="Tìm lộ trình…"
             className="form-input"
             style={{ width: "240px", padding: "6px 12px" }}
             value={searchQuery}

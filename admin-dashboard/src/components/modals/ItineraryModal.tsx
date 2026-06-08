@@ -6,8 +6,10 @@ interface ItineraryModalProps {
   onSave: (data: {
     name: string;
     name_en?: string;
+    name_km?: string;
     duration: string;
     duration_en?: string;
+    duration_km?: string;
     color: string;
     place_slugs: string[];
     steps: AdminItineraryStep[];
@@ -27,21 +29,26 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
 }) => {
   const [itName, setItName] = useState("");
   const [itNameEn, setItNameEn] = useState("");
+  const [itNameKm, setItNameKm] = useState("");
   const [itDuration, setItDuration] = useState("");
   const [itDurationEn, setItDurationEn] = useState("");
+  const [itDurationKm, setItDurationKm] = useState("");
   const [itColor, setItColor] = useState("#ffc107");
   const [itPlaceSlugs, setItPlaceSlugs] = useState<string[]>([]);
   const [itSteps, setItSteps] = useState<AdminItineraryStep[]>([]);
   const [itStatus, setItStatus] = useState("published");
 
   const [translatingField, setTranslatingField] = useState<string | null>(null);
+  const [translatingAll, setTranslatingAll] = useState(false);
 
   useEffect(() => {
     if (modalType === "edit" && selectedItem) {
       setItName(selectedItem.name || "");
       setItNameEn(selectedItem.name_en || "");
+      setItNameKm(selectedItem.name_km || "");
       setItDuration(selectedItem.duration || "");
       setItDurationEn(selectedItem.duration_en || "");
+      setItDurationKm(selectedItem.duration_km || "");
       setItColor(selectedItem.color || "#ffc107");
       setItPlaceSlugs(selectedItem.place_slugs || []);
       setItSteps(selectedItem.steps || []);
@@ -49,8 +56,10 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
     } else {
       setItName("");
       setItNameEn("");
+      setItNameKm("");
       setItDuration("");
       setItDurationEn("");
+      setItDurationKm("");
       setItColor("#ffc107");
       setItPlaceSlugs([]);
       setItSteps([]);
@@ -58,15 +67,17 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
     }
   }, [modalType, selectedItem]);
 
-  const handleTranslate = async (sourceText: string, fieldToSet: "itNameEn") => {
+  const handleTranslate = async (sourceText: string, fieldToSet: "itNameEn" | "itNameKm") => {
     if (!sourceText) {
       alert("Vui lòng nhập nội dung tiếng Việt trước khi dịch!");
       return;
     }
     setTranslatingField(fieldToSet);
     try {
-      const res = await adminApi.translateText(sourceText, "en");
+      const targetLang = fieldToSet.endsWith("Km") ? "km" : "en";
+      const res = await adminApi.translateText(sourceText, targetLang);
       if (fieldToSet === "itNameEn") setItNameEn(res.translated_text);
+      else if (fieldToSet === "itNameKm") setItNameKm(res.translated_text);
     } catch (e: any) {
       console.error(e);
       alert(e?.message || "Lỗi khi dịch tự động.");
@@ -75,13 +86,65 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
     }
   };
 
+  const handleTranslateAll = async () => {
+    if (!itName && !itDuration && itSteps.length === 0) {
+      alert("Vui lòng nhập thông tin tiếng Việt trước khi dịch!");
+      return;
+    }
+
+    let needsTranslation = !itNameEn || !itNameKm || !itDurationEn || !itDurationKm;
+
+    if (itSteps && itSteps.length > 0) {
+      for (const step of itSteps) {
+        if (!step.en || !step.km) {
+          needsTranslation = true;
+          break;
+        }
+      }
+    }
+
+    if (!needsTranslation) {
+      alert("Tất cả các trường đã được dịch đầy đủ, không cần dịch thêm!");
+      return;
+    }
+
+    const payload = {
+      name: itName,
+      nameEn: itNameEn,
+      nameKm: itNameKm,
+      duration: itDuration,
+      durationEn: itDurationEn,
+      durationKm: itDurationKm,
+      steps: itSteps
+    };
+
+    setTranslatingAll(true);
+    try {
+      const res = await adminApi.translateText(JSON.stringify(payload), "both");
+      const resObj = JSON.parse(res.translated_text);
+      
+      if (resObj.nameEn) setItNameEn(resObj.nameEn);
+      if (resObj.nameKm) setItNameKm(resObj.nameKm);
+      if (resObj.durationEn) setItDurationEn(resObj.durationEn);
+      if (resObj.durationKm) setItDurationKm(resObj.durationKm);
+      if (resObj.steps) setItSteps(resObj.steps);
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || "Lỗi khi dịch tự động toàn bộ bằng AI.");
+    } finally {
+      setTranslatingAll(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
       name: itName,
       name_en: itNameEn,
+      name_km: itNameKm,
       duration: itDuration,
       duration_en: itDurationEn,
+      duration_km: itDurationKm,
       color: itColor,
       place_slugs: itPlaceSlugs,
       steps: itSteps,
@@ -97,6 +160,47 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
       </header>
       <form onSubmit={handleSubmit}>
         <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+          {/* Centralized AI Translation Banner */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(11,37,69,0.05) 0%, rgba(212,163,89,0.1) 100%)",
+            border: "1px solid rgba(212,163,89,0.3)",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            gap: "12px"
+          }}>
+            <div>
+              <h4 style={{ margin: 0, color: "var(--primary-navy)", fontSize: "13px", fontWeight: 700 }}>✨ Trợ lý Dịch thuật AI Đa ngôn ngữ (EN & KM)</h4>
+              <p style={{ margin: "2px 0 0 0", color: "#475569", fontSize: "11px", lineHeight: "1.4" }}>
+                Nhấn dịch để tự động chuyển ngữ các phần trống sang Tiếng Anh & Khmer. Thông tin đã nhập tay sẽ được giữ nguyên.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn"
+              style={{
+                background: "linear-gradient(135deg, var(--primary-navy) 0%, #1e293b 100%)",
+                border: "1px solid var(--accent-gold)",
+                color: "var(--accent-gold)",
+                padding: "6px 14px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap"
+              }}
+              disabled={translatingAll}
+              onClick={handleTranslateAll}
+            >
+              {translatingAll ? "⏳ Đang dịch AI..." : "🚀 Dịch AI (EN & KM)"}
+            </button>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Tên lộ trình (VI)</label>
             <input 
@@ -131,7 +235,29 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div className="form-group">
+            <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Tên lộ trình (KM)</span>
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-xs" 
+                style={{ padding: "2px 8px", fontSize: "10px" }}
+                disabled={translatingField === "itNameKm"}
+                onClick={() => handleTranslate(itName, "itNameKm")}
+              >
+                {translatingField === "itNameKm" ? "Đang dịch..." : "Dịch tự động"}
+              </button>
+            </label>
+            <input 
+              type="text" 
+              className="form-input" 
+              value={itNameKm} 
+              onChange={e => setItNameKm(e.target.value)} 
+              placeholder="Ví dụ: ផ្លូវធម្មយាត្រាដ៏វិសុទ្ធ"
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
             <div className="form-group">
               <label className="form-label">Thời lượng (VI)</label>
               <input 
@@ -152,6 +278,17 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
                 value={itDurationEn} 
                 onChange={e => setItDurationEn(e.target.value)} 
                 placeholder="Ví dụ: 4 hours or 1 day"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Thời lượng (KM)</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                required 
+                value={itDurationKm} 
+                onChange={e => setItDurationKm(e.target.value)} 
+                placeholder="Ví dụ: ៤ ម៉ោង ឬ ១ ថ្ងៃ"
               />
             </div>
           </div>
@@ -259,7 +396,7 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
               <button 
                 type="button" 
                 className="btn btn-primary btn-xs" 
-                onClick={() => setItSteps([...itSteps, { vi: "", en: "" }])}
+                onClick={() => setItSteps([...itSteps, { vi: "", en: "", km: "" }])}
               >
                 + Thêm chặng đi
               </button>
@@ -298,7 +435,7 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
                     />
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div className="form-group" style={{ marginBottom: "6px" }}>
                     <label style={{ fontSize: "11px", display: "flex", justifyContent: "space-between", marginBottom: "2px", fontWeight: 600 }}>
                       <span>Hướng dẫn tiếng Anh (EN)</span>
                       <button 
@@ -331,6 +468,43 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
                         setItSteps(newSteps);
                       }}
                       placeholder="Ví dụ: Start your journey at the mountain base..."
+                      style={{ padding: "4px 8px", fontSize: "12px" }}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: "11px", display: "flex", justifyContent: "space-between", marginBottom: "2px", fontWeight: 600 }}>
+                      <span>Hướng dẫn tiếng Khmer (KM)</span>
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary btn-xs" 
+                        style={{ padding: "0px 6px", fontSize: "9px" }}
+                        onClick={async () => {
+                          if (!step.vi) return;
+                          try {
+                            const res = await adminApi.translateText(step.vi, "km");
+                            const newSteps = [...itSteps];
+                            newSteps[idx].km = res.translated_text;
+                            setItSteps(newSteps);
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                      >
+                        Dịch tự động
+                      </button>
+                    </label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      required 
+                      value={step.km || ""} 
+                      onChange={e => {
+                        const newSteps = [...itSteps];
+                        newSteps[idx].km = e.target.value;
+                        setItSteps(newSteps);
+                      }}
+                      placeholder="Ví dụ: ចាប់ផ្តើមដំណើររបស់អ្នកនៅឯមូលដ្ឋានភ្នំ..."
                       style={{ padding: "4px 8px", fontSize: "12px" }}
                     />
                   </div>

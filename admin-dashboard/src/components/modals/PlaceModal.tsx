@@ -6,14 +6,18 @@ interface PlaceModalProps {
   onSave: (data: {
     name: string;
     name_en?: string;
+    name_km?: string;
     category: string;
     short_description: string;
     short_description_en?: string;
+    short_description_km?: string;
     full_description: string;
     full_description_en?: string;
+    full_description_km?: string;
     image_url: string;
     audio_url?: string | null;
     audio_url_en?: string | null;
+    audio_url_km?: string | null;
     audio_enabled?: boolean;
     latitude: number;
     longitude: number;
@@ -32,14 +36,18 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
   // Form states
   const [plName, setPlName] = useState("");
   const [plNameEn, setPlNameEn] = useState("");
+  const [plNameKm, setPlNameKm] = useState("");
   const [plCategory, setPlCategory] = useState("tam_linh");
   const [plShort, setPlShort] = useState("");
   const [plShortEn, setPlShortEn] = useState("");
+  const [plShortKm, setPlShortKm] = useState("");
   const [plFull, setPlFull] = useState("");
   const [plFullEn, setPlFullEn] = useState("");
+  const [plFullKm, setPlFullKm] = useState("");
   const [plImage, setPlImage] = useState("");
   const [plAudio, setPlAudio] = useState("");
   const [plAudioEn, setPlAudioEn] = useState("");
+  const [plAudioKm, setPlAudioKm] = useState("");
   const [plAudioEnabled, setPlAudioEnabled] = useState(false);
   const [plLat, setPlLat] = useState(11.378345);
   const [plLng, setPlLng] = useState(106.168924);
@@ -47,6 +55,7 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
 
   // AI translation & upload states
   const [translatingField, setTranslatingField] = useState<string | null>(null);
+  const [translatingAll, setTranslatingAll] = useState(false);
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
 
   // Leaflet Map states & refs
@@ -62,7 +71,7 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
 
   const handleTranslate = async (
     sourceText: string,
-    fieldToSet: "plNameEn" | "plShortEn" | "plFullEn"
+    fieldToSet: "plNameEn" | "plShortEn" | "plFullEn" | "plNameKm" | "plShortKm" | "plFullKm"
   ) => {
     if (!sourceText) {
       alert("Vui lòng nhập nội dung tiếng Việt trước khi dịch!");
@@ -70,10 +79,14 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     }
     setTranslatingField(fieldToSet);
     try {
-      const res = await adminApi.translateText(sourceText, "en");
+      const targetLang = fieldToSet.endsWith("Km") ? "km" : "en";
+      const res = await adminApi.translateText(sourceText, targetLang);
       if (fieldToSet === "plNameEn") setPlNameEn(res.translated_text);
       else if (fieldToSet === "plShortEn") setPlShortEn(res.translated_text);
       else if (fieldToSet === "plFullEn") setPlFullEn(res.translated_text);
+      else if (fieldToSet === "plNameKm") setPlNameKm(res.translated_text);
+      else if (fieldToSet === "plShortKm") setPlShortKm(res.translated_text);
+      else if (fieldToSet === "plFullKm") setPlFullKm(res.translated_text);
     } catch (e: any) {
       console.error(e);
       alert(e?.message || "Lỗi khi dịch tự động.");
@@ -82,9 +95,53 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     }
   };
 
+  const handleTranslateAll = async () => {
+    if (!plName && !plShort && !plFull) {
+      alert("Vui lòng nhập thông tin tiếng Việt trước khi dịch!");
+      return;
+    }
+
+    const needsTranslation = !plNameEn || !plNameKm || !plShortEn || !plShortKm || !plFullEn || !plFullKm;
+
+    if (!needsTranslation) {
+      alert("Tất cả các trường đã được dịch đầy đủ, không cần dịch thêm!");
+      return;
+    }
+
+    const payload = {
+      name: plName,
+      nameEn: plNameEn,
+      nameKm: plNameKm,
+      shortDescription: plShort,
+      shortDescriptionEn: plShortEn,
+      shortDescriptionKm: plShortKm,
+      fullDescription: plFull,
+      fullDescriptionEn: plFullEn,
+      fullDescriptionKm: plFullKm
+    };
+
+    setTranslatingAll(true);
+    try {
+      const res = await adminApi.translateText(JSON.stringify(payload), "both");
+      const resObj = JSON.parse(res.translated_text);
+      
+      if (resObj.nameEn) setPlNameEn(resObj.nameEn);
+      if (resObj.nameKm) setPlNameKm(resObj.nameKm);
+      if (resObj.shortDescriptionEn) setPlShortEn(resObj.shortDescriptionEn);
+      if (resObj.shortDescriptionKm) setPlShortKm(resObj.shortDescriptionKm);
+      if (resObj.fullDescriptionEn) setPlFullEn(resObj.fullDescriptionEn);
+      if (resObj.fullDescriptionKm) setPlFullKm(resObj.fullDescriptionKm);
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || "Lỗi khi dịch tự động toàn bộ bằng AI.");
+    } finally {
+      setTranslatingAll(false);
+    }
+  };
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldToSet: "plImage" | "plAudio" | "plAudioEn"
+    fieldToSet: "plImage" | "plAudio" | "plAudioEn" | "plAudioKm"
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -94,6 +151,7 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
       if (fieldToSet === "plImage") setPlImage(res.url);
       else if (fieldToSet === "plAudio") setPlAudio(res.url);
       else if (fieldToSet === "plAudioEn") setPlAudioEn(res.url);
+      else if (fieldToSet === "plAudioKm") setPlAudioKm(res.url);
     } catch (e) {
       console.error(e);
       alert("Lỗi khi tải file lên hệ thống.");
@@ -107,14 +165,18 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     if (modalType === "edit" && selectedItem) {
       setPlName(selectedItem.name || "");
       setPlNameEn(selectedItem.name_en || "");
+      setPlNameKm(selectedItem.name_km || "");
       setPlCategory(selectedItem.category || "tam_linh");
       setPlShort(selectedItem.short_description || "");
       setPlShortEn(selectedItem.short_description_en || "");
+      setPlShortKm(selectedItem.short_description_km || "");
       setPlFull(selectedItem.full_description || "");
       setPlFullEn(selectedItem.full_description_en || "");
+      setPlFullKm(selectedItem.full_description_km || "");
       setPlImage(selectedItem.image_url || "");
       setPlAudio(selectedItem.audio_url || "");
       setPlAudioEn(selectedItem.audio_url_en || "");
+      setPlAudioKm(selectedItem.audio_url_km || "");
       setPlAudioEnabled(!!selectedItem.audio_enabled);
       setPlLat(selectedItem.latitude || 11.378345);
       setPlLng(selectedItem.longitude || 106.168924);
@@ -122,14 +184,18 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     } else {
       setPlName("");
       setPlNameEn("");
+      setPlNameKm("");
       setPlCategory("tam_linh");
       setPlShort("");
       setPlShortEn("");
+      setPlShortKm("");
       setPlFull("");
       setPlFullEn("");
+      setPlFullKm("");
       setPlImage("");
       setPlAudio("");
       setPlAudioEn("");
+      setPlAudioKm("");
       setPlAudioEnabled(false);
       setPlLat(11.378345);
       setPlLng(106.168924);
@@ -238,14 +304,18 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     onSave({
       name: plName,
       name_en: plNameEn,
+      name_km: plNameKm,
       category: plCategory,
       short_description: plShort,
       short_description_en: plShortEn,
+      short_description_km: plShortKm,
       full_description: plFull,
       full_description_en: plFullEn,
+      full_description_km: plFullKm,
       image_url: plImage,
       audio_url: getOptionalUrlValue(plAudio),
       audio_url_en: getOptionalUrlValue(plAudioEn),
+      audio_url_km: getOptionalUrlValue(plAudioKm),
       audio_enabled: plAudioEnabled,
       latitude: Number(plLat),
       longitude: Number(plLng),
@@ -261,6 +331,47 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
       </header>
       <form onSubmit={handleSubmit}>
         <div className="modal-body">
+          {/* Centralized AI Translation Banner */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(11,37,69,0.05) 0%, rgba(212,163,89,0.1) 100%)",
+            border: "1px solid rgba(212,163,89,0.3)",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            gap: "12px"
+          }}>
+            <div>
+              <h4 style={{ margin: 0, color: "var(--primary-navy)", fontSize: "13px", fontWeight: 700 }}>✨ Trợ lý Dịch thuật AI Đa ngôn ngữ (EN & KM)</h4>
+              <p style={{ margin: "2px 0 0 0", color: "#475569", fontSize: "11px", lineHeight: "1.4" }}>
+                Nhấn dịch để tự động chuyển ngữ các phần trống sang Tiếng Anh & Khmer. Thông tin đã nhập tay sẽ được giữ nguyên.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn"
+              style={{
+                background: "linear-gradient(135deg, var(--primary-navy) 0%, #1e293b 100%)",
+                border: "1px solid var(--accent-gold)",
+                color: "var(--accent-gold)",
+                padding: "6px 14px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap"
+              }}
+              disabled={translatingAll}
+              onClick={handleTranslateAll}
+            >
+              {translatingAll ? "⏳ Đang dịch AI..." : "🚀 Dịch AI (EN & KM)"}
+            </button>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Tên địa danh di tích (VI)</label>
             <input 
@@ -289,6 +400,26 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
               className="form-input" 
               value={plNameEn} 
               onChange={e => setPlNameEn(e.target.value)} 
+            />
+          </div>
+          <div className="form-group">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label className="form-label">Tên địa danh di tích (KM)</label>
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-xs" 
+                style={{ padding: "2px 8px", marginBottom: "4px" }}
+                disabled={translatingField === "plNameKm"}
+                onClick={() => handleTranslate(plName, "plNameKm")}
+              >
+                {translatingField === "plNameKm" ? "Đang dịch..." : "Dịch tự động AI"}
+              </button>
+            </div>
+            <input 
+              type="text" 
+              className="form-input" 
+              value={plNameKm} 
+              onChange={e => setPlNameKm(e.target.value)} 
             />
           </div>
           <div className="form-group">
@@ -345,6 +476,26 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
             />
           </div>
           <div className="form-group">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label className="form-label">Mô tả ngắn gọn (KM)</label>
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-xs" 
+                style={{ padding: "2px 8px", marginBottom: "4px" }}
+                disabled={translatingField === "plShortKm"}
+                onClick={() => handleTranslate(plShort, "plShortKm")}
+              >
+                {translatingField === "plShortKm" ? "Đang dịch..." : "Dịch tự động AI"}
+              </button>
+            </div>
+            <input 
+              type="text" 
+              className="form-input" 
+              value={plShortKm} 
+              onChange={e => setPlShortKm(e.target.value)} 
+            />
+          </div>
+          <div className="form-group">
             <label className="form-label">Lịch sử thuyết minh đầy đủ (VI)</label>
             <textarea 
               className="form-textarea" 
@@ -372,6 +523,26 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
               rows={4}
               value={plFullEn} 
               onChange={e => setPlFullEn(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label className="form-label">Lịch sử thuyết minh đầy đủ (KM)</label>
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-xs" 
+                style={{ padding: "2px 8px", marginBottom: "4px" }}
+                disabled={translatingField === "plFullKm"}
+                onClick={() => handleTranslate(plFull, "plFullKm")}
+              >
+                {translatingField === "plFullKm" ? "Đang dịch..." : "Dịch tự động AI"}
+              </button>
+            </div>
+            <textarea 
+              className="form-textarea" 
+              rows={4}
+              value={plFullKm} 
+              onChange={e => setPlFullKm(e.target.value)}
             />
           </div>
           <div className="form-group">
@@ -449,6 +620,28 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
                   style={{ display: "none" }} 
                   disabled={uploadingFile !== null}
                   onChange={e => handleFileUpload(e, "plAudioEn")} 
+                />
+              </label>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">URL Audio Thuyết Minh Số (KM)</label>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                value={plAudioKm} 
+                onChange={e => setPlAudioKm(e.target.value)} 
+                style={{ flex: 1 }}
+              />
+              <label className="btn btn-secondary btn-xs" style={{ cursor: "pointer", whiteSpace: "nowrap", padding: "8px 12px", margin: 0, display: "flex", alignItems: "center" }}>
+                {uploadingFile === "plAudioKm" ? "Đang tải..." : "Tải nhạc lên"}
+                <input 
+                  type="file" 
+                  accept="audio/*" 
+                  style={{ display: "none" }} 
+                  disabled={uploadingFile !== null}
+                  onChange={e => handleFileUpload(e, "plAudioKm")} 
                 />
               </label>
             </div>

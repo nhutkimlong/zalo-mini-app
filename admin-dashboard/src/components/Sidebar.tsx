@@ -9,12 +9,13 @@ import {
   MessageSquare,
   DollarSign,
   Users,
-  LogOut
+  LogOut,
+  Activity
 } from "lucide-react";
 
 interface SidebarProps {
-  activeTab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users";
-  setActiveTab: (tab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users") => void;
+  activeTab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime";
+  setActiveTab: (tab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime") => void;
   setSearchQuery: (q: string) => void;
   newFeedbacks: number;
   isOpen?: boolean;
@@ -35,6 +36,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setActiveTab(tab);
     setSearchQuery("");
     if (onClose) onClose();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, tab: typeof activeTab) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleNavClick(tab);
+    }
   };
 
   return (
@@ -72,50 +80,71 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <li
             className={`nav-item ${activeTab === "dashboard" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("dashboard")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "dashboard")}
           >
-            <LayoutDashboard size={18} />
+            <LayoutDashboard size={18} aria-hidden="true" />
             <span>Bảng Tổng Quan</span>
           </li>
           <li
             className={`nav-item ${activeTab === "articles" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("articles")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "articles")}
           >
-            <BookOpen size={18} />
+            <BookOpen size={18} aria-hidden="true" />
             <span>Kho Tri Thức RAG</span>
           </li>
           <li
             className={`nav-item ${activeTab === "guides" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("guides")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "guides")}
           >
-            <BookOpen size={18} style={{ color: "var(--accent-gold)" }} />
+            <BookOpen size={18} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
             <span>Hướng Dẫn Tham Quan</span>
           </li>
           <li
             className={`nav-item ${activeTab === "places" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("places")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "places")}
           >
-            <MapPin size={18} />
+            <MapPin size={18} aria-hidden="true" />
             <span>Điểm Tham Quan</span>
           </li>
           <li
             className={`nav-item ${activeTab === "itineraries" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("itineraries")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "itineraries")}
           >
-            <Compass size={18} style={{ color: "var(--accent-gold)" }} />
+            <Compass size={18} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
             <span>Lộ Trình AI</span>
           </li>
           <li
             className={`nav-item ${activeTab === "announcements" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("announcements")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "announcements")}
           >
-            <Bell size={18} />
+            <Bell size={18} aria-hidden="true" />
             <span>Thông Báo BQL</span>
           </li>
           <li
             className={`nav-item ${activeTab === "feedbacks" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("feedbacks")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "feedbacks")}
           >
-            <AlertTriangle size={18} />
+            <AlertTriangle size={18} aria-hidden="true" />
             <span>Phản Ánh Du Khách</span>
             {newFeedbacks > 0 && (
               <span
@@ -134,25 +163,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </li>
           <li
+            className={`nav-item ${activeTab === "realtime" ? "nav-item-active" : ""}`}
+            onClick={() => handleNavClick("realtime")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "realtime")}
+          >
+            <Activity size={18} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
+            <span>Thông Tin Thực Địa</span>
+          </li>
+          <li
             className={`nav-item ${activeTab === "chats" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("chats")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "chats")}
           >
-            <MessageSquare size={18} />
+            <MessageSquare size={18} aria-hidden="true" />
             <span>Giám Sát Chatbot AI</span>
           </li>
           <li
             className={`nav-item ${activeTab === "usage" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("usage")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "usage")}
           >
-            <DollarSign size={18} />
+            <DollarSign size={18} aria-hidden="true" />
             <span>Chi Phí API</span>
           </li>
           <li
             className={`nav-item ${activeTab === "users" ? "nav-item-active" : ""}`}
             onClick={() => handleNavClick("users")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "users")}
             style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", marginTop: "8px", paddingTop: "12px" }}
           >
-            <Users size={18} />
+            <Users size={18} aria-hidden="true" />
             <span>Quản Lý Thành Viên</span>
           </li>
         </ul>

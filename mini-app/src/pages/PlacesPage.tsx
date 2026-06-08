@@ -69,73 +69,81 @@ export const PlacesPage: React.FC = () => {
       {/* Places cards grid */}
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "var(--light-text)", fontWeight: 600 }}>
-            {t("common.loading")}
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "40px", color: "var(--light-text)", fontWeight: 600 }}>
+            <div className="common-loading">{t("common.loading")}</div>
           </div>
         ) : places.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px", color: "var(--light-text)" }}>
             {t("common.no_data")}
           </div>
         ) : (
-          places.map((place, index) => (
-            <Link 
-              key={place.id}
-              to={`/places/${place.slug}`}
-              className="glass-card fade-in-up"
-              style={{
-                display: "flex",
-                gap: "12px",
-                textDecoration: "none",
-                color: "var(--dark-text)",
-                padding: "12px",
-                animationDelay: `${index * 0.05}s`
-              }}
-            >
-              {/* Thumbnail Image */}
-              <div style={{ position: "relative", width: "90px", height: "90px", borderRadius: "10px", overflow: "hidden", flexShrink: 0 }}>
-                <img 
-                  src={place.image_url} 
-                  alt={language === "en" && place.name_en ? place.name_en : place.name}
-                  width={90}
-                  height={90}
-                  loading="lazy"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                <span style={{ 
-                   position: "absolute", 
-                   top: "4px", 
-                   left: "4px", 
-                   fontSize: "9px", 
-                   fontWeight: 700,
-                   backgroundColor: "var(--primary-navy)",
-                   color: "var(--accent-gold)",
-                   padding: "2px 6px",
-                   borderRadius: "4px"
-                 }}>
-                  {getCategoryName(place.category)}
-                </span>
-              </div>
-
-              {/* Text Description */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <div>
-                  <h3 style={{ fontSize: "14px", fontWeight: 700, margin: "0 0 4px 0", color: "var(--primary-navy)" }}>
-                    {language === "en" && place.name_en ? place.name_en : place.name}
-                  </h3>
-                  <p style={{ fontSize: "12px", color: "var(--light-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                    {language === "en" && place.short_description_en ? place.short_description_en : place.short_description}
-                  </p>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--light-text)", fontWeight: 600 }}>
-                  <MapPin size={11} style={{ stroke: "var(--accent-gold)", strokeWidth: 3 }} aria-hidden="true" />
-                  <span>
-                    {language === "vi" ? "Xem thuyết minh & nghe audio guide" : "View details & listen to audio guide"}
+          places.map((place, index) => {
+            const localizedName = language === "km" && place.name_km ? place.name_km : language === "en" && place.name_en ? place.name_en : place.name;
+            const localizedDesc = language === "km" && place.short_description_km ? place.short_description_km : language === "en" && place.short_description_en ? place.short_description_en : place.short_description;
+            return (
+              <Link 
+                key={place.id}
+                to={`/places/${place.slug}`}
+                className="glass-card fade-in-up"
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  textDecoration: "none",
+                  color: "var(--dark-text)",
+                  padding: "12px",
+                  animationDelay: `${index * 0.05}s`
+                }}
+              >
+                {/* Thumbnail Image */}
+                <div style={{ position: "relative", width: "90px", height: "90px", borderRadius: "10px", overflow: "hidden", flexShrink: 0 }}>
+                  <img 
+                    src={place.image_url} 
+                    alt={localizedName}
+                    width={90}
+                    height={90}
+                    loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <span style={{ 
+                     position: "absolute", 
+                     top: "4px", 
+                     left: "4px", 
+                     fontSize: "9px", 
+                     fontWeight: 700,
+                     backgroundColor: "var(--primary-navy)",
+                     color: "var(--accent-gold)",
+                     padding: "2px 6px",
+                     borderRadius: "4px"
+                   }}>
+                    {getCategoryName(place.category)}
                   </span>
                 </div>
-              </div>
-            </Link>
-          ))
+
+                {/* Text Description */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <h3 style={{ fontSize: "14px", fontWeight: 700, margin: "0 0 4px 0", color: "var(--primary-navy)" }}>
+                      {localizedName}
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "var(--light-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                      {localizedDesc}
+                    </p>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--light-text)", fontWeight: 600 }}>
+                    <MapPin size={11} style={{ stroke: "var(--accent-gold)", strokeWidth: 3 }} aria-hidden="true" />
+                    <span>
+                      {language === "km" 
+                        ? "មើលព័ត៌មាន និងស្តាប់សំឡេងណែនាំ" 
+                        : language === "vi" 
+                          ? "Xem thuyết minh & nghe audio guide" 
+                          : "View details & listen to audio guide"}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })
         )}
       </div>
 
@@ -161,7 +169,7 @@ export const PlacesPage: React.FC = () => {
       >
         <Map size={20} />
         <span style={{ fontSize: "13px", fontWeight: 700 }}>
-          {language === "vi" ? "Xem Bản Đồ" : "View Map"}
+          {language === "km" ? "មើលផែនទី" : language === "vi" ? "Xem Bản Đồ" : "View Map"}
         </span>
       </Link>
     </Page>

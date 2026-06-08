@@ -36,7 +36,7 @@ export const ArticlesPanel: React.FC<ArticlesPanelProps> = ({
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <input
             type="text"
-            placeholder="Tìm bài viết..."
+            placeholder="Tìm bài viết…"
             className="form-input"
             style={{ width: "240px", padding: "6px 12px" }}
             value={searchQuery}
@@ -46,7 +46,7 @@ export const ArticlesPanel: React.FC<ArticlesPanelProps> = ({
         <div style={{ display: "flex", gap: "8px" }}>
           <button className="btn btn-secondary" onClick={handleReindexKnowledge} disabled={isReindexing}>
             <Database size={16} />
-            <span>{isReindexing ? "Đang index..." : "Re-index RAG"}</span>
+            <span>{isReindexing ? "Đang index…" : "Re-index RAG"}</span>
           </button>
           <button className="btn btn-primary" onClick={() => handleOpenAddArticle()}>
             <Plus size={16} />
@@ -62,7 +62,7 @@ export const ArticlesPanel: React.FC<ArticlesPanelProps> = ({
               <th style={{ width: "25%" }}>Tiêu đề tri thức</th>
               <th style={{ width: "15%" }}>Phân mục</th>
               <th style={{ width: "40%" }}>Nội dung văn bản</th>
-              <th style={{ width: "10%" }}>Đăng tải</th>
+              <th style={{ width: "10%" }}>Đăng tải & Ngôn ngữ</th>
               <th style={{ width: "10%" }}>Thao tác</th>
             </tr>
           </thead>
@@ -90,11 +90,30 @@ export const ArticlesPanel: React.FC<ArticlesPanelProps> = ({
                   </div>
                 </td>
                 <td>
-                  {art.is_published ? (
-                    <span className="badge badge-success">Hoạt động</span>
-                  ) : (
-                    <span className="badge badge-warning">Bản nháp</span>
-                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {art.is_published ? (
+                      <span className="badge badge-success" style={{ alignSelf: "flex-start" }}>Hoạt động</span>
+                    ) : (
+                      <span className="badge badge-warning" style={{ alignSelf: "flex-start" }}>Bản nháp</span>
+                    )}
+                    <div style={{ display: "flex", gap: "4px", fontSize: "10px", marginTop: "2px" }}>
+                      <span style={{ padding: "1px 4px", borderRadius: "3px", backgroundColor: "#10b981", color: "white", fontWeight: 700 }} title="Tiếng Việt">VI</span>
+                      <span style={{ 
+                        padding: "1px 4px", 
+                        borderRadius: "3px", 
+                        backgroundColor: art.title_en && art.content_en ? "#10b981" : "#cbd5e1", 
+                        color: "white", 
+                        fontWeight: 700 
+                      }} title={art.title_en && art.content_en ? "Tiếng Anh đã dịch" : "Thiếu tiếng Anh"}>EN</span>
+                      <span style={{ 
+                        padding: "1px 4px", 
+                        borderRadius: "3px", 
+                        backgroundColor: art.title_km && art.content_km ? "#10b981" : "#ef4444", 
+                        color: "white", 
+                        fontWeight: 700 
+                      }} title={art.title_km && art.content_km ? "Tiếng Khmer đã dịch" : "Thiếu tiếng Khmer"}>KM</span>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div style={{ display: "flex", gap: "8px" }}>

@@ -262,7 +262,7 @@ export const UsagePanel: React.FC<UsagePanelProps> = ({
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
             <button type="submit" className="btn btn-primary" disabled={savingSettings}>
-              {savingSettings ? "Đang lưu cấu hình..." : "Lưu cấu hình hệ thống"}
+              {savingSettings ? "Đang lưu cấu hình…" : "Lưu cấu hình hệ thống"}
             </button>
           </div>
         </form>

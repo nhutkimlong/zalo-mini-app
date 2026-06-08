@@ -71,6 +71,30 @@ Mandatory rules:
 Reference documents:
 {context}"""
 
+SYSTEM_PROMPT_KM = """អ្នកគឺជា {name} — ជាមគ្គុទ្ទេសក៍ទេសចរណ៍ AI សម្រាប់តំបន់ទេសចរណ៍ជាតិភ្នំបាដិន (Sun World BaDen Mountain), Tây Ninh, វៀតណាម។
+
+តម្រូវការភាសា៖
+- ឆ្លើយជាភាសាខ្មែរជានិច្ច ទោះបីជាភ្ញៀវសួរជាភាសាវៀតណាម ឬភាសាអង់គ្លេសក៏ដោយ ឬឯកសារយោងជាភាសាវៀតណាមក្តី។
+- កុំសុំឱ្យភ្ញៀវប្រើភាសាខ្មែរ។
+
+ស្ទីលទំនាក់ទំនង៖
+- និយាយដោយកក់ក្តៅ និងធម្មជាតិ ដូចជាមគ្គុទ្ទេសក៍ក្នុងស្រុកដែលមានចំណេះដឹងខ្ពស់ក្នុងការសន្ទនាពិតប្រាកដជាមួយភ្ញៀវ។
+- មានភាពស្និទ្ធស្នាល និងស្មោះត្រង់ — មិនមែនជាការផ្សព្វផ្សាយពាណិជ្ជកម្ម ឬដូចមនុស្សយន្តឡើយ។
+- នៅពេលដែលព័ត៌មានណាមួយគួរឱ្យចាប់អារម្មណ៍ (រឿងព្រេង កំណត់ត្រា ឬលក្ខណៈពិសេសប្លែកពីគេ) សូមចែករំលែកវាដោយសង្ខេបដើម្បីទាក់ទាញចំណាប់អារម្មណ៍។
+- រក្សាការឆ្លើយតបដោយផ្តោតអារម្មណ៍។ ប្រើចំណុចរាយនាម (bullet points) សម្រាប់តែការរាយតម្លៃសំបុត្រ ម៉ោងបើក ឬជម្រើសផ្សេងគ្នាប៉ុណ្ណោះ។
+- គ្មានរូបអារម្មណ៍ (emoji) ឡើយ។ កុំនិយាយដដែលៗនូវឈ្មោះប្រព័ន្ធ។
+
+ច្បាប់ដាច់ខាត៖
+- ផ្តល់អាទិភាពដាច់ខាតចំពោះ [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (ប្រសិនបើមាន)។ ប្រសិនបើព័ត៌មាននៅក្នុងសេចក្តីជូនដំណឹងផ្ទុយគ្នា ឬថ្មីជាងឯកសារយោងចាស់ៗ (ឧទាហរណ៍៖ ការជូនដំណឹងអំពីការថែទាំ ការផ្អាកឡានកាបជាបណ្តោះអាសន្ន ឬការផ្លាស់ប្តូរម៉ោងប្រតិបត្តិការបន្ទាន់) អ្នកត្រូវតែផ្តល់អាទិភាព និងប្រើប្រាស់ព័ត៌មានពីសេចក្តីជូនដំណឹងដើម្បីឆ្លើយតបទៅភ្ញៀវ ដោយសង្កត់ធ្ងន់លើការផ្លាស់ប្តូរបន្ទាន់/ការផ្អាកជាបណ្តោះអាសន្ននេះ។
+- ប្រើតែព័ត៌មានដែលមាននៅក្នុងឯកសារយោងខាងក្រោមប៉ុណ្ណោះ។ កុំស្មាន ឬបង្កើតឡើងដោយខ្លួនឯងឡើយ។
+- កុំចម្លងអត្ថបទទាំងស្រុងពីឯកសារយោង — ត្រូវតែនិយាយឡើងវិញដោយធម្មជាតិតាមរយៈពាក្យរបស់អ្នកផ្ទាល់។
+- កុំបញ្ចូលចំណងជើងប្រភពនៅក្នុងចម្លើយរបស់អ្នក។ UI នឹងបង្ហាញប្រភពដោយឡែកពីគ្នា។
+- ប្រសិនបើឯកសារយោងមិនមានចម្លើយ៖ និយាយដោយស្មោះត្រង់ថាអ្នកមិនទាន់មានព័ត៌មានផ្លូវការអំពីចំណុចនេះទេ ហើយណែនាំឱ្យទាក់ទងគណៈគ្រប់គ្រងតាមរយៈលេខទូរស័ព្ទ (0276) 3823.378។
+- កុំណែនាំការឡើងភ្នំដោយគ្មានការអនុញ្ញាត ឬសកម្មភាពដែលល្មើសនឹងច្បាប់វិន័យឡើយ។
+
+ឯកសារយោង៖
+{context}"""
+
 
 def _beeknoee_client() -> Optional[OpenAI]:
     """Create an OpenAI-compatible Beeknoee client."""
@@ -281,6 +305,11 @@ class RAGService:
     # ─── No-Info Response ─────────────────────────────────────────────────────
 
     def _no_info_response(self, language: str) -> str:
+        if language == "km":
+            return (
+                f"បច្ចុប្បន្ន {CRAWBOT_NAME} មិនទាន់មានព័ត៌មានផ្លូវការអំពីប្រធានបទនេះទេ។ "
+                "សូមទាក់ទងគណៈគ្រប់គ្រងតាមរយៈលេខទូរស័ព្ទ (0276) 3823.378 សម្រាប់ជំនួយផ្ទាល់។"
+            )
         if language == "en":
             return (
                 f"Currently, {CRAWBOT_NAME} does not have approved information on this topic. "
@@ -299,8 +328,11 @@ class RAGService:
         greetings = {
             "vi": {"xin chao", "chao", "hello", "hi", "alo", "cam on", "cảm ơn", "thanks"},
             "en": {"hello", "hi", "thanks", "thank you", "good morning", "good afternoon"},
+            "km": {"suosdei", "chao", "hello", "hi", "alo", "akun", "thanks", "thank you"}
         }
         if normalized in greetings.get(language, greetings["vi"]):
+            if language == "km":
+                return "សួស្តីបង។ ខ្ញុំអាចជួយផ្តល់ព័ត៌មានអំពីតម្លៃសំបុត្រឡានកាប ម៉ោងបើកធ្វើការ ផ្លូវធ្វើដំណើរ បទប្បញ្ញត្តិទស្សនា កន្លែងទេសចរណ៍ និងសេចក្តីជូនដំណឹងផ្លូវការ។ តើបងចង់សួរអំពីខ្លឹមសារអ្វីដែរ?"
             if language == "en":
                 return "Hello. I can help with cable car tickets, opening hours, directions, temple etiquette, attractions, and official visitor notices. What would you like to know?"
             return "Chào anh/chị. Mình có thể hỗ trợ thông tin về giá vé cáp treo, giờ hoạt động, đường đi, quy định tham quan, điểm tham quan và thông báo chính thức. Anh/chị muốn hỏi nội dung nào?"
@@ -339,6 +371,29 @@ class RAGService:
         """
         history_context = self._format_conversation_history(conversation_history)
         question_with_context = question + history_context
+
+        # Lấy thông tin cá nhân hóa của du khách để nhúng vào hệ thống chatbot
+        personalization_str = ""
+        if self.supabase and user_id:
+            try:
+                user_res = self.supabase.table("app_users").select("name").eq("id", str(user_id)).execute()
+                if user_res.data:
+                    user_name = user_res.data[0].get("name")
+                    if user_name:
+                        personalization_str += f"\n- Du khách tên là: {user_name}. Hãy xưng hô chào đón hoặc trả lời thân mật có gọi tên họ khi bắt đầu câu trả lời nếu thấy phù hợp."
+                
+                # Lấy địa danh ưa thích của du khách
+                fav_res = self.supabase.table("user_favorites").select("place_id, tourist_places(name)").eq("user_id", str(user_id)).execute()
+                if fav_res.data:
+                    fav_names = []
+                    for f in fav_res.data:
+                        if f.get("tourist_places") and f["tourist_places"].get("name"):
+                            fav_names.append(f["tourist_places"]["name"])
+                    if fav_names:
+                        fav_places = ", ".join(fav_names)
+                        personalization_str += f"\n- Du khách này đã lưu các địa danh sau vào mục yêu thích: {fav_places}. Bạn có thể liên hệ hoặc gợi ý thêm các hoạt động phù hợp liên quan đến các địa danh này."
+            except Exception as pe:
+                print(f"[{LOG_NAME}] Personalization lookup failed: {pe}")
 
         small_talk = self._small_talk_response(question, language)
         if small_talk:
@@ -409,7 +464,13 @@ class RAGService:
                     context_parts.append(f"[Tài liệu {i} — {title}]\n{chunk['text']}")
                 context_str = history_context + "\n\n" + "\n\n---\n\n".join(context_parts) if history_context else "\n\n---\n\n".join(context_parts)
 
-                prompt = (SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT_VI).format(
+                sys_prompt_base = SYSTEM_PROMPT_KM if language == "km" else SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT_VI
+                if personalization_str:
+                    sys_prompt_base = sys_prompt_base.replace("Tài liệu tham khảo:", f"Thông tin du khách & Cá nhân hóa:{personalization_str}\n\nTài liệu tham khảo:")
+                    sys_prompt_base = sys_prompt_base.replace("Reference documents:", f"Visitor profile & Personalization:{personalization_str}\n\nReference documents:")
+                    sys_prompt_base = sys_prompt_base.replace("ឯកសារយោង:", f"ព័ត៌មានផ្ទាល់ខ្លួនរបស់ភ្ញៀវ & បុគ្គលិកលក្ខណៈ:{personalization_str}\n\nឯកសារយោង:")
+
+                prompt = sys_prompt_base.format(
                     name=CRAWBOT_NAME,
                     context=context_str,
                 )
@@ -428,6 +489,7 @@ class RAGService:
                     no_info_markers = [
                         "chưa có thông tin chính xác",
                         "don't have official information",
+                        "មិនទាន់មានព័ត៌មានផ្លូវការ",
                     ]
                     if any(m in answer for m in no_info_markers):
                         confidence_score = 0.1

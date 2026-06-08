@@ -57,9 +57,20 @@ def get_feedback_stats(db: Client = Depends(get_db)):
         resolved_reports=res
     )
 
+from app.core.auth_deps import get_optional_user
+
 @router.post("/", response_model=FeedbackResponse)
-def submit_feedback(report: FeedbackCreate, db: Client = Depends(get_db)):
+def submit_feedback(
+    report: FeedbackCreate, 
+    db: Client = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
     payload = report.dict()
+    if current_user:
+        payload["user_id"] = current_user["id"]
+        # Điền tên tự động nếu chưa có
+        if not payload.get("reporter_name") and current_user.get("user_metadata"):
+            payload["reporter_name"] = current_user["user_metadata"].get("name")
     try:
         response = db.table("feedback_reports").insert(payload).execute()
         if response.data:

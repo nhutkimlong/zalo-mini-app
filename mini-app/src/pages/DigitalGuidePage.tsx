@@ -40,7 +40,7 @@ export const DigitalGuidePage: React.FC = () => {
     <Page>
       {/* Header */}
       <Header
-        title={language === "en" ? "Digital Audio Guides Library" : "Kho thuyết minh số di tích"}
+        title={language === "km" ? "បណ្ណាល័យសំឡេងណែនាំឌីជីថល" : language === "en" ? "Digital Audio Guides Library" : "Kho thuyết minh số di tích"}
         showBackIcon={true}
       />
 
@@ -48,9 +48,11 @@ export const DigitalGuidePage: React.FC = () => {
         <div className="glass-card" style={{ background: "rgba(11, 37, 69, 0.03)", marginBottom: "16px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
           <Volume2 size={18} style={{ color: "var(--accent-gold)", flexShrink: 0, marginTop: "2px" }} />
           <p style={{ fontSize: "13px", color: "var(--light-text)", margin: 0, lineHeight: 1.6 }}>
-            {language === "en"
-              ? "The automated digital narration system (Audio Guide) provides accurate historical research information about the pilgrimage sites and temples at the Tay Ninh Black Lady Mountain National Relic Area. Please plug in your headphones for the best experience."
-              : "Hệ thống thuyết minh số tự động (Audio Guide) cung cấp thông tin lịch sử khảo cứu chính xác về các địa điểm hành hương, đền đài tại Khu di tích Quốc gia Núi Bà Đen Tây Ninh. Du khách vui lòng cắm tai nghe để có trải nghiệm tốt nhất."}
+            {language === "km"
+              ? "ប្រព័ន្ធរៀបរាប់ឌីជីថលស្វ័យប្រវត្តិ (Audio Guide) ផ្តល់នូវព័ត៌មានស្រាវជ្រាវប្រវត្តិសាស្ត្រត្រឹមត្រូវអំពីទីកន្លែងសក្ការៈបូជា និងព្រះវិហារនៅតំបន់កេរដំណែលជាតិភ្នំ Ba Den ខេត្ត Tây Ninh។ សូមដោតកាសរបស់អ្នកដើម្បីទទួលបានបទពិសោធន៍ល្អបំផុត។"
+              : language === "en"
+                ? "The automated digital narration system (Audio Guide) provides accurate historical research information about the pilgrimage sites and temples at the Tay Ninh Black Lady Mountain National Relic Area. Please plug in your headphones for the best experience."
+                : "Hệ thống thuyết minh số tự động (Audio Guide) cung cấp thông tin lịch sử khảo cứu chính xác về các địa điểm hành hương, đền đài tại Khu di tích Quốc gia Núi Bà Đen Tây Ninh. Du khách vui lòng cắm tai nghe để có trải nghiệm tốt nhất."}
           </p>
         </div>
 
@@ -58,19 +60,19 @@ export const DigitalGuidePage: React.FC = () => {
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           {loading ? (
             <div style={{ textAlign: "center", padding: "30px", color: "var(--light-text)" }}>
-              {language === "en" ? "Loading audio guides list..." : "Đang tải danh sách thuyết minh..."}
+              {language === "km" ? "កំពុងទាញយកបញ្ជីសំឡេងណែនាំ..." : language === "en" ? "Loading audio guides list..." : "Đang tải danh sách thuyết minh..."}
             </div>
           ) : (() => {
             const audioPlaces = places.filter((place) => hasAudioGuide(place, language));
             if (audioPlaces.length === 0) {
               return (
                 <div style={{ textAlign: "center", padding: "30px", color: "var(--light-text)" }}>
-                  {language === "en" ? "No audio guides are available yet." : "Chưa có bài thuyết minh số khả dụng."}
+                  {language === "km" ? "មិនទាន់មានសំឡេងណែនាំនៅឡើយទេ។" : language === "en" ? "No audio guides are available yet." : "Chưa có bài thuyết minh số khả dụng."}
                 </div>
               );
             }
             return audioPlaces.map((place, index) => {
-              const localizedName = language === "en" && place.name_en ? place.name_en : place.name;
+              const localizedName = language === "km" && place.name_km ? place.name_km : language === "en" && place.name_en ? place.name_en : place.name;
               return (
                 <div 
                   key={place.id}
@@ -109,9 +111,11 @@ export const DigitalGuidePage: React.FC = () => {
                             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--light-text)" }}>
                               <BookOpen size={10} aria-hidden="true" />
                               <span>
-                                {language === "en"
-                                  ? `Audio guide narration • ${durations[place.id] || "--:--"} mins`
-                                  : `Bài nghe thuyết minh • ${durations[place.id] || "--:--"} phút`}
+                                {language === "km"
+                                  ? `មេរៀនស្តាប់ណែនាំ • ${durations[place.id] || "--:--"} នាទី`
+                                  : language === "en"
+                                    ? `Audio guide narration • ${durations[place.id] || "--:--"} mins`
+                                    : `Bài nghe thuyết minh • ${durations[place.id] || "--:--"} phút`}
                               </span>
                             </div>
                           </div>
@@ -135,7 +139,7 @@ export const DigitalGuidePage: React.FC = () => {
                               cursor: "pointer",
                               flexShrink: 0
                             }}
-                            aria-label={language === "en" ? `Listen to ${localizedName} audio guide` : `Nghe thuyết minh di tích ${localizedName}`}
+                            aria-label={language === "km" ? `ស្តាប់សំឡេងណែនាំ ${localizedName}` : language === "en" ? `Listen to ${localizedName} audio guide` : `Nghe thuyết minh di tích ${localizedName}`}
                           >
                             <Play size={16} style={{ fill: "var(--accent-gold)", marginLeft: "2px" }} aria-hidden="true" />
                           </Link>
@@ -151,7 +155,7 @@ export const DigitalGuidePage: React.FC = () => {
                             flexShrink: 0,
                             display: "inline-block"
                           }}>
-                            {language === "en" ? "No audio" : "Chưa có audio"}
+                            {language === "km" ? "គ្មានសំឡេង" : language === "en" ? "No audio" : "Chưa có audio"}
                           </span>
                         )}
                       </>

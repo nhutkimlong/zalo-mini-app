@@ -1,5 +1,5 @@
 import React from "react";
-import { UserPlus, Search, Edit2, Trash2, Calendar, Phone } from "lucide-react";
+import { UserPlus, Search, Edit2, Trash2, Calendar, Phone, MessageSquare, Heart } from "lucide-react";
 import { AdminUser } from "../../services/adminApi";
 
 interface UsersPanelProps {
@@ -9,6 +9,7 @@ interface UsersPanelProps {
   handleOpenAddUser: () => void;
   handleOpenEditUser: (user: AdminUser) => void;
   handleDeleteUser: (id: string) => void;
+  onViewChatLogs: (userName: string) => void;
 }
 
 export const UsersPanel: React.FC<UsersPanelProps> = ({
@@ -18,6 +19,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
   handleOpenAddUser,
   handleOpenEditUser,
   handleDeleteUser,
+  onViewChatLogs,
 }) => {
 
   const getRoleBadge = (role: string) => {
@@ -182,17 +184,18 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
             <tr>
               <th style={{ width: "60px" }}>Avatar</th>
               <th>Họ tên</th>
-              <th>Zalo User ID</th>
+              <th>Liên kết tài khoản</th>
               <th>Số điện thoại</th>
               <th>Vai trò</th>
+              <th style={{ textAlign: "center" }}>Địa danh lưu</th>
               <th>Ngày tạo</th>
-              <th style={{ width: "100px", textAlign: "right" }}>Thao tác</th>
+              <th style={{ width: "130px", textAlign: "right" }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--text-light)" }}>
+                <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "var(--text-light)" }}>
                   Không tìm thấy người dùng nào phù hợp.
                 </td>
               </tr>
@@ -237,17 +240,14 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
                   </td>
                   <td style={{ fontWeight: 600, color: "var(--cream-white)" }}>{user.name}</td>
                   <td>
-                    <code 
-                      style={{ 
-                        fontSize: "12px", 
-                        backgroundColor: "rgba(0, 0, 0, 0.2)", 
-                        padding: "2px 6px", 
-                        borderRadius: "4px",
-                        border: "1px solid rgba(255, 255, 255, 0.05)"
-                      }}
-                    >
-                      {user.zalo_user_id}
-                    </code>
+                    {user.zalo_user_id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span className="badge badge-info" style={{ fontWeight: 600 }}>Zalo Mini App</span>
+                        <code style={{ fontSize: "10px", opacity: 0.6 }}>{user.zalo_user_id}</code>
+                      </div>
+                    ) : (
+                      <span className="badge badge-success" style={{ fontWeight: 600 }}>Email / Supabase</span>
+                    )}
                   </td>
                   <td>
                     {user.phone ? (
@@ -260,6 +260,19 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
                     )}
                   </td>
                   <td>{getRoleBadge(user.role)}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <span 
+                      style={{ 
+                        display: "inline-flex", 
+                        alignItems: "center", 
+                        gap: "4px",
+                        color: user.favorites_count && user.favorites_count > 0 ? "var(--accent-gold)" : "rgba(255,255,255,0.3)" 
+                      }}
+                    >
+                      <Heart size={14} fill={user.favorites_count && user.favorites_count > 0 ? "var(--accent-gold)" : "none"} />
+                      <strong>{user.favorites_count || 0}</strong>
+                    </span>
+                  </td>
                   <td>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text-light)" }}>
                       <Calendar size={12} />
@@ -267,7 +280,15 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                    <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                      <button 
+                        className="btn btn-secondary btn-xs" 
+                        onClick={() => onViewChatLogs(user.name)}
+                        title="Xem nhật ký chat AI"
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "6px", borderColor: "rgba(212, 175, 55, 0.3)" }}
+                      >
+                        <MessageSquare size={13} style={{ color: "var(--accent-gold)" }} />
+                      </button>
                       <button 
                         className="btn btn-secondary btn-xs" 
                         onClick={() => handleOpenEditUser(user)}

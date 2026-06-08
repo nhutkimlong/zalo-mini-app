@@ -46,7 +46,17 @@ def get_place_by_slug(slug: str, db: Client = Depends(get_db)):
         print(f"Places slug query error: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi truy vấn cơ sở dữ liệu địa điểm theo slug: {str(e)}")
 
-OPTIONAL_PLACE_FIELDS = {"audio_enabled", "audio_url_en", "name_en", "short_description_en", "full_description_en"}
+OPTIONAL_PLACE_FIELDS = {
+    "audio_enabled", 
+    "audio_url_en", 
+    "audio_url_km", 
+    "name_en", 
+    "name_km", 
+    "short_description_en", 
+    "short_description_km", 
+    "full_description_en", 
+    "full_description_km"
+}
 
 
 def _execute_with_optional_fields(call_factory, payload: dict):

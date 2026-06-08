@@ -11,6 +11,7 @@ class FeedbackCreate(BaseModel):
     image_url: Optional[str] = Field(None, description="Đường dẫn ảnh đính kèm")
     latitude: Optional[float] = Field(None, description="Vĩ độ GPS")
     longitude: Optional[float] = Field(None, description="Kinh độ GPS")
+    user_id: Optional[UUID] = Field(None, description="ID người dùng gửi phản ánh")
 
 class FeedbackUpdate(BaseModel):
     status: Optional[str] = Field(None, description="Trạng thái phản ánh ('new', 'in_progress', 'resolved', 'spam')")
@@ -29,6 +30,7 @@ class FeedbackResponse(BaseModel):
     status: str
     assigned_unit: Optional[str] = None
     internal_note: Optional[str] = None
+    user_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

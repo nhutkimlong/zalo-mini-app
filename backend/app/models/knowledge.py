@@ -12,6 +12,8 @@ class ArticleCreate(BaseModel):
     status: str = Field("draft", description="Trạng thái ('draft', 'published', 'archived')")
     title_en: Optional[str] = Field(None, description="Tiêu đề bài viết tri thức (English)")
     content_en: Optional[str] = Field(None, description="Nội dung chính chi tiết (English)")
+    title_km: Optional[str] = Field(None, description="Tiêu đề bài viết tri thức (Khmer)")
+    content_km: Optional[str] = Field(None, description="Nội dung chính chi tiết (Khmer)")
 
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
@@ -22,6 +24,8 @@ class ArticleUpdate(BaseModel):
     status: Optional[str] = None
     title_en: Optional[str] = None
     content_en: Optional[str] = None
+    title_km: Optional[str] = None
+    content_km: Optional[str] = None
 
 class ArticleResponse(BaseModel):
     id: UUID
@@ -36,6 +40,8 @@ class ArticleResponse(BaseModel):
     updated_at: datetime
     title_en: Optional[str] = None
     content_en: Optional[str] = None
+    title_km: Optional[str] = None
+    content_km: Optional[str] = None
 
     class Config:
         from_attributes = True

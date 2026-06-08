@@ -28,12 +28,13 @@ TTS_CHAIN = [
 LANG_CODES = {
     "vi": {"code": "vi-VN", "name": "vi-VN-Standard-A"},
     "en": {"code": "en-US", "name": "en-US-Standard-A"},
+    "km": {"code": "km-KH", "name": "km-KH-Standard-A"},
 }
 
 
 class TTSRequest(BaseModel):
     text: str
-    lang: str = "vi"  # "vi" | "en"
+    lang: str = "vi"  # "vi" | "en" | "km"
 
 
 def get_db() -> Optional[Client]:

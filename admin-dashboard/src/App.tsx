@@ -18,6 +18,7 @@ import { AnnouncementModal } from "./components/modals/AnnouncementModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
 import { Login } from "./components/Login";
 import { UsersPanel } from "./components/panels/UsersPanel";
+import { RealtimePanel } from "./components/panels/RealtimePanel";
 import { UserModal } from "./components/modals/UserModal";
 
 import adminApi, { 
@@ -55,7 +56,7 @@ const toSlug = (str: string): string => {
 };
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime">("dashboard");
 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -390,8 +391,10 @@ export const App: React.FC = () => {
   const handleSaveItinerary = async (data: {
     name: string;
     name_en?: string;
+    name_km?: string;
     duration: string;
     duration_en?: string;
+    duration_km?: string;
     color: string;
     place_slugs: string[];
     steps: AdminItineraryStep[];
@@ -438,8 +441,10 @@ export const App: React.FC = () => {
   const handleSaveAnnouncement = async (data: {
     title: string;
     title_en?: string;
+    title_km?: string;
     content: string;
     content_en?: string;
+    content_km?: string;
     type: "general" | "emergency" | "weather" | "festival";
   }) => {
     try {
@@ -892,7 +897,15 @@ export const App: React.FC = () => {
                   handleOpenAddUser={handleOpenAddUser}
                   handleOpenEditUser={handleOpenEditUser}
                   handleDeleteUser={handleDeleteUser}
+                  onViewChatLogs={(userName) => {
+                    setActiveTab("chats");
+                    setSearchQuery(userName);
+                  }}
                 />
+              )}
+
+              {activeTab === "realtime" && (
+                <RealtimePanel places={places} />
               )}
             </>
           )}

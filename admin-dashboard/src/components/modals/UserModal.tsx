@@ -88,7 +88,7 @@ export const UserModal: React.FC<UserModalProps> = ({
               type="text" 
               className="form-input" 
               required 
-              placeholder="Nhập tên người dùng..."
+              placeholder="Nhập tên người dùng…"
               value={name} 
               onChange={e => setName(e.target.value)} 
             />
@@ -110,7 +110,7 @@ export const UserModal: React.FC<UserModalProps> = ({
             <input 
               type="tel" 
               className="form-input" 
-              placeholder="Nhập số điện thoại..."
+              placeholder="Nhập số điện thoại…"
               value={phone} 
               onChange={e => setPhone(e.target.value)} 
             />
