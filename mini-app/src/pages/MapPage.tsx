@@ -775,16 +775,7 @@ export const MapPage: React.FC = () => {
     <Page
       className="map-page-premium"
       style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        paddingTop: "calc(48px + var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px)))",
         color: "#f4f7f6",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
         background: "radial-gradient(circle at 50% 0%, #17375e 0%, #06152a 100%)",
         zIndex: 97
       }}
@@ -969,12 +960,15 @@ export const MapPage: React.FC = () => {
         {/* Zoom and resetting viewport overlay tools */}
         <div style={{
           position: "absolute",
-          bottom: "24px",
+          bottom: (selectedPlace || activeRoute)
+            ? "calc(min(240px, 35vh) + 16px)"
+            : "calc(54px + 16px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 8px)))",
           right: "16px",
           display: "flex",
           flexDirection: "column",
           gap: "10px",
-          zIndex: 1000
+          zIndex: 1000,
+          transition: "bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)"
         }}>
           {/* GPS Locate Button */}
           <button
@@ -1095,12 +1089,16 @@ export const MapPage: React.FC = () => {
 
       {/* Pop-up bottom details sheet panel */}
       <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
         backgroundColor: "var(--primary-navy)",
         borderTop: "2.5px solid var(--accent-gold)",
         padding: (selectedPlace || activeRoute)
           ? "8px 16px calc(16px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px))) 16px"
           : "4px 16px calc(8px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 8px))) 16px",
-        maxHeight: (selectedPlace || activeRoute) ? "240px" : "54px",
+        maxHeight: (selectedPlace || activeRoute) ? "min(240px, 35vh)" : "54px",
         transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
         overflowY: "auto",
         zIndex: 1001,
@@ -1109,6 +1107,16 @@ export const MapPage: React.FC = () => {
         flexDirection: "column",
         gap: (selectedPlace || activeRoute) ? "8px" : "2px"
       }}>
+        {/* Fail-safe background extension: fills any iOS/PWA bottom safe area gap silently */}
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          height: "100px",
+          backgroundColor: "var(--primary-navy)",
+          pointerEvents: "none"
+        }} />
         {/* Drag handle */}
         <div style={{
           width: "40px",

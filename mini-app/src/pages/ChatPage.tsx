@@ -306,7 +306,12 @@ export const ChatPage: React.FC = () => {
         
       {/* Main Conversation Window */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px" }}>
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          padding: "16px 16px calc(140px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px))) 16px"
+        }}>
           {messages.map((msg) => {
             const isUser = msg.sender === "user";
             
@@ -460,8 +465,19 @@ export const ChatPage: React.FC = () => {
       </div>
 
       {/* Suggested Quick Prompt Chips slider */}
-      <div style={{ zIndex: 98, backgroundColor: "rgba(6, 21, 42, 0.65)" }}>
-        {!hasUserMessage && (
+      {!hasUserMessage && (
+        <div style={{
+          position: "fixed",
+          bottom: "calc(68px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px)))",
+          left: 0,
+          right: 0,
+          zIndex: 98,
+          backgroundColor: "rgba(6, 21, 42, 0.95)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          padding: "4px 0"
+        }}>
           <div className="chips-slider-container">
             {SUGGESTED_QUESTIONS.map((q, idx) => (
               <button 
@@ -473,8 +489,8 @@ export const ChatPage: React.FC = () => {
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Floating Bottom Input Message Bar */}
       <div className="floating-input-bar-dark" style={{ display: "flex", gap: "8px", alignItems: "center" }}>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "nui-ba-den-pwa-v3";
+const CACHE_NAME = "nui-ba-den-pwa-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -55,17 +55,20 @@ self.addEventListener("fetch", (event) => {
 
   // 1. Network-First for navigation requests (HTML shell)
   if (event.request.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname === "/") {
+    // Standard SPA behavior: always fetch and serve the root /index.html file for any route navigation
+    const indexRequest = new Request("/index.html", { cache: "no-cache" });
     event.respondWith(
-      // Force checking the network server by bypassing browser HTTP cache validation
-      fetch(new Request(event.request, { cache: "no-cache" }))
+      fetch(indexRequest)
         .then((networkResponse) => {
           if (networkResponse.status === 200) {
             const cacheCopy = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
+              // Cache it under the original navigation request (e.g. /profile) to support offline sub-route loading
               cache.put(event.request, cacheCopy);
             });
+            return networkResponse;
           }
-          return networkResponse;
+          return caches.match("./index.html") || caches.match("./");
         })
         .catch(() => {
           // Offline fallback

@@ -111,12 +111,23 @@ body {
   background-color: var(--primary-navy) !important;
   color: var(--cream-white) !important;
   border-bottom: 2px solid var(--accent-gold) !important;
-  position: static !important; /* Make header scroll with content */
+  position: static !important; /* Make header stay in the layout flow, avoiding manual page paddingTop offsets */
 }
 
-/* Universal zaui page layout fix: allow static header to naturally push content */
 .zaui-page {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important; /* Use 100% height to ensure soft keyboard viewport shrinking works correctly */
+  overflow: hidden !important;
   padding-top: var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
+  box-sizing: border-box !important;
+}
+
+.zaui-page-content {
+  flex: 1 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .zaui-header-title {
@@ -562,7 +573,9 @@ body {
 .map-page-premium .zaui-page-content {
   display: flex !important;
   flex-direction: column !important;
-  height: 100% !important;
+  height: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
   overflow: hidden !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -695,16 +708,30 @@ body {
 }
 
 .floating-input-bar-dark {
-  background: rgba(6, 21, 42, 0.85);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: rgba(6, 21, 42, 0.95) !important;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px 16px max(12px, var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  padding: 12px 16px calc(12px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px))) 16px !important;
   display: flex;
   align-items: center;
   gap: 10px;
   z-index: 99;
-  position: relative; /* Ensure it stays in flow but handles safe area */
+}
+
+.floating-input-bar-dark::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: rgba(6, 21, 42, 0.95);
+  pointer-events: none;
 }
 
 .input-box-dark {
