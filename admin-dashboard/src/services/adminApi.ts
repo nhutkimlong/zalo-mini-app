@@ -110,7 +110,7 @@ export interface AdminChatLog {
 
 export interface AdminUser {
   id: string;
-  zalo_user_id: string;
+  email?: string | null;
   name: string;
   phone?: string | null;
   avatar_url?: string | null;
@@ -118,6 +118,19 @@ export interface AdminUser {
   created_at: string;
   favorites_count?: number;
   link_type?: string;
+}
+
+export interface AdminBadge {
+  id: string;
+  title: string;
+  title_en?: string | null;
+  title_km?: string | null;
+  xp_required: number;
+  description?: string | null;
+  description_en?: string | null;
+  description_km?: string | null;
+  icon_url?: string | null;
+  created_at: string;
 }
 
 export interface AdminUsageRow {
@@ -287,10 +300,6 @@ class AdminApiClient {
     weather_auto: boolean;
     weather_status: string;
     weather_temp: number;
-    cable_peak_queue: string;
-    cable_peak_wait_time: number;
-    cable_temple_queue: string;
-    cable_temple_wait_time: number;
   }> {
     return await this.request<any>("/api/tourism/realtime");
   }
@@ -299,10 +308,6 @@ class AdminApiClient {
     weather_auto: boolean;
     weather_status: string;
     weather_temp: number;
-    cable_peak_queue: string;
-    cable_peak_wait_time: number;
-    cable_temple_queue: string;
-    cable_temple_wait_time: number;
   }): Promise<{ status: string; message: string }> {
     return await this.request<{ status: string; message: string }>("/api/tourism/realtime", {
       method: "PUT",
@@ -438,7 +443,7 @@ class AdminApiClient {
     return await this.request<AdminUser[]>("/api/admin/users");
   }
 
-  async createUser(data: Omit<AdminUser, "id" | "created_at">): Promise<AdminUser> {
+  async createUser(data: Omit<AdminUser, "id" | "created_at"> & { id?: string | null }): Promise<AdminUser> {
     return await this.request<AdminUser>("/api/admin/users", {
       method: "POST",
       body: JSON.stringify(data)
@@ -454,6 +459,31 @@ class AdminApiClient {
 
   async deleteUser(id: string): Promise<{ status: string; message: string }> {
     return await this.request<{ status: string; message: string }>(`/api/admin/users/${id}`, {
+      method: "DELETE"
+    });
+  }
+
+  // --- Badges management (CRUD) ---
+  async getBadges(): Promise<AdminBadge[]> {
+    return await this.request<AdminBadge[]>("/api/badges");
+  }
+
+  async createBadge(data: Omit<AdminBadge, "id" | "created_at">): Promise<AdminBadge> {
+    return await this.request<AdminBadge>("/api/badges", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateBadge(id: string, data: Partial<Omit<AdminBadge, "id" | "created_at">>): Promise<AdminBadge> {
+    return await this.request<AdminBadge>(`/api/badges/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteBadge(id: string): Promise<{ status: string; message: string }> {
+    return await this.request<{ status: string; message: string }>(`/api/badges/${id}`, {
       method: "DELETE"
     });
   }

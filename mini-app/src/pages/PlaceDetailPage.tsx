@@ -29,8 +29,6 @@ export const PlaceDetailPage: React.FC = () => {
   const [distance, setDistance] = useState<number | null>(null); // in meters
   const [gpsLoading, setGpsLoading] = useState(false);
   const [checkinStatus, setCheckinStatus] = useState<"none" | "checking" | "success" | "too_far">("none");
-  const [checkinMessage, setCheckinMessage] = useState("");
-  const [stampsCount, setStampsCount] = useState(0);
   const [rewardGranted, setRewardGranted] = useState(false);
   const [alreadyStamped, setAlreadyStamped] = useState(false);
 
@@ -63,9 +61,6 @@ export const PlaceDetailPage: React.FC = () => {
         const stamps = await api.getMyStamps();
         const hasStamp = stamps.some(s => s.place_slug === place.slug);
         setAlreadyStamped(hasStamp);
-        if (hasStamp) {
-          setStampsCount(stamps.length);
-        }
       }
     } catch (err) {
       console.warn("[Detail] Failed to check auth details:", err);
@@ -98,7 +93,7 @@ export const PlaceDetailPage: React.FC = () => {
         console.warn("[GPS] Location permission denied or unavailable:", error);
         setGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 5000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -205,6 +200,15 @@ export const PlaceDetailPage: React.FC = () => {
     }
   };
 
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (audioRef.current && audioRef.current.duration) {
+      const seekValue = parseFloat(e.target.value);
+      const newTime = (seekValue / 100) * audioRef.current.duration;
+      audioRef.current.currentTime = newTime;
+      setProgress(seekValue);
+    }
+  };
+
   const handleToggleFavorite = async () => {
     if (!isLoggedIn) {
       alert(language === "en" ? "Please log in first!" : language === "km" ? "សូមចូលគណនីជាមុនសិន!" : "Vui lòng đăng nhập tài khoản trước!");
@@ -239,27 +243,33 @@ export const PlaceDetailPage: React.FC = () => {
       if (res.status === "success") {
         setCheckinStatus("success");
         setAlreadyStamped(true);
-        setStampsCount(res.total_stamps);
         setRewardGranted(res.reward_granted);
-        setCheckinMessage(res.message);
       } else {
         setCheckinStatus("too_far");
-        setCheckinMessage(res.message);
       }
     } catch (err: any) {
       setCheckinStatus("too_far");
-      setCheckinMessage(err.message || "Lỗi check-in GPS.");
     }
   };
 
   const handleAskAI = () => {
     if (place) {
       const placeName = language === "km" && place.name_km ? place.name_km : language === "en" && place.name_en ? place.name_en : place.name;
-      const question = language === "km"
-        ? `សូមប្រាប់ខ្ញុំអំពីប្រវត្តិ និងព័ត៌មានលម្អិតរបស់ ${placeName}`
-        : language === "en" 
+      const isSpiritual = place.category === "tam_linh";
+      let question = "";
+      if (language === "km") {
+        question = isSpiritual 
+          ? `សូមប្រាប់ខ្ញុំអំពីប្រវត្តិ និងព័ត៌មានលម្អិតរបស់ ${placeName}`
+          : `សូមផ្តល់ព័ត៌មានលម្អិតអំពី ${placeName}`;
+      } else if (language === "en") {
+        question = isSpiritual
           ? `Tell me about the history and details of ${placeName}`
-          : `Hãy kể sự tích và thông tin chi tiết về ${placeName}`;
+          : `Tell me detailed information about ${placeName}`;
+      } else {
+        question = isSpiritual
+          ? `Hãy kể sự tích và thông tin chi tiết về ${placeName}`
+          : `Hãy cung cấp thông tin chi tiết về ${placeName}`;
+      }
       
       localStorage.setItem("preloaded_question", question);
       localStorage.setItem("preloaded_question_language", language);
@@ -319,6 +329,52 @@ export const PlaceDetailPage: React.FC = () => {
 
   return (
     <Page>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .audio-slider-input {
+          -webkit-appearance: none;
+          appearance: none;
+          flex: 1;
+          height: 6px;
+          border-radius: 3px;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        /* Webkit Thumb styles */
+        .audio-slider-input::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: var(--accent-gold);
+          border: 2.5px solid var(--primary-navy);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+          cursor: pointer;
+          transition: transform 0.1s ease;
+        }
+
+        .audio-slider-input::-webkit-slider-thumb:hover {
+          transform: scale(1.25);
+        }
+
+        /* Firefox Thumb styles */
+        .audio-slider-input::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: var(--accent-gold);
+          border: 2.5px solid var(--primary-navy);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+          cursor: pointer;
+          transition: transform 0.1s ease;
+        }
+
+        .audio-slider-input::-moz-range-thumb:hover {
+          transform: scale(1.25);
+        }
+      ` }} />
       {/* Header */}
       <Header 
         title={localizedName} 
@@ -383,6 +439,7 @@ export const PlaceDetailPage: React.FC = () => {
       </div>
 
       {/* GPS Check-in Area for Stamp Rally */}
+      {isLoggedIn && (
       <div style={{ padding: "16px 16px 0 16px" }}>
         <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -398,10 +455,10 @@ export const PlaceDetailPage: React.FC = () => {
             )}
           </div>
 
-          {alreadyStamped ? (
+          {alreadyStamped && checkinStatus !== "success" ? (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981", fontSize: "13px", fontWeight: 700, backgroundColor: "rgba(16,185,129,0.08)", padding: "10px", borderRadius: "10px", border: "1px solid rgba(16,185,129,0.2)" }}>
               <Check size={18} style={{ strokeWidth: 3 }} />
-              <span>{t("place.checkin.already")} ({t("profile.stamps_collected").replace("{count}", stampsCount.toString())})</span>
+              <span>{t("place.checkin.already")}</span>
             </div>
           ) : (
             <>
@@ -425,25 +482,47 @@ export const PlaceDetailPage: React.FC = () => {
                   color: "var(--light-text)",
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: "space-between",
                   gap: "8px",
                   lineHeight: "1.4"
                 }}>
-                  <AlertCircle size={16} style={{ color: "var(--alert-orange)", flexShrink: 0 }} />
-                  <span>
-                    {gpsLoading ? (
-                      language === "en"
-                        ? "Detecting GPS position..."
-                        : language === "km"
-                          ? "កំពុងស្វែងរកទីតាំង GPS..."
-                          : "Đang xác định vị trí GPS của bạn..."
-                    ) : distance === null ? (
-                      language === "en" 
-                        ? "Unable to detect GPS position. Please allow location access." 
-                        : language === "km" 
-                          ? "មិនអាចរកទីតាំង GPS បានទេ។ សូមអនុញ្ញាតឲ្យបើក GPS។" 
-                          : "Không thể lấy vị trí GPS. Hãy kiểm tra cài đặt vị trí để check-in."
-                    ) : t("place.checkin.too_far").replace("{dist}", distance.toFixed(0))}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+                    <AlertCircle size={16} style={{ color: "var(--alert-orange)", flexShrink: 0 }} />
+                    <span>
+                      {gpsLoading ? (
+                        language === "en"
+                          ? "Detecting GPS position..."
+                          : language === "km"
+                            ? "កំពុងស្វែងរកទីតាំង GPS..."
+                            : "Đang xác định vị trí GPS của bạn..."
+                      ) : distance === null ? (
+                        language === "en" 
+                          ? "Unable to detect GPS position. Please allow location access." 
+                          : language === "km" 
+                            ? "មិនអាចរកទីតាំង GPS បានទេ។ សូមអនុញ្ញាតឲ្យបើក GPS។" 
+                            : "Không thể lấy vị trí GPS. Hãy kiểm tra cài đặt vị trí để check-in."
+                      ) : t("place.checkin.too_far").replace("{dist}", distance.toFixed(0))}
+                    </span>
+                  </div>
+                  {!gpsLoading && (
+                    <button
+                      type="button"
+                      onClick={requestUserLocation}
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        backgroundColor: "var(--primary-navy)",
+                        color: "var(--accent-gold)",
+                        border: "1px solid var(--accent-gold)",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {language === "en" ? "Refresh" : language === "km" ? "ធ្វើបច្ចុប្បន្នភាព" : "Cập nhật"}
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -456,9 +535,6 @@ export const PlaceDetailPage: React.FC = () => {
                 <Sparkles size={16} style={{ color: "var(--accent-gold)" }} />
                 <span>{t("place.checkin.success")}</span>
               </div>
-              <p style={{ margin: "4px 0 0 0", opacity: 0.9, color: "var(--primary-navy)" }}>
-                {checkinMessage}
-              </p>
               {rewardGranted && (
                 <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "8px", fontWeight: 700, fontSize: "12px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
                   <Sparkles size={14} style={{ color: "var(--accent-gold)" }} />
@@ -475,6 +551,7 @@ export const PlaceDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Audio Guide Player — only shown when place has audio_url */}
       {(() => {
@@ -496,11 +573,20 @@ export const PlaceDetailPage: React.FC = () => {
 
             {/* Progress bar */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}>
-              <span style={{ fontSize: "11px", fontFamily: "monospace" }}>{currentTime}</span>
-              <div style={{ flex: 1, height: "6px", backgroundColor: "rgba(255,255,255,0.2)", borderRadius: "3px", overflow: "hidden" }}>
-                <div style={{ width: `${progress}%`, height: "100%", backgroundColor: "var(--accent-gold)", borderRadius: "3px" }} />
-              </div>
-              <span style={{ fontSize: "11px", fontFamily: "monospace" }}>{duration}</span>
+              <span style={{ fontSize: "11px", fontFamily: "monospace", color: "var(--cream-white)" }}>{currentTime}</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={0.1}
+                value={progress}
+                onChange={handleSeek}
+                className="audio-slider-input"
+                style={{
+                  background: `linear-gradient(to right, var(--accent-gold) 0%, var(--accent-gold) ${progress}%, rgba(255, 255, 255, 0.2) ${progress}%, rgba(255, 255, 255, 0.2) 100%)`
+                }}
+              />
+              <span style={{ fontSize: "11px", fontFamily: "monospace", color: "var(--cream-white)" }}>{duration}</span>
             </div>
 
             {/* Controls */}

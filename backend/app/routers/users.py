@@ -17,13 +17,15 @@ def get_db():
         raise HTTPException(status_code=503, detail=f"Không thể kết nối Supabase: {str(e)}")
 
 class UserCreate(BaseModel):
-    zalo_user_id: str
+    id: Optional[UUID] = None
+    email: Optional[str] = None
     name: str
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
     role: str = "visitor"
 
 class UserUpdate(BaseModel):
+    email: Optional[str] = None
     name: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -31,14 +33,14 @@ class UserUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     id: UUID
-    zalo_user_id: Optional[str] = None
+    email: Optional[str] = None
     name: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
     role: str
     created_at: datetime
     favorites_count: Optional[int] = 0
-    link_type: Optional[str] = "Zalo Mini App"
+    link_type: Optional[str] = "Email / Supabase"
 
     class Config:
         from_attributes = True
@@ -64,7 +66,7 @@ def get_users(db: Client = Depends(get_db)):
         for u in users:
             uid_str = str(u["id"])
             u["favorites_count"] = fav_counts.get(uid_str, 0)
-            u["link_type"] = "Zalo Mini App" if u.get("zalo_user_id") else "Email / Supabase"
+            u["link_type"] = "Email / Supabase"
             
         return users
     except Exception as e:
@@ -73,12 +75,25 @@ def get_users(db: Client = Depends(get_db)):
 @router.post("", response_model=UserResponse)
 def create_user(user: UserCreate, db: Client = Depends(get_db)):
     try:
-        # Check unique zalo_user_id
-        check_res = db.table("app_users").select("id").eq("zalo_user_id", user.zalo_user_id).execute()
-        if check_res.data:
-            raise HTTPException(status_code=400, detail="Zalo User ID này đã tồn tại trên hệ thống")
+        # Check unique id (if provided)
+        if user.id:
+            check_id = db.table("app_users").select("id").eq("id", str(user.id)).execute()
+            if check_id.data:
+                raise HTTPException(status_code=400, detail="User ID (UUID) này đã tồn tại trên hệ thống")
+
+
+                
+        # Check unique email (if provided)
+        if user.email:
+            check_email = db.table("app_users").select("id").eq("email", user.email).execute()
+            if check_email.data:
+                raise HTTPException(status_code=400, detail="Email này đã tồn tại trên hệ thống")
             
-        res = db.table("app_users").insert(user.dict()).execute()
+        payload = {k: v for k, v in user.dict().items() if v is not None}
+        if "id" in payload:
+            payload["id"] = str(payload["id"])
+            
+        res = db.table("app_users").insert(payload).execute()
         if res.data:
             return res.data[0]
         raise HTTPException(status_code=400, detail="Không thể tạo người dùng mới")

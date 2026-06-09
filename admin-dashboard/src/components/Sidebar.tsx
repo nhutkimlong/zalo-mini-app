@@ -10,12 +10,13 @@ import {
   DollarSign,
   Users,
   LogOut,
-  Activity
+  Activity,
+  Award
 } from "lucide-react";
 
 interface SidebarProps {
-  activeTab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime";
-  setActiveTab: (tab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime") => void;
+  activeTab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime" | "badges";
+  setActiveTab: (tab: "dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime" | "badges") => void;
   setSearchQuery: (q: string) => void;
   newFeedbacks: number;
   isOpen?: boolean;
@@ -202,6 +203,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Users size={18} aria-hidden="true" />
             <span>Quản Lý Thành Viên</span>
+          </li>
+          <li
+            className={`nav-item ${activeTab === "badges" ? "nav-item-active" : ""}`}
+            onClick={() => handleNavClick("badges")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, "badges")}
+          >
+            <Award size={18} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
+            <span>Quản Lý Danh Hiệu</span>
           </li>
         </ul>
 

@@ -686,7 +686,7 @@ export const MapPage: React.FC = () => {
       if (navigator.geolocation) {
         try {
           const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000, enableHighAccuracy: true });
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
           });
           latitude = pos.coords.latitude;
           longitude = pos.coords.longitude;
@@ -898,49 +898,11 @@ export const MapPage: React.FC = () => {
         display: "flex",
         flexDirection: "column",
         gap: "6px",
-        padding: "8px 12px",
+        padding: "6px 12px 8px 12px",
         background: "rgba(11, 37, 69, 0.85)",
         borderBottom: "1px solid rgba(212, 175, 55, 0.25)",
         zIndex: 10
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontSize: "10.5px", color: "#f4f7f6", opacity: 0.85 }}>
-            {gpsLocation ? (
-              <span style={{ color: "#22c55e", fontWeight: 700 }}>
-                {language === "km" ? "ប្រព័ន្ធ GPS កំពុងដំណើរការ" : language === "en" ? "GPS Live Active" : "GPS Thực Địa Đang Bật"}
-              </span>
-            ) : (
-              language === "km" ? "គោលដៅ: ភ្នំ Ba Den" : language === "en" ? "GPS Target: Mount Ba Den" : "Tiêu điểm: Núi Bà Đen"
-            )}
-          </div>
-
-          <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => handleActivateGPS(false)}
-              disabled={gpsLoading}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                padding: "4px 10px",
-                borderRadius: "14px",
-                border: "1px solid var(--accent-gold)",
-                backgroundColor: gpsLocation ? "rgba(212, 175, 55, 0.2)" : "rgba(255, 255, 255, 0.06)",
-                color: "var(--accent-gold)",
-                fontSize: "10.5px",
-                fontWeight: 700,
-                cursor: "pointer",
-                minHeight: "26px"
-              }}
-            >
-              <Navigation size={11} style={{ transform: "rotate(45deg)", strokeWidth: 3 }} />
-              {gpsLoading 
-                ? (language === "km" ? "កំពុងស្វែងរក..." : language === "en" ? "Locating..." : "Đang lấy...") 
-                : (language === "km" ? "កំណត់ទីតាំង GPS" : language === "en" ? "GPS Locate" : "Định Vị GPS")}
-            </button>
-          </div>
-        </div>
-
         {/* AI route scrollable list */}
         <div style={{
           display: "flex",
@@ -1006,68 +968,126 @@ export const MapPage: React.FC = () => {
         {/* Zoom and resetting viewport overlay tools */}
         <div style={{
           position: "absolute",
-          bottom: "16px",
+          bottom: "24px",
           right: "16px",
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
+          gap: "10px",
           zIndex: 1000
         }}>
+          {/* GPS Locate Button */}
+          <button
+            onClick={() => handleActivateGPS(false)}
+            disabled={gpsLoading}
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(11, 37, 69, 0.9)",
+              color: "var(--accent-gold)",
+              border: gpsLocation ? "1.5px solid var(--accent-gold)" : "1px solid rgba(255, 255, 255, 0.25)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+              position: "relative",
+              transition: "all 0.2s ease",
+              outline: "none"
+            }}
+            title={language === "km" ? "កំណត់ទីតាំង GPS" : language === "en" ? "GPS Locate" : "Định Vị GPS"}
+          >
+            {gpsLoading ? (
+              <Compass size={18} style={{ animation: "spin 2s linear infinite", color: "var(--accent-gold)" }} />
+            ) : (
+              <Navigation size={18} style={{ 
+                transform: "rotate(45deg)", 
+                strokeWidth: 3, 
+                color: gpsLocation ? "var(--accent-gold)" : "#ffffff" 
+              }} />
+            )}
+            {gpsLocation && (
+              <span style={{
+                position: "absolute",
+                top: "4px",
+                right: "4px",
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: "#22c55e",
+                boxShadow: "0 0 6px #22c55e"
+              }} />
+            )}
+          </button>
+
+          {/* Zoom In Button */}
           <button
             onClick={handleZoomIn}
             style={{
-              width: "36px",
-              height: "36px",
+              width: "40px",
+              height: "40px",
               borderRadius: "50%",
-              backgroundColor: "rgba(11, 37, 69, 0.85)",
+              backgroundColor: "rgba(11, 37, 69, 0.9)",
               color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "18px",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
+              fontSize: "20px",
               fontWeight: 800,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+              transition: "all 0.2s ease"
             }}
+            title={language === "en" ? "Zoom In" : "Phóng to"}
           >
             +
           </button>
+
+          {/* Zoom Out Button */}
           <button
             onClick={handleZoomOut}
             style={{
-              width: "36px",
-              height: "36px",
+              width: "40px",
+              height: "40px",
               borderRadius: "50%",
-              backgroundColor: "rgba(11, 37, 69, 0.85)",
+              backgroundColor: "rgba(11, 37, 69, 0.9)",
               color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "18px",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
+              fontSize: "20px",
               fontWeight: 800,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+              transition: "all 0.2s ease"
             }}
+            title={language === "en" ? "Zoom Out" : "Thu nhỏ"}
           >
             -
           </button>
+
+          {/* Reset Zoom / Center Button */}
           <button
             onClick={handleResetZoom}
             style={{
-              padding: "6px 12px",
-              borderRadius: "14px",
-              backgroundColor: "rgba(11, 37, 69, 0.85)",
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(11, 37, 69, 0.9)",
               color: "var(--accent-gold)",
               border: "1px solid var(--accent-gold)",
-              fontSize: "10px",
-              fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+              transition: "all 0.2s ease"
             }}
+            title={language === "km" ? "ទម្រង់ដើម" : language === "en" ? "Center Map" : "Thu Nhỏ / Trung Tâm"}
           >
-            {language === "km" ? "ទម្រង់ដើម" : language === "en" ? "Center" : "Thu Nhỏ"}
+            <Compass size={18} style={{ color: "var(--accent-gold)" }} />
           </button>
         </div>
       </div>

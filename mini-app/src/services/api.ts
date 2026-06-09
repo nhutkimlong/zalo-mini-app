@@ -203,9 +203,27 @@ class ApiClient {
     return (data as Announcement[]) ?? [];
   }
 
-  // ─── Itineraries ─ FastAPI Backend ──────────────────────
+  // ─── Itineraries ─ Direct Supabase ──────────────────────
   async getItineraries(): Promise<Itinerary[]> {
-    return this.backendRequest<Itinerary[]>("/api/itineraries");
+    const { data, error } = await supabase
+      .from("itineraries")
+      .select("*")
+      .eq("status", "published")
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data as Itinerary[]) ?? [];
+  }
+
+  async getMyItineraries(): Promise<any[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("user_itineraries")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
   }
 
   // ─── Hướng dẫn viên 4.0 AI Chat ─ FastAPI RAG backend ───────
@@ -213,17 +231,15 @@ class ApiClient {
     question: string,
     language: string = "vi",
     signal?: AbortSignal,
-    conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [],
-    userInfo?: { zalo_user_id?: string; name?: string; avatar_url?: string }
+    conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
   ): Promise<ChatResponse> {
     return this.backendRequest<ChatResponse>("/api/chat/", {
       method: "POST",
       body: JSON.stringify({
         question,
-        channel: "mini_app",
+        channel: "web",
         language,
         conversation_history: conversationHistory,
-        user_info: userInfo,
       }),
       signal,
     });
@@ -288,45 +304,147 @@ class ApiClient {
     weather_auto: boolean;
     weather_status: string;
     weather_temp: number;
-    cable_peak_queue: string;
-    cable_peak_wait_time: number;
-    cable_temple_queue: string;
-    cable_temple_wait_time: number;
   }> {
     return this.backendRequest<any>("/api/tourism/realtime");
   }
 
   // ─── User Profile ──────────────────────────────────────
   async getMyProfile(): Promise<any> {
-    return this.backendRequest<any>("/api/users/me");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from("app_users")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (data) {
+      return { ...data, email: user.email };
+    }
+    
+    // Fail-safe: Auto-create profile in app_users if not found
+    const metadata = user.user_metadata || {};
+    const name = metadata.name || user.email?.split("@")[0] || "Khách du lịch";
+    const { data: inserted, error: insertError } = await supabase
+      .from("app_users")
+      .insert({
+        id: user.id,
+        name: name,
+        phone: metadata.phone || null,
+        avatar_url: metadata.avatar_url || null,
+        role: "visitor"
+      })
+      .select()
+      .single();
+    if (insertError) throw new Error(insertError.message);
+    return { ...inserted, email: user.email };
   }
 
   async updateMyProfile(profileData: { name?: string; phone?: string; avatar_url?: string }): Promise<any> {
-    return this.backendRequest<any>("/api/users/me", {
-      method: "PUT",
-      body: JSON.stringify(profileData),
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not logged in");
+    const { data, error } = await supabase
+      .from("app_users")
+      .update(profileData)
+      .eq("id", user.id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { ...data, email: user.email };
+  }
+
+  async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+    const sessionRes = await supabase.auth.getSession();
+    const token = sessionRes.data.session?.access_token;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.backendUrl}/api/users/me/avatar`, {
+      method: "POST",
+      headers,
+      body: formData,
     });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Upload failed: ${response.status}`);
+    }
+
+    return response.json();
   }
 
   // ─── Favorites ─────────────────────────────────────────
   async getMyFavorites(): Promise<TouristPlace[]> {
-    return this.backendRequest<TouristPlace[]>("/api/users/favorites");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("user_favorites")
+      .select("place_id, tourist_places(*)")
+      .eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    const favorites: TouristPlace[] = [];
+    if (data) {
+      for (const item of data) {
+        if (item.tourist_places) {
+          favorites.push(item.tourist_places as any);
+        }
+      }
+    }
+    return favorites;
   }
 
   async toggleFavorite(placeId: string): Promise<{ favorited: boolean; message: string }> {
-    return this.backendRequest<{ favorited: boolean; message: string }>("/api/users/favorites/toggle", {
-      method: "POST",
-      body: JSON.stringify({ place_id: placeId }),
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not logged in");
+    const { data: existing, error: checkError } = await supabase
+      .from("user_favorites")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("place_id", placeId)
+      .maybeSingle();
+    if (checkError) throw new Error(checkError.message);
+
+    if (existing) {
+      const { error: deleteError } = await supabase
+        .from("user_favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("place_id", placeId);
+      if (deleteError) throw new Error(deleteError.message);
+      return { favorited: false, message: "Đã bỏ địa danh khỏi danh sách yêu thích." };
+    } else {
+      const { error: insertError } = await supabase
+        .from("user_favorites")
+        .insert({ user_id: user.id, place_id: placeId });
+      if (insertError) throw new Error(insertError.message);
+      return { favorited: true, message: "Đã thêm địa danh vào danh sách yêu thích." };
+    }
   }
 
   // ─── Stamp Rally & Rewards ─────────────────────────────
   async getMyStamps(): Promise<Array<{ place_slug: string; created_at: string; verified_via: string }>> {
-    return this.backendRequest<any[]>("/api/tourism/stamps");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("user_stamps")
+      .select("*")
+      .eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    return data ?? [];
   }
 
   async getAllStamps(): Promise<Array<{ place_slug: string; created_at: string }>> {
-    return this.backendRequest<any[]>("/api/tourism/stamps/all");
+    const { data, error } = await supabase
+      .from("user_stamps")
+      .select("place_slug, created_at");
+    if (error) throw new Error(error.message);
+    return data ?? [];
   }
 
   async checkinPlace(placeSlug: string, latitude: number, longitude: number): Promise<{
@@ -351,7 +469,34 @@ class ApiClient {
     status: "unused" | "used";
     created_at: string;
   }>> {
-    return this.backendRequest<any[]>("/api/tourism/rewards");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("user_rewards")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as any[]) ?? [];
+  }
+
+  async getBadges(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from("badge_rules")
+      .select("*")
+      .order("xp_required", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async getLeaderboard(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from("leaderboard")
+      .select("*")
+      .order("total_xp", { ascending: false })
+      .limit(10);
+    if (error) throw new Error(error.message);
+    return data ?? [];
   }
 }
 

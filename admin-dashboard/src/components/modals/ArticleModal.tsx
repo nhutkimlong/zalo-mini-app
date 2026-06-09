@@ -594,7 +594,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           {artCategory === "ve_va_gio_mo_cua" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ background: "rgba(11,37,69,0.06)", borderRadius: "8px", padding: "12px 16px", border: "1px solid rgba(11,37,69,0.12)", fontSize: "12.5px", color: "var(--primary-navy)", fontWeight: 600 }}>
-                ✏️ <strong>Trình soạn thảo bảng giá trực quan</strong> — Thay đổi sẽ tự động đồng bộ sang Zalo Mini App ngay lập tức sau khi lưu.
+                ✏️ <strong>Trình soạn thảo bảng giá trực quan</strong> — Thay đổi sẽ tự động đồng bộ sang Web PWA ngay lập tức sau khi lưu.
               </div>
 
               {visualTickets.map((section, sIdx) => (

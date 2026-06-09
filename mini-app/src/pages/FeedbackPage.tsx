@@ -38,7 +38,7 @@ export const FeedbackPage: React.FC = () => {
         if (navigator.geolocation) {
           try {
             const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000, enableHighAccuracy: true });
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
             });
             latitude = pos.coords.latitude;
             longitude = pos.coords.longitude;

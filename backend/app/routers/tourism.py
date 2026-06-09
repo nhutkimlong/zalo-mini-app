@@ -13,10 +13,6 @@ class RealtimeUpdate(BaseModel):
     weather_auto: bool
     weather_status: str
     weather_temp: int
-    cable_peak_queue: str
-    cable_peak_wait_time: int
-    cable_temple_queue: str
-    cable_temple_wait_time: int
 
 class CheckinRequest(BaseModel):
     place_slug: str
@@ -49,11 +45,7 @@ def get_realtime_status(db: Client = Depends(get_db_client)):
         status_map = {
             "REALTIME_WEATHER_AUTO": "true",
             "REALTIME_WEATHER_STATUS": "sunny",
-            "REALTIME_WEATHER_TEMP": "30",
-            "REALTIME_CABLE_PEAK_QUEUE": "low",
-            "REALTIME_CABLE_PEAK_WAIT": "5",
-            "REALTIME_CABLE_TEMPLE_QUEUE": "medium",
-            "REALTIME_CABLE_TEMPLE_WAIT": "15"
+            "REALTIME_WEATHER_TEMP": "30"
         }
         
         for row in data:
@@ -98,22 +90,14 @@ def get_realtime_status(db: Client = Depends(get_db_client)):
         return {
             "weather_auto": weather_auto,
             "weather_status": weather_status,
-            "weather_temp": weather_temp,
-            "cable_peak_queue": status_map["REALTIME_CABLE_PEAK_QUEUE"],
-            "cable_peak_wait_time": int(status_map["REALTIME_CABLE_PEAK_WAIT"]),
-            "cable_temple_queue": status_map["REALTIME_CABLE_TEMPLE_QUEUE"],
-            "cable_temple_wait_time": int(status_map["REALTIME_CABLE_TEMPLE_WAIT"])
+            "weather_temp": weather_temp
         }
     except Exception as e:
         print(f"Failed to fetch realtime status: {e}")
         return {
             "weather_auto": True,
             "weather_status": "sunny",
-            "weather_temp": 30,
-            "cable_peak_queue": "low",
-            "cable_peak_wait_time": 5,
-            "cable_temple_queue": "medium",
-            "cable_temple_wait_time": 15
+            "weather_temp": 30
         }
 
 @router.put("/realtime")
@@ -122,11 +106,7 @@ def update_realtime_status(req: RealtimeUpdate, db: Client = Depends(get_db_clie
         settings_payload = [
             {"key": "REALTIME_WEATHER_AUTO", "value": str(req.weather_auto).lower(), "description": "Tự động lấy thời tiết bằng Open-Meteo API"},
             {"key": "REALTIME_WEATHER_STATUS", "value": req.weather_status, "description": "Thời tiết hiện tại"},
-            {"key": "REALTIME_WEATHER_TEMP", "value": str(req.weather_temp), "description": "Nhiệt độ đỉnh núi"},
-            {"key": "REALTIME_CABLE_PEAK_QUEUE", "value": req.cable_peak_queue, "description": "Hàng đợi tuyến Vân Sơn"},
-            {"key": "REALTIME_CABLE_PEAK_WAIT", "value": str(req.cable_peak_wait_time), "description": "Thời gian chờ tuyến Vân Sơn"},
-            {"key": "REALTIME_CABLE_TEMPLE_QUEUE", "value": req.cable_temple_queue, "description": "Hàng đợi tuyến Chùa Hang"},
-            {"key": "REALTIME_CABLE_TEMPLE_WAIT", "value": str(req.cable_temple_wait_time), "description": "Thời gian chờ tuyến Chùa Hang"}
+            {"key": "REALTIME_WEATHER_TEMP", "value": str(req.weather_temp), "description": "Nhiệt độ đỉnh núi"}
         ]
         
         for setting in settings_payload:
@@ -200,33 +180,12 @@ def checkin_place(
         stamps_collected = stamps_res.data or []
         unique_stamps_count = len(set(s["place_slug"] for s in stamps_collected))
         
-        # 5. Reward Voucher logic: 3 or more stamps grants BD50BUFFET coupon
-        reward_granted = False
-        if unique_stamps_count >= 3:
-            # Check if reward already exists
-            reward_check = db.table("user_rewards") \
-                .select("id") \
-                .eq("user_id", user_id) \
-                .eq("reward_code", "BD50BUFFET") \
-                .execute()
-                
-            if not reward_check.data:
-                db.table("user_rewards").insert({
-                    "user_id": user_id,
-                    "reward_code": "BD50BUFFET",
-                    "title": "Giảm 50% Vé Buffet Đỉnh Vân Sơn (Stamp Rally)",
-                    "title_en": "50% Off Van Son Peak Buffet (Stamp Rally)",
-                    "title_km": "បញ្ចុះតម្លៃ ៥០% លើសំបុត្រអាហារប៊ូហ្វេកំពូលភ្នំ Vân Sơn (Stamp Rally)",
-                    "status": "unused"
-                }).execute()
-                reward_granted = True
-                
         return {
             "status": "success",
             "message": f"Chúc mừng bạn đã thu thập dấu ấn di sản: {place['name']}",
             "distance_meters": round(dist, 1),
             "total_stamps": unique_stamps_count,
-            "reward_granted": reward_granted
+            "reward_granted": False
         }
     except HTTPException:
         raise

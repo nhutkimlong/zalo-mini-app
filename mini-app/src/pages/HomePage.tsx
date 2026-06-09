@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Compass, Info, FileText, Map, Bell, PhoneCall, ChevronRight, Sun, Cloud, CloudRain, Wind, Thermometer, Activity } from "lucide-react";
+import { Bot, Compass, Info, FileText, Map, Bell, PhoneCall, ChevronRight, Sun, Cloud, CloudRain, Wind, Thermometer } from "lucide-react";
 import { Header, Page } from "zmp-ui";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -37,23 +37,6 @@ export const HomePage: React.FC = () => {
       default:
         return <Sun size={24} style={{ color: "#f59e0b" }} />;
     }
-  };
-
-  const getQueueBadgeColor = (level: string) => {
-    switch (level) {
-      case "low":
-        return "#10b981"; // Green
-      case "medium":
-        return "#f59e0b"; // Yellow/Orange
-      case "high":
-        return "#ef4444"; // Red
-      default:
-        return "#10b981";
-    }
-  };
-
-  const getQueueLabel = (level: string) => {
-    return t(`realtime.queue.${level}`);
   };
 
   return (
@@ -236,83 +219,28 @@ export const HomePage: React.FC = () => {
         </Link>
       )}
 
-      {/* Real-time Field Widget (WOW Premium UI!) */}
+      {/* Compact Real-time Weather Widget */}
       {realtime && (
-        <div style={{ padding: "12px 16px 4px 16px" }}>
-          <div className="glass-card fade-in-up stagger-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", border: "1px solid rgba(212,175,55,0.25)" }}>
-            
-            {/* Weather widget */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderRight: "1px solid rgba(11,37,69,0.1)", paddingRight: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--primary-navy)", fontWeight: 750, fontSize: "12px" }}>
-                <Thermometer size={14} style={{ color: "var(--accent-gold)" }} />
-                <span>{t("realtime.weather")}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
-                {getWeatherIcon(realtime.weather_status)}
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--primary-navy)" }}>{realtime.weather_temp}°C</span>
-                  <span style={{ fontSize: "11px", color: "var(--light-text)", textTransform: "capitalize" }}>
-                    {realtime.weather_status}
-                  </span>
-                </div>
-              </div>
+        <div style={{ padding: "8px 16px 2px 16px" }}>
+          <div className="glass-card fade-in-up stagger-1" style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            padding: "8px 16px",
+            border: "1px solid rgba(212,175,55,0.2)",
+            borderRadius: "12px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontWeight: 750, fontSize: "13px" }}>
+              <Thermometer size={16} style={{ color: "var(--accent-gold)" }} />
+              <span>{t("realtime.weather")}:</span>
+              <span style={{ fontWeight: 850 }}>{realtime.weather_temp}°C</span>
             </div>
-
-            {/* Cable Car Queues widget */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--primary-navy)", fontWeight: 750, fontSize: "12px" }}>
-                <Activity size={14} style={{ color: "var(--accent-gold)" }} />
-                <span>{t("realtime.cable_status")}</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", marginTop: "2px" }}>
-                
-                {/* Peak Line */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600 }}>{language === "en" ? "Peak Route" : language === "km" ? "កំពូលភ្នំ" : "Tuyến Đỉnh"}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span 
-                      style={{ 
-                        display: "inline-block", 
-                        width: "6px", 
-                        height: "6px", 
-                        borderRadius: "50%", 
-                        backgroundColor: getQueueBadgeColor(realtime.cable_peak_queue) 
-                      }} 
-                    />
-                    <span style={{ fontWeight: 700, color: getQueueBadgeColor(realtime.cable_peak_queue) }}>
-                      {getQueueLabel(realtime.cable_peak_queue)}
-                    </span>
-                    <span style={{ color: "var(--light-text)", fontSize: "10px" }}>
-                      ({t("realtime.wait_time").replace("{time}", realtime.cable_peak_wait_time.toString())})
-                    </span>
-                  </div>
-                </div>
-
-                {/* Temple Line */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600 }}>{language === "en" ? "Temple Route" : language === "km" ? "វត្តទួល" : "Tuyến Chùa"}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span 
-                      style={{ 
-                        display: "inline-block", 
-                        width: "6px", 
-                        height: "6px", 
-                        borderRadius: "50%", 
-                        backgroundColor: getQueueBadgeColor(realtime.cable_temple_queue) 
-                      }} 
-                    />
-                    <span style={{ fontWeight: 700, color: getQueueBadgeColor(realtime.cable_temple_queue) }}>
-                      {getQueueLabel(realtime.cable_temple_queue)}
-                    </span>
-                    <span style={{ color: "var(--light-text)", fontSize: "10px" }}>
-                      ({t("realtime.wait_time").replace("{time}", realtime.cable_temple_wait_time.toString())})
-                    </span>
-                  </div>
-                </div>
-
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--primary-navy)", fontWeight: 700, fontSize: "13px" }}>
+              {getWeatherIcon(realtime.weather_status)}
+              <span style={{ textTransform: "capitalize", fontSize: "12px", color: "var(--light-text)" }}>
+                {realtime.weather_status}
+              </span>
             </div>
-
           </div>
         </div>
       )}

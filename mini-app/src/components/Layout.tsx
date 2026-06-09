@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Bot, Compass, AlertTriangle, User } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
@@ -18,10 +18,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return false;
   };
 
+  const pageContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (pageContainerRef.current) {
+      pageContainerRef.current.scrollTo(0, 0);
+    }
+    const zauiPages = document.querySelectorAll('.zaui-page');
+    zauiPages.forEach(page => {
+      page.scrollTo(0, 0);
+    });
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const showBottomNav = path !== "/chat" && path !== "/map";
 
   return (
-    <div className="page-container" style={showBottomNav ? {} : { paddingBottom: 0, height: "100dvh", overflow: "hidden" }}>
+    <div ref={pageContainerRef} className="page-container" style={showBottomNav ? {} : { paddingBottom: 0, height: "100dvh", overflow: "hidden" }}>
       {/* Dynamic Content */}
       <main style={showBottomNav ? { minHeight: "calc(100dvh - 60px)" } : { height: "100dvh", overflow: "hidden" }}>
         {children}

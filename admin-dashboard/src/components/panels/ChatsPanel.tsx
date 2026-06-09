@@ -84,10 +84,10 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
               return (
                 <tr key={c.id}>
                   <td>
-                    {c.channel === "mini_app" ? (
-                      <span className="badge badge-info">Zalo Mini App</span>
+                    {c.channel === "web" || c.channel === "mini_app" ? (
+                      <span className="badge badge-info">Web PWA</span>
                     ) : (
-                      <span className="badge badge-success">Zalo OA Chatbot</span>
+                      <span className="badge badge-success">Khác</span>
                     )}
                   </td>
                   <td style={{ fontWeight: 600, color: "var(--cream-white)" }}>
@@ -104,13 +104,21 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                       <span style={{ color: "var(--text-light)", fontStyle: "italic" }}>Ẩn danh</span>
                     )}
                   </td>
-                  <td style={{ fontWeight: 600 }}>{c.question}</td>
-                  <td style={{ fontSize: "12.5px" }}>{c.answer}</td>
+                  <td style={{ fontWeight: 600, maxWidth: "250px" }}>
+                    <div style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }} title={c.question}>
+                      {c.question}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: "12.5px", maxWidth: "350px" }}>
+                    <div style={{ display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }} title={c.answer}>
+                      {c.answer}
+                    </div>
+                  </td>
                   <td className={scoreClass} style={{ fontSize: "14px", textAlign: "center" }}>
                     {Math.round(c.confidence_score * 100)}%
                   </td>
-                  <td>
-                    <div className="rag-meta-box">
+                  <td style={{ maxWidth: "150px" }}>
+                    <div className="rag-meta-box" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }} title={c.matched_chunks}>
                       <span>{c.matched_chunks}</span>
                     </div>
                   </td>

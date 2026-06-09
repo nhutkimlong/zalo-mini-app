@@ -20,6 +20,9 @@ import { Login } from "./components/Login";
 import { UsersPanel } from "./components/panels/UsersPanel";
 import { RealtimePanel } from "./components/panels/RealtimePanel";
 import { UserModal } from "./components/modals/UserModal";
+import { BadgesPanel } from "./components/panels/BadgesPanel";
+import { BadgeModal } from "./components/modals/BadgeModal";
+import { AdminBadge } from "./services/adminApi";
 
 import adminApi, { 
   AdminKnowledgeArticle, 
@@ -56,7 +59,7 @@ const toSlug = (str: string): string => {
 };
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "guides" | "places" | "itineraries" | "announcements" | "feedbacks" | "chats" | "usage" | "users" | "realtime" | "badges">("dashboard");
 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -71,6 +74,7 @@ export const App: React.FC = () => {
   const [feedbacks, setFeedbacks] = useState<AdminFeedback[]>([]);
   const [chats, setChats] = useState<AdminChatLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [badges, setBadges] = useState<AdminBadge[]>([]);
   const [usageSummary, setUsageSummary] = useState<AdminUsageSummary | null>(null);
 
   // Selection & Modals State
@@ -81,7 +85,7 @@ export const App: React.FC = () => {
 
   // Modal Control
   const [modalType, setModalType] = useState<"add" | "edit" | "resolve" | null>(null);
-  const [modalResource, setModalResource] = useState<"article" | "place" | "announcement" | "feedback" | "itinerary" | "user" | null>(null);
+  const [modalResource, setModalResource] = useState<"article" | "place" | "announcement" | "feedback" | "itinerary" | "user" | "badge" | null>(null);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [defaultCategory, setDefaultCategory] = useState<string | undefined>(undefined);
 
@@ -117,7 +121,8 @@ export const App: React.FC = () => {
         adminApi.getUsageSummary(),
         adminApi.getItineraries(),
         adminApi.getSettings(),
-        adminApi.getUsers()
+        adminApi.getUsers(),
+        adminApi.getBadges()
       ]);
 
       if (results[0].status === "fulfilled") setArticles(results[0].value);
@@ -144,6 +149,7 @@ export const App: React.FC = () => {
       }
 
       if (results[8].status === "fulfilled") setUsers(results[8].value);
+      if (results[9] && results[9].status === "fulfilled") setBadges(results[9].value);
     } catch (e) {
       console.error("Failed to load backend administration data:", e);
     } finally {
@@ -208,7 +214,7 @@ export const App: React.FC = () => {
   };
 
   const handleSaveUser = async (data: {
-    zalo_user_id: string;
+    id?: string | null;
     name: string;
     phone?: string | null;
     avatar_url?: string | null;
@@ -216,7 +222,8 @@ export const App: React.FC = () => {
   }) => {
     try {
       if (selectedItem) {
-        const res = await adminApi.updateUser(selectedItem.id, data);
+        const { id, ...updatePayload } = data;
+        const res = await adminApi.updateUser(selectedItem.id, updatePayload);
         setUsers(users.map(u => u.id === res.id ? res : u));
       } else {
         const res = await adminApi.createUser(data);
@@ -237,6 +244,47 @@ export const App: React.FC = () => {
       } catch (err: any) {
         console.error(err);
         alert(err.message || "Lỗi khi xóa người dùng.");
+      }
+    }
+  };
+
+  // --- Badges Submissions ---
+  const handleOpenAddBadge = () => {
+    setSelectedItem(null);
+    setModalResource("badge");
+    setModalType("add");
+  };
+
+  const handleOpenEditBadge = (badge: AdminBadge) => {
+    setSelectedItem(badge);
+    setModalResource("badge");
+    setModalType("edit");
+  };
+
+  const handleSaveBadge = async (data: Omit<AdminBadge, "id" | "created_at">) => {
+    try {
+      if (selectedItem) {
+        const res = await adminApi.updateBadge(selectedItem.id, data);
+        setBadges(badges.map(b => b.id === res.id ? res : b));
+      } else {
+        const res = await adminApi.createBadge(data);
+        setBadges([...badges, res]);
+      }
+      closeModal();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Lỗi khi lưu danh hiệu.");
+    }
+  };
+
+  const handleDeleteBadge = async (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa danh hiệu này? Các mốc tính rank của người dùng sẽ tự động tính lại.")) {
+      try {
+        await adminApi.deleteBadge(id);
+        setBadges(badges.filter(b => b.id !== id));
+      } catch (err: any) {
+        console.error(err);
+        alert(err.message || "Lỗi khi xóa danh hiệu.");
       }
     }
   };
@@ -723,13 +771,14 @@ export const App: React.FC = () => {
           <div className="topbar-title">
             {activeTab === "dashboard" && "Bảng Điều Khiển Hệ Thống"}
             {activeTab === "articles" && "Quản Lý Kho Tri Thức RAG (Supabase pgvector)"}
-            {activeTab === "guides" && "Thông Tin Hướng Dẫn Tham Quan (Đồng bộ Zalo Mini App)"}
+            {activeTab === "guides" && "Thông Tin Hướng Dẫn Tham Quan (Đồng bộ Web PWA)"}
             {activeTab === "places" && "Danh Mục Điểm Tham Quan & Thuyết Minh Số"}
             {activeTab === "itineraries" && "Thiết Kế Tuyến Đi & Lộ Trình Tham Quan Đề Xuất (Supabase Database)"}
             {activeTab === "announcements" && "Quản Lý Thông Báo & Cảnh Báo Bản Tin"}
             {activeTab === "feedbacks" && "Tổng Hợp Ý Kiến & Phản Ánh Của Du Khách"}
             {activeTab === "chats" && "Nhật Ký Hội Thoại AI & Kiểm Toán Chất Lượng RAG"}
             {activeTab === "usage" && "Tổng Chi Phí Gọi Model Beeknoee"}
+            {activeTab === "badges" && "Quản Lý Huy Hiệu & Danh Hiệu Số (Supabase Database)"}
           </div>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }} className="hide-on-mobile">
@@ -904,6 +953,17 @@ export const App: React.FC = () => {
                 />
               )}
 
+              {activeTab === "badges" && (
+                <BadgesPanel
+                  badges={badges}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  handleOpenAddBadge={handleOpenAddBadge}
+                  handleOpenEditBadge={handleOpenEditBadge}
+                  handleDeleteBadge={handleDeleteBadge}
+                />
+              )}
+
               {activeTab === "realtime" && (
                 <RealtimePanel places={places} />
               )}
@@ -965,6 +1025,15 @@ export const App: React.FC = () => {
             <UserModal
               onClose={closeModal}
               onSave={handleSaveUser}
+              selectedItem={selectedItem}
+              modalType={modalType === "resolve" ? null : modalType}
+            />
+          )}
+
+          {modalResource === "badge" && (
+            <BadgeModal
+              onClose={closeModal}
+              onSave={handleSaveBadge}
               selectedItem={selectedItem}
               modalType={modalType === "resolve" ? null : modalType}
             />

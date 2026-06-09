@@ -15,10 +15,6 @@ export const RealtimePanel: React.FC<RealtimePanelProps> = ({ places }) => {
   const [weatherAuto, setWeatherAuto] = useState(true);
   const [weatherStatus, setWeatherStatus] = useState("sunny");
   const [weatherTemp, setWeatherTemp] = useState(30);
-  const [cablePeakQueue, setCablePeakQueue] = useState("low");
-  const [cablePeakWait, setCablePeakWait] = useState(5);
-  const [cableTempleQueue, setCableTempleQueue] = useState("medium");
-  const [cableTempleWait, setCableTempleWait] = useState(15);
 
   // Analytics states
   const [checkins, setCheckins] = useState<Array<{ place_slug: string; created_at: string }>>([]);
@@ -34,10 +30,6 @@ export const RealtimePanel: React.FC<RealtimePanelProps> = ({ places }) => {
       setWeatherAuto(realtimeRes.weather_auto);
       setWeatherStatus(realtimeRes.weather_status);
       setWeatherTemp(realtimeRes.weather_temp);
-      setCablePeakQueue(realtimeRes.cable_peak_queue);
-      setCablePeakWait(realtimeRes.cable_peak_wait_time);
-      setCableTempleQueue(realtimeRes.cable_temple_queue);
-      setCableTempleWait(realtimeRes.cable_temple_wait_time);
       setCheckins(stampsRes);
     } catch (err: any) {
       console.error(err);
@@ -59,11 +51,7 @@ export const RealtimePanel: React.FC<RealtimePanelProps> = ({ places }) => {
       const res = await adminApi.updateRealtimeStatus({
         weather_auto: weatherAuto,
         weather_status: weatherStatus,
-        weather_temp: weatherTemp,
-        cable_peak_queue: cablePeakQueue,
-        cable_peak_wait_time: cablePeakWait,
-        cable_temple_queue: cableTempleQueue,
-        cable_temple_wait_time: cableTempleWait
+        weather_temp: weatherTemp
       });
       setMessage({ type: "success", text: res.message || "Cập nhật thành công!" });
     } catch (err: any) {
@@ -124,12 +112,12 @@ export const RealtimePanel: React.FC<RealtimePanelProps> = ({ places }) => {
           </div>
         ) : (
           <form onSubmit={handleSave}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", marginBottom: "24px" }}>
               
               {/* Weather block */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <h4 style={{ fontSize: "14px", fontWeight: 700, color: "var(--primary-navy)", borderBottom: "1px dashed var(--border-slate)", paddingBottom: "6px" }}>
-                  1. Trạng Thái Thời Tiết Đỉnh Núi
+                  Trạng Thái Thời Tiết Đỉnh Núi
                 </h4>
                 
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", backgroundColor: "rgba(11,37,69,0.03)", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--border-slate)" }}>
@@ -184,70 +172,6 @@ export const RealtimePanel: React.FC<RealtimePanelProps> = ({ places }) => {
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Cable car queues block */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h4 style={{ fontSize: "14px", fontWeight: 700, color: "var(--primary-navy)", borderBottom: "1px dashed var(--border-slate)", paddingBottom: "6px" }}>
-                  2. Trạng Thái Hàng Đợi Các Tuyến Cáp Treo
-                </h4>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <label className="form-label" style={{ display: "block", marginBottom: "6px", fontWeight: 600 }}>Tuyến Vân Sơn (Đỉnh):</label>
-                    <select 
-                      className="form-input" 
-                      value={cablePeakQueue} 
-                      onChange={(e) => setCablePeakQueue(e.target.value)}
-                      style={{ width: "100%" }}
-                    >
-                      <option value="low">🟢 Thưa thớt (Vắng)</option>
-                      <option value="medium">🟡 Vừa phải (Bình thường)</option>
-                      <option value="high">🔴 Đông đúc (Chờ lâu)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label" style={{ display: "block", marginBottom: "6px", fontWeight: 600 }}>Chờ dự kiến (phút):</label>
-                    <input 
-                      type="number" 
-                      className="form-input" 
-                      min="0" 
-                      max="120"
-                      value={cablePeakWait} 
-                      onChange={(e) => setCablePeakWait(parseInt(e.target.value) || 0)}
-                      style={{ width: "100%" }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <label className="form-label" style={{ display: "block", marginBottom: "6px", fontWeight: 600 }}>Tuyến Chùa Hang (Chùa):</label>
-                    <select 
-                      className="form-input" 
-                      value={cableTempleQueue} 
-                      onChange={(e) => setCableTempleQueue(e.target.value)}
-                      style={{ width: "100%" }}
-                    >
-                      <option value="low">🟢 Thưa thớt (Vắng)</option>
-                      <option value="medium">🟡 Vừa phải (Bình thường)</option>
-                      <option value="high">🔴 Đông đúc (Chờ lâu)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label" style={{ display: "block", marginBottom: "6px", fontWeight: 600 }}>Chờ dự kiến (phút):</label>
-                    <input 
-                      type="number" 
-                      className="form-input" 
-                      min="0" 
-                      max="120"
-                      value={cableTempleWait} 
-                      onChange={(e) => setCableTempleWait(parseInt(e.target.value) || 0)}
-                      style={{ width: "100%" }}
-                    />
-                  </div>
-                </div>
-
               </div>
 
             </div>

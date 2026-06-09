@@ -4,7 +4,7 @@ import { AdminUser } from "../../services/adminApi";
 interface UserModalProps {
   onClose: () => void;
   onSave: (data: {
-    zalo_user_id: string;
+    id?: string | null;
     name: string;
     phone?: string | null;
     avatar_url?: string | null;
@@ -20,7 +20,7 @@ export const UserModal: React.FC<UserModalProps> = ({
   selectedItem,
   modalType,
 }) => {
-  const [zaloUserId, setZaloUserId] = useState("");
+  const [userId, setUserId] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -28,13 +28,13 @@ export const UserModal: React.FC<UserModalProps> = ({
 
   useEffect(() => {
     if (modalType === "edit" && selectedItem) {
-      setZaloUserId(selectedItem.zalo_user_id || "");
+      setUserId(selectedItem.id || "");
       setName(selectedItem.name || "");
       setPhone(selectedItem.phone || "");
       setAvatarUrl(selectedItem.avatar_url || "");
       setRole(selectedItem.role || "visitor");
     } else {
-      setZaloUserId("");
+      setUserId("");
       setName("");
       setPhone("");
       setAvatarUrl("");
@@ -44,12 +44,22 @@ export const UserModal: React.FC<UserModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!zaloUserId.trim() || !name.trim()) {
-      alert("Vui lòng điền đầy đủ các thông tin bắt buộc!");
+    if (!name.trim()) {
+      alert("Vui lòng nhập tên người dùng!");
       return;
     }
+    
+    // Validate UUID format if user entered something
+    if (userId.trim()) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId.trim())) {
+        alert("User ID phải đúng định dạng UUID (Ví dụ: 123e4567-e89b-12d3-a456-426614174000)!");
+        return;
+      }
+    }
+
     onSave({
-      zalo_user_id: zaloUserId,
+      id: userId.trim() ? userId.trim() : null,
       name,
       phone: phone.trim() ? phone : null,
       avatar_url: avatarUrl.trim() ? avatarUrl : null,
@@ -66,19 +76,18 @@ export const UserModal: React.FC<UserModalProps> = ({
       <form onSubmit={handleSubmit}>
         <div className="modal-body">
           <div className="form-group">
-            <label className="form-label">Zalo User ID *</label>
+            <label className="form-label">User ID (UUID)</label>
             <input 
               type="text" 
               className="form-input" 
-              required 
-              disabled={modalType === "edit"} // Khóa không cho sửa zalo_user_id khi edit
-              placeholder="Ví dụ: 2817652167434672457"
-              value={zaloUserId} 
-              onChange={e => setZaloUserId(e.target.value)} 
+              disabled={modalType === "edit"}
+              placeholder={modalType === "add" ? "Để trống để tự động tạo ngẫu nhiên..." : ""}
+              value={userId} 
+              onChange={e => setUserId(e.target.value)} 
             />
             {modalType === "add" && (
               <small style={{ color: "rgba(255, 255, 255, 0.4)", fontSize: "11px", marginTop: "4px", display: "block" }}>
-                Nhập chính xác ID người dùng từ Zalo SDK / Zalo OA Webhook để đối khớp dữ liệu.
+                Nhập UUID từ Auth (nếu có) hoặc để trống để hệ thống tự tạo mã ngẫu nhiên.
               </small>
             )}
           </div>

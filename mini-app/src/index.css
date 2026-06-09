@@ -111,11 +111,12 @@ body {
   background-color: var(--primary-navy) !important;
   color: var(--cream-white) !important;
   border-bottom: 2px solid var(--accent-gold) !important;
+  position: static !important; /* Make header scroll with content */
 }
 
-/* Universal zaui page layout fix: prevent header from covering top content on all screens */
+/* Universal zaui page layout fix: allow static header to naturally push content */
 .zaui-page {
-  padding-top: calc(48px + var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px))) !important;
+  padding-top: var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
 }
 
 .zaui-header-title {
@@ -447,8 +448,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(60px + env(safe-area-inset-bottom, 12px)); /* Safe area support for iOS home bar */
-  padding-bottom: env(safe-area-inset-bottom, 12px);
+  height: calc(60px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  padding-bottom: var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   background-color: var(--cream-white);
   border-top: 1px solid rgba(11, 37, 69, 0.08);
   display: flex;
@@ -548,7 +549,7 @@ body {
   left: 0;
   right: 0;
   height: 100%;
-  padding-top: calc(48px + var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px))) !important;
+  padding-top: var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
   color: #f4f7f6;
   display: flex;
   flex-direction: column;
@@ -686,11 +687,12 @@ body {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px 16px calc(12px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  padding: 12px 16px max(12px, var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   display: flex;
   align-items: center;
   gap: 10px;
   z-index: 99;
+  position: relative; /* Ensure it stays in flow but handles safe area */
 }
 
 .input-box-dark {

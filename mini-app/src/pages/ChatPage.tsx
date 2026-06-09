@@ -258,8 +258,7 @@ export const ChatPage: React.FC = () => {
         text, 
         messageLanguage, 
         abortControllerRef.current.signal, 
-        buildConversationHistory(),
-        profile ? { name: profile.name, avatar_url: profile.avatar_url } : undefined
+        buildConversationHistory()
       );
 
       // 4. Update typing loader with official answer
@@ -305,43 +304,6 @@ export const ChatPage: React.FC = () => {
         }
       />
         
-      {/* Control bar: Clear History */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 16px",
-        backgroundColor: "var(--primary-navy)",
-        borderBottom: "1px solid rgba(212, 175, 55, 0.2)",
-      }}>
-        <div style={{ fontSize: "12px", color: "var(--cream-white)", opacity: 0.8 }}>
-          {language === "km" ? "ឧបករណ៍ជំនួយ៖" : language === "en" ? "Assistant tools:" : "Công cụ hỗ trợ:"}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button
-            type="button"
-            onClick={clearChatHistory}
-            aria-label={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
-            title={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              border: "1px solid rgba(212, 175, 55, 0.4)",
-              background: "rgba(255, 255, 255, 0.08)",
-              color: "var(--accent-gold)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-              cursor: "pointer"
-            }}
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
-      </div>
-
       {/* Main Conversation Window */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px" }}>
@@ -515,7 +477,29 @@ export const ChatPage: React.FC = () => {
       </div>
 
       {/* Floating Bottom Input Message Bar */}
-      <div className="floating-input-bar-dark">
+      <div className="floating-input-bar-dark" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={clearChatHistory}
+          aria-label={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
+          title={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            border: "1px solid rgba(212, 175, 55, 0.4)",
+            background: "rgba(255, 255, 255, 0.08)",
+            color: "var(--accent-gold)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            cursor: "pointer",
+            flexShrink: 0
+          }}
+        >
+          <Trash2 size={18} />
+        </button>
         <input 
           type="text" 
           className="input-box-dark" 
@@ -525,6 +509,7 @@ export const ChatPage: React.FC = () => {
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSendMessage(inputValue);
           }}
+          style={{ flex: 1 }}
         />
         <button 
           onClick={() => handleSendMessage(inputValue)}

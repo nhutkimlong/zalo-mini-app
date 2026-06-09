@@ -418,7 +418,7 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
           <div className="panel-header">
             <h3 className="panel-title">
               <Bot size={18} />
-              <span>Trợ lý số & Zalo OA</span>
+              <span>Trợ lý số & Web PWA</span>
             </h3>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -445,8 +445,8 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
                 <span style={{ fontWeight: 700, color: "var(--danger)" }}>{lowConfCount}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                <span style={{ color: "var(--text-light)" }}>Nguồn câu hỏi Mini App:</span>
-                <span style={{ fontWeight: 700 }}>{chats.filter(c => c.channel === "mini_app").length}</span>
+                <span style={{ color: "var(--text-light)" }}>Nguồn câu hỏi Web PWA:</span>
+                <span style={{ fontWeight: 700 }}>{chats.filter(c => c.channel === "web" || c.channel === "mini_app").length}</span>
               </div>
             </div>
           </div>

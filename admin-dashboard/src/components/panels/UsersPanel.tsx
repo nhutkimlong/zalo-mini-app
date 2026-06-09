@@ -70,7 +70,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
     return (
       (u.name || "").toLowerCase().includes(q) ||
       (u.phone || "").toLowerCase().includes(q) ||
-      (u.zalo_user_id || "").toLowerCase().includes(q) ||
+      (u.id || "").toLowerCase().includes(q) ||
       (u.role || "").toLowerCase().includes(q)
     );
   });
@@ -117,7 +117,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
           </span>
           <input 
             type="text" 
-            placeholder="Tìm kiếm người dùng theo tên, SĐT, Zalo ID, vai trò..." 
+            placeholder="Tìm kiếm người dùng theo tên, SĐT, User ID, vai trò..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="form-input"
@@ -238,16 +238,18 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
                       </div>
                     )}
                   </td>
-                  <td style={{ fontWeight: 600, color: "var(--cream-white)" }}>{user.name}</td>
+                  <td style={{ fontWeight: 600, color: "var(--cream-white)" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span>{user.name}</span>
+                      <code style={{ fontSize: "9px", opacity: 0.5, fontWeight: "normal", fontFamily: "monospace" }}>
+                        ID: {user.id}
+                      </code>
+                    </div>
+                  </td>
                   <td>
-                    {user.zalo_user_id ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span className="badge badge-info" style={{ fontWeight: 600 }}>Zalo Mini App</span>
-                        <code style={{ fontSize: "10px", opacity: 0.6 }}>{user.zalo_user_id}</code>
-                      </div>
-                    ) : (
-                      <span className="badge badge-success" style={{ fontWeight: 600 }}>Email / Supabase</span>
-                    )}
+                    <span className="badge badge-success" style={{ fontWeight: 600 }}>
+                      {user.link_type || "Email / Supabase"}
+                    </span>
                   </td>
                   <td>
                     {user.phone ? (

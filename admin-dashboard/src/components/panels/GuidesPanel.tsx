@@ -30,7 +30,7 @@ export const GuidesPanel: React.FC<GuidesPanelProps> = ({
   return (
     <div className="panel-card">
       <div style={{ background: "rgba(11,37,69,0.05)", border: "1px solid rgba(11,37,69,0.12)", borderRadius: "8px", padding: "12px 16px", marginBottom: "16px", fontSize: "12.5px", color: "var(--primary-navy)" }}>
-        <strong>🎫 Hướng Dẫn Tham Quan</strong> — Quản lý thông tin hiển thị trực tiếp trên <strong>Zalo Mini App</strong> (bảng giá vé, lịch hoạt động, di chuyển, nội quy). Đây là nội dung <em>riêng biệt hoàn toàn</em> với Kho Tri Thức RAG.
+        <strong>🎫 Hướng Dẫn Tham Quan</strong> — Quản lý thông tin hiển thị trực tiếp trên <strong>Web PWA</strong> (bảng giá vé, lịch hoạt động, di chuyển, nội quy). Đây là nội dung <em>riêng biệt hoàn toàn</em> với Kho Tri Thức RAG.
       </div>
       <div className="panel-header">
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

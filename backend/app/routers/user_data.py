@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
@@ -30,7 +30,6 @@ def get_my_profile(current_user: dict = Depends(get_current_user), db: Client = 
         res = db.table("app_users").select("*").eq("id", user_id).execute()
         if res.data and len(res.data) > 0:
             user_data = res.data[0]
-            # Kết hợp với email từ auth
             user_data["email"] = current_user["email"]
             return user_data
             
@@ -74,12 +73,60 @@ def update_my_profile(
             
         res = db.table("app_users").update(payload).eq("id", user_id).execute()
         if res.data and len(res.data) > 0:
-            return res.data[0]
+            user_data = res.data[0]
+            user_data["email"] = current_user["email"]
+            return user_data
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ để cập nhật.")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi cập nhật hồ sơ: {str(e)}")
+
+@router.post("/me/avatar")
+async def upload_my_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: Client = Depends(get_db_client)
+):
+    try:
+        user_id = current_user["id"]
+        
+        # Read file bytes
+        contents = await file.read()
+        filename_parts = file.filename.split(".")
+        file_ext = filename_parts[-1] if len(filename_parts) > 1 else "png"
+        
+        unique_filename = f"avatars/{user_id}.{file_ext}"
+        content_type = file.content_type or "image/png"
+        
+        # Ensure public bucket 'baden_assets' exists
+        try:
+            db.storage.create_bucket("baden_assets", options={"public": True})
+        except Exception:
+            pass
+            
+        # Delete previous file if exists to prevent cache or space issues
+        try:
+            db.storage.from_("baden_assets").remove([unique_filename])
+        except Exception:
+            pass
+            
+        db.storage.from_("baden_assets").upload(
+            path=unique_filename,
+            file=contents,
+            file_options={"content-type": content_type}
+        )
+        
+        # Get public url
+        public_url = db.storage.from_("baden_assets").get_public_url(unique_filename)
+        
+        # Update user's avatar_url in public.app_users
+        db.table("app_users").update({"avatar_url": public_url}).eq("id", user_id).execute()
+        
+        return {"avatar_url": public_url}
+    except Exception as e:
+        print(f"[Avatar Upload] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Lỗi tải ảnh đại diện lên: {str(e)}")
 
 # ─── Favorites Endpoints ──────────────────────────────────────────────────────
 @router.get("/favorites")

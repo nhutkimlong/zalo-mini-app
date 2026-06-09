@@ -61,7 +61,7 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
         }}
       >
         <div style={{ position: "relative", flex: 1, minWidth: "250px", maxWidth: "400px" }}>
-          <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.4)", display: "flex" }}>
+          <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-light)", display: "flex" }}>
             <Search size={16} />
           </span>
           <input
@@ -78,10 +78,10 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
         <div 
           style={{ 
             display: "flex", 
-            backgroundColor: "rgba(255, 255, 255, 0.05)", 
+            backgroundColor: "rgba(15, 23, 42, 0.05)", 
             padding: "4px", 
             borderRadius: "8px", 
-            border: "1px solid rgba(255, 255, 255, 0.1)" 
+            border: "1px solid var(--border-slate)" 
           }}
         >
           <button
@@ -97,7 +97,7 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
               fontSize: "13px",
               fontWeight: 600,
               backgroundColor: viewMode === "kanban" ? "#D4AF37" : "transparent",
-              color: viewMode === "kanban" ? "#121212" : "rgba(255, 255, 255, 0.6)",
+              color: viewMode === "kanban" ? "#121212" : "var(--text-light)",
               transition: "all 0.2s"
             }}
           >
@@ -117,7 +117,7 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
               fontSize: "13px",
               fontWeight: 600,
               backgroundColor: viewMode === "table" ? "#D4AF37" : "transparent",
-              color: viewMode === "table" ? "#121212" : "rgba(255, 255, 255, 0.6)",
+              color: viewMode === "table" ? "#121212" : "var(--text-light)",
               transition: "all 0.2s"
             }}
           >
@@ -140,17 +140,17 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
           }}
         >
           {/* Column 1: New */}
-          <div className="kanban-col" style={{ backgroundColor: "rgba(0,0,0,0.15)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="kanban-col" style={{ backgroundColor: "#f0f9ff", borderRadius: "12px", padding: "16px", border: "1px solid #bae6fd" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#38bdf8", fontWeight: 700 }}>
+              <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#0369a1", fontWeight: 700 }}>
                 <AlertCircle size={16} />
                 <span>Mới tiếp nhận</span>
               </h4>
-              <span className="badge" style={{ backgroundColor: "rgba(56, 189, 248, 0.15)", color: "#38bdf8" }}>{newFeedbacks.length}</span>
+              <span className="badge" style={{ backgroundColor: "#e0f2fe", color: "#0369a1" }}>{newFeedbacks.length}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {newFeedbacks.length === 0 ? (
-                <div style={{ padding: "30px 10px", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "13px", fontStyle: "italic" }}>
+                <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-light)", fontSize: "13px", fontStyle: "italic" }}>
                   Không có phản ánh mới
                 </div>
               ) : (
@@ -158,36 +158,45 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
                   <div 
                     key={fb.id} 
                     onClick={() => handleOpenResolveFeedback(fb)}
-                    className="glass-card" 
                     style={{ 
                       padding: "14px", 
                       borderRadius: "8px", 
-                      borderLeft: "4px solid #38bdf8", 
+                      borderLeft: "4px solid #0284c7", 
                       cursor: "pointer", 
-                      backgroundColor: "rgba(255,255,255,0.02)",
-                      transition: "transform 0.2s"
+                      backgroundColor: "#ffffff",
+                      borderTop: "1px solid var(--border-slate)",
+                      borderRight: "1px solid var(--border-slate)",
+                      borderBottom: "1px solid var(--border-slate)",
+                      boxShadow: "var(--shadow-sm)",
+                      transition: "all 0.2s ease"
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "none"}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "var(--shadow-md)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+                    }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", backgroundColor: "rgba(56, 189, 248, 0.1)", color: "#38bdf8" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", backgroundColor: "#e0f2fe", color: "#0369a1" }}>
                         {getFeedbackTypeLabel(fb.report_type)}
                       </span>
-                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-light)" }}>
                         ID: {fb.id.slice(0, 8)}
                       </span>
                     </div>
-                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.85)", margin: "0 0 10px 0", lineHeight: "1.4", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                    <p style={{ fontSize: "13px", color: "var(--text-dark)", margin: "0 0 10px 0", lineHeight: "1.4", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
                       {fb.image_url && <Camera size={12} style={{ color: "#E5A93C", marginRight: "4px", display: "inline" }} />}
                       {fb.content}
                     </p>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", color: "rgba(255,255,255,0.5)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", color: "var(--text-light)" }}>
                       <div>
-                        <strong>{fb.reporter_name || "Nặc danh"}</strong>
+                        <strong style={{ color: "var(--text-dark)" }}>{fb.reporter_name || "Nặc danh"}</strong>
                         {fb.phone && <div style={{ fontSize: "10.5px" }}>📞 {fb.phone}</div>}
                       </div>
-                      <ArrowRight size={14} style={{ color: "rgba(255,255,255,0.3)" }} />
+                      <ArrowRight size={14} style={{ color: "var(--text-light)" }} />
                     </div>
                   </div>
                 ))
@@ -196,17 +205,17 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
           </div>
 
           {/* Column 2: In Progress */}
-          <div className="kanban-col" style={{ backgroundColor: "rgba(0,0,0,0.15)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="kanban-col" style={{ backgroundColor: "#fffbeb", borderRadius: "12px", padding: "16px", border: "1px solid #fde68a" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#fbbf24", fontWeight: 700 }}>
+              <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#b45309", fontWeight: 700 }}>
                 <Clock size={16} />
                 <span>Đang xử lý</span>
               </h4>
-              <span className="badge" style={{ backgroundColor: "rgba(251, 191, 36, 0.15)", color: "#fbbf24" }}>{inProgressFeedbacks.length}</span>
+              <span className="badge" style={{ backgroundColor: "#fef3c7", color: "#b45309" }}>{inProgressFeedbacks.length}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {inProgressFeedbacks.length === 0 ? (
-                <div style={{ padding: "30px 10px", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "13px", fontStyle: "italic" }}>
+                <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-light)", fontSize: "13px", fontStyle: "italic" }}>
                   Không có phản ánh đang xử lý
                 </div>
               ) : (
@@ -214,41 +223,50 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
                   <div 
                     key={fb.id} 
                     onClick={() => handleOpenResolveFeedback(fb)}
-                    className="glass-card" 
                     style={{ 
                       padding: "14px", 
                       borderRadius: "8px", 
-                      borderLeft: "4px solid #fbbf24", 
+                      borderLeft: "4px solid #d97706", 
                       cursor: "pointer", 
-                      backgroundColor: "rgba(255,255,255,0.02)",
-                      transition: "transform 0.2s"
+                      backgroundColor: "#ffffff",
+                      borderTop: "1px solid var(--border-slate)",
+                      borderRight: "1px solid var(--border-slate)",
+                      borderBottom: "1px solid var(--border-slate)",
+                      boxShadow: "var(--shadow-sm)",
+                      transition: "all 0.2s ease"
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "none"}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "var(--shadow-md)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+                    }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", backgroundColor: "rgba(251, 191, 36, 0.1)", color: "#fbbf24" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", backgroundColor: "#fef3c7", color: "#b45309" }}>
                         {getFeedbackTypeLabel(fb.report_type)}
                       </span>
-                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-light)" }}>
                         ID: {fb.id.slice(0, 8)}
                       </span>
                     </div>
-                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.85)", margin: "0 0 10px 0", lineHeight: "1.4", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                    <p style={{ fontSize: "13px", color: "var(--text-dark)", margin: "0 0 10px 0", lineHeight: "1.4", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
                       {fb.image_url && <Camera size={12} style={{ color: "#E5A93C", marginRight: "4px", display: "inline" }} />}
                       {fb.content}
                     </p>
                     {fb.assigned_unit && (
-                      <div style={{ fontSize: "11px", color: "#fbbf24", backgroundColor: "rgba(251, 191, 36, 0.05)", padding: "4px 8px", borderRadius: "4px", marginBottom: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#b45309", backgroundColor: "#fef3c7", padding: "4px 8px", borderRadius: "4px", marginBottom: "8px", border: "1px solid #fde68a" }}>
                         📍 Đơn vị: {fb.assigned_unit}
                       </div>
                     )}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", color: "rgba(255,255,255,0.5)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", color: "var(--text-light)" }}>
                       <div>
-                        <strong>{fb.reporter_name || "Nặc danh"}</strong>
+                        <strong style={{ color: "var(--text-dark)" }}>{fb.reporter_name || "Nặc danh"}</strong>
                         {fb.phone && <div style={{ fontSize: "10.5px" }}>📞 {fb.phone}</div>}
                       </div>
-                      <ArrowRight size={14} style={{ color: "rgba(255,255,255,0.3)" }} />
+                      <ArrowRight size={14} style={{ color: "var(--text-light)" }} />
                     </div>
                   </div>
                 ))
@@ -257,17 +275,17 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
           </div>
 
           {/* Column 3: Resolved */}
-          <div className="kanban-col" style={{ backgroundColor: "rgba(0,0,0,0.15)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="kanban-col" style={{ backgroundColor: "#f0fdf4", borderRadius: "12px", padding: "16px", border: "1px solid #bbf7d0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#22c55e", fontWeight: 700 }}>
+              <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", color: "#15803d", fontWeight: 700 }}>
                 <CheckCircle size={16} />
                 <span>Đã giải quyết / Từ chối</span>
               </h4>
-              <span className="badge" style={{ backgroundColor: "rgba(34, 197, 94, 0.15)", color: "#22c55e" }}>{resolvedFeedbacks.length}</span>
+              <span className="badge" style={{ backgroundColor: "#dcfce7", color: "#15803d" }}>{resolvedFeedbacks.length}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {resolvedFeedbacks.length === 0 ? (
-                <div style={{ padding: "30px 10px", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "13px", fontStyle: "italic" }}>
+                <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-light)", fontSize: "13px", fontStyle: "italic" }}>
                   Không có phản ánh hoàn tất
                 </div>
               ) : (
@@ -275,17 +293,26 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
                   <div 
                     key={fb.id} 
                     onClick={() => handleOpenResolveFeedback(fb)}
-                    className="glass-card" 
                     style={{ 
                       padding: "14px", 
                       borderRadius: "8px", 
-                      borderLeft: `4px solid ${fb.status === "spam" ? "#ef4444" : "#22c55e"}`, 
+                      borderLeft: `4px solid ${fb.status === "spam" ? "#dc2626" : "#16a34a"}`, 
                       cursor: "pointer", 
-                      backgroundColor: "rgba(255,255,255,0.02)",
-                      transition: "transform 0.2s"
+                      backgroundColor: "#ffffff",
+                      borderTop: "1px solid var(--border-slate)",
+                      borderRight: "1px solid var(--border-slate)",
+                      borderBottom: "1px solid var(--border-slate)",
+                      boxShadow: "var(--shadow-sm)",
+                      transition: "all 0.2s ease"
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "none"}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "var(--shadow-md)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+                    }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
                       <span style={{ 
@@ -293,20 +320,20 @@ export const FeedbacksPanel: React.FC<FeedbacksPanelProps> = ({
                         fontWeight: 700, 
                         padding: "2px 6px", 
                         borderRadius: "4px", 
-                        backgroundColor: fb.status === "spam" ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)", 
-                        color: fb.status === "spam" ? "#ef4444" : "#22c55e" 
+                        backgroundColor: fb.status === "spam" ? "#fee2e2" : "#dcfce7", 
+                        color: fb.status === "spam" ? "#b91c1c" : "#15803d" 
                       }}>
                         {getFeedbackTypeLabel(fb.report_type)}
                       </span>
-                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-light)" }}>
                         ID: {fb.id.slice(0, 8)}
                       </span>
                     </div>
-                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", margin: "0 0 10px 0", lineHeight: "1.4", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                    <p style={{ fontSize: "13px", color: "var(--text-light)", margin: "0 0 10px 0", lineHeight: "1.4", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
                       {fb.content}
                     </p>
                     {fb.admin_notes && (
-                      <div style={{ fontSize: "11.5px", color: "rgba(255,255,255,0.7)", backgroundColor: "rgba(255,255,255,0.03)", padding: "8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ fontSize: "11.5px", color: "var(--text-dark)", backgroundColor: "var(--bg-slate)", padding: "8px", borderRadius: "6px", border: "1px solid var(--border-slate)" }}>
                         <strong>notes:</strong> {fb.admin_notes}
                       </div>
                     )}
