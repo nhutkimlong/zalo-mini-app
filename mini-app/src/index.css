@@ -557,6 +557,18 @@ body {
   z-index: 97; /* Sits at absolute 100% since bottom-nav is hidden on chat page */
 }
 
+/* Enable flex layout on page-content wrapper to support fixed header/footer on Chat & Map */
+.chat-page-dark .zaui-page-content,
+.map-page-premium .zaui-page-content {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+
 .chat-header-dark {
   background: rgba(11, 37, 69, 0.75);
   backdrop-filter: blur(16px);

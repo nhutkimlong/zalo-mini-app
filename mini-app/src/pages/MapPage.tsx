@@ -773,6 +773,7 @@ export const MapPage: React.FC = () => {
 
   return (
     <Page
+      className="map-page-premium"
       style={{
         position: "absolute",
         top: 0,
@@ -940,7 +941,7 @@ export const MapPage: React.FC = () => {
       </div>
 
       {/* Main Map Content DOM */}
-      <div style={{ flex: 1, position: "relative", width: "100%", height: "100%" }}>
+      <div style={{ flex: 1, position: "relative", width: "100%", minHeight: 0 }}>
         {!leafletLoaded && (
           <div style={{
             position: "absolute",
@@ -1097,9 +1098,9 @@ export const MapPage: React.FC = () => {
         backgroundColor: "var(--primary-navy)",
         borderTop: "2.5px solid var(--accent-gold)",
         padding: (selectedPlace || activeRoute)
-          ? "8px 16px calc(12px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) 16px"
-          : "4px 16px calc(4px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) 16px",
-        maxHeight: (selectedPlace || activeRoute) ? "210px" : "48px",
+          ? "8px 16px calc(16px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px))) 16px"
+          : "4px 16px calc(8px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 8px))) 16px",
+        maxHeight: (selectedPlace || activeRoute) ? "240px" : "54px",
         transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
         overflowY: "auto",
         zIndex: 1001,

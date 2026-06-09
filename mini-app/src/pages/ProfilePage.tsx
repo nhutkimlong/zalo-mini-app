@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { User, LogIn, LogOut, Award, Heart, Check, Lock, Edit2, Save, X, Phone, Mail, Camera } from "lucide-react";
+import { User, LogOut, Award, Heart, Check, Lock, Edit2, Save, X, Phone, Mail, Camera } from "lucide-react";
 import { Header, Page } from "zmp-ui";
 import api, { TouristPlace, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -132,41 +132,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleGuestLogin = async () => {
-    setAuthLoading(true);
-    setAuthError("");
-    
-    const randomId = Math.random().toString(36).substring(7);
-    const guestEmail = `guest_${randomId}@nubaden.vn`;
-    const guestPassword = "guestPassword123";
-    const guestName = `Du khách vãng lai #${randomId.toUpperCase()}`;
-    
-    try {
-      // First try to sign up
-      const signUpRes = await supabase.auth.signUp({
-        email: guestEmail,
-        password: guestPassword,
-        options: {
-          data: { name: guestName }
-        }
-      });
-      
-      if (signUpRes.error) throw signUpRes.error;
-      
-      // Then sign in
-      const signInRes = await supabase.auth.signInWithPassword({
-        email: guestEmail,
-        password: guestPassword
-      });
-      
-      if (signInRes.error) throw signInRes.error;
-      setAuthMessage("Đăng nhập Demo thành công!");
-    } catch (err: any) {
-      setAuthError(err.message || "Lỗi đăng nhập nhanh.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -366,34 +331,6 @@ export const ProfilePage: React.FC = () => {
               </button>
             </form>
 
-            <div style={{ display: "flex", alignItems: "center", margin: "16px 0", color: "var(--light-text)", fontSize: "12px" }}>
-              <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(0,0,0,0.08)" }} />
-              <span style={{ padding: "0 10px" }}>{language === "en" ? "OR" : "HOẶC DÙNG THỬ"}</span>
-              <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(0,0,0,0.08)" }} />
-            </div>
-
-            <button 
-              onClick={handleGuestLogin} 
-              disabled={authLoading}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: "12px",
-                border: "2px dashed var(--accent-gold)",
-                background: "rgba(212, 175, 55, 0.05)",
-                color: "var(--primary-navy)",
-                fontWeight: 700,
-                fontSize: "14px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px"
-              }}
-            >
-              <LogIn size={16} />
-              {language === "en" ? "Log In as Guest / Demo" : "Đăng Nhập Nhanh (Demo)"}
-            </button>
           </div>
 
         </div>
