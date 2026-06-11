@@ -27,30 +27,5 @@ export const apiService = {
         if (!response.ok) throw new Error("API Connection Failed");
         const data = await response.json();
         return data.answer || "Tôi đang gặp chút sự cố kết nối. Anh/Chị vui lòng thử lại sau giây lát ạ!";
-    },
-
-    /**
-     * Generates a structured itinerary via AI
-     */
-    async generateItinerary(request) {
-        const response = await fetch(`${BACKEND_BASE_URL}/api/chat/itinerary`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                request: request
-            })
-        });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error("Lỗi kết nối API: " + response.status);
-        }
-
-        const data = await response.json();
-        if (!data.steps || !Array.isArray(data.steps)) {
-            throw new Error("Dữ liệu lịch trình không hợp lệ.");
-        }
-
-        return data;
     }
 };
