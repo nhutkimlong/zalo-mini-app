@@ -174,13 +174,31 @@ export const ChatPage: React.FC = () => {
           "Sự tích Bà Đen (Linh Sơn Thánh Mẫu)?"
         ];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTimeRef = useRef(0);
+  const THROTTLE_DELAY = 150;
+
+  const isNearBottom = () => {
+    const container = chatContainerRef.current;
+    if (!container) return true;
+    const threshold = 150;
+    const scrollBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    return scrollBottom <= threshold;
+  };
+
+  const scrollSmart = (force = false) => {
+    const now = Date.now();
+    if (force || now - lastScrollTimeRef.current > THROTTLE_DELAY) {
+      if (force || isNearBottom()) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+        lastScrollTimeRef.current = now;
+      }
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollSmart(true);
+  }, [messages.length]);
 
   useEffect(() => {
     const stableMessages = messages
@@ -305,12 +323,15 @@ export const ChatPage: React.FC = () => {
       />
         
       {/* Main Conversation Window */}
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
+      <div 
+        ref={chatContainerRef}
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column" }}
+      >
         <div style={{
           display: "flex",
           flexDirection: "column",
           gap: "16px",
-          padding: "16px 16px calc(140px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px))) 16px"
+          padding: "16px 16px 20px 16px"
         }}>
           {messages.map((msg) => {
             const isUser = msg.sender === "user";
@@ -392,13 +413,13 @@ export const ChatPage: React.FC = () => {
                       {msg.animate ? (
                         <TypewriterText
                           text={msg.text}
-                          onType={scrollToBottom}
+                          onType={() => scrollSmart(false)}
                           onComplete={() => {
                             // Turn off animation flag once typed
                             setMessages(prev =>
                               prev.map(m => m.id === msg.id ? { ...m, animate: false } : m)
                             );
-                            scrollToBottom();
+                            scrollSmart(true);
                           }}
                         />
                       ) : (
@@ -466,18 +487,7 @@ export const ChatPage: React.FC = () => {
 
       {/* Suggested Quick Prompt Chips slider */}
       {!hasUserMessage && (
-        <div style={{
-          position: "fixed",
-          bottom: "calc(68px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px)))",
-          left: 0,
-          right: 0,
-          zIndex: 98,
-          backgroundColor: "rgba(6, 21, 42, 0.95)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-          padding: "4px 0"
-        }}>
+        <div className="chips-slider-wrapper">
           <div className="chips-slider-container">
             {SUGGESTED_QUESTIONS.map((q, idx) => (
               <button 
@@ -493,7 +503,7 @@ export const ChatPage: React.FC = () => {
       )}
 
       {/* Floating Bottom Input Message Bar */}
-      <div className="floating-input-bar-dark" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+      <div className="floating-input-bar-dark">
         <button
           type="button"
           onClick={clearChatHistory}
