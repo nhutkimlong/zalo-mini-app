@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Bot, Compass, AlertTriangle, User } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
@@ -11,6 +11,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const path = location.pathname;
   const { t } = useLanguage();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        setIsKeyboardOpen(window.visualViewport.height < window.innerHeight * 0.85);
+      }
+    };
+    window.visualViewport?.addEventListener("resize", handleResize);
+    handleResize();
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const isLinkActive = (targetPath: string) => {
     if (targetPath === "/" && path === "/") return true;
@@ -41,7 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       {/* Elegant Bottom Navigation Bar */}
-      {showBottomNav && (
+      {showBottomNav && !isKeyboardOpen && (
         <nav className="bottom-nav">
           <Link to="/" className={`nav-item ${isLinkActive("/") ? "nav-item-active" : ""}`} aria-label={t("nav.home")}>
             <Home size={22} aria-hidden="true" />

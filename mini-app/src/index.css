@@ -483,9 +483,14 @@ body {
 }
 
 /* Force override of Zalo UI layout wrapper margins/paddings that could push fixed elements */
-.zaui-app, .zaui-page, .zaui-page-content {
+.zaui-app, .zaui-page {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
+}
+
+.zaui-page-content {
+  margin-bottom: 0 !important;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 16px)) !important; /* Offset for bottom-nav */
 }
 
 .nav-item {
@@ -521,7 +526,7 @@ body {
   border-radius: 10px;
   border: 1px solid rgba(11, 37, 69, 0.15);
   background-color: var(--cream-white);
-  font-size: 14.5px;
+  font-size: 16px; /* Prevent iOS Safari focus auto-zoom */
   color: var(--dark-text);
   transition: all 0.2s ease;
 }
@@ -561,6 +566,8 @@ body {
 /* Enable flex layout on page-content wrapper to support fixed header/footer on Chat & Map */
 .chat-page-dark .zaui-page-content,
 .map-page-premium .zaui-page-content {
+  position: relative !important;
+  top: auto !important;
   display: flex !important;
   flex-direction: column !important;
   height: auto !important;
@@ -743,7 +750,7 @@ body {
   border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: 12px;
   padding: 12px 16px;
-  font-size: 14.5px;
+  font-size: 16px; /* Prevent iOS Safari focus auto-zoom */
   color: #ffffff;
 }
 

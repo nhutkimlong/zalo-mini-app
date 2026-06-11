@@ -49,9 +49,9 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
   const [plAudioEn, setPlAudioEn] = useState("");
   const [plAudioKm, setPlAudioKm] = useState("");
   const [plAudioEnabled, setPlAudioEnabled] = useState(false);
-  const [plLat, setPlLat] = useState(11.378345);
-  const [plLng, setPlLng] = useState(106.168924);
-  const [plDisplayOrder, setPlDisplayOrder] = useState<number>(0);
+  const [plLat, setPlLat] = useState<string>("11.378345");
+  const [plLng, setPlLng] = useState<string>("106.168924");
+  const [plDisplayOrder, setPlDisplayOrder] = useState<string>("0");
 
   // AI translation & upload states
   const [translatingField, setTranslatingField] = useState<string | null>(null);
@@ -178,9 +178,9 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
       setPlAudioEn(selectedItem.audio_url_en || "");
       setPlAudioKm(selectedItem.audio_url_km || "");
       setPlAudioEnabled(!!selectedItem.audio_enabled);
-      setPlLat(selectedItem.latitude || 11.378345);
-      setPlLng(selectedItem.longitude || 106.168924);
-      setPlDisplayOrder(selectedItem.display_order ?? 0);
+      setPlLat(selectedItem.latitude !== undefined ? String(selectedItem.latitude) : "11.378345");
+      setPlLng(selectedItem.longitude !== undefined ? String(selectedItem.longitude) : "106.168924");
+      setPlDisplayOrder(selectedItem.display_order !== undefined ? String(selectedItem.display_order) : "0");
     } else {
       setPlName("");
       setPlNameEn("");
@@ -197,9 +197,9 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
       setPlAudioEn("");
       setPlAudioKm("");
       setPlAudioEnabled(false);
-      setPlLat(11.378345);
-      setPlLng(106.168924);
-      setPlDisplayOrder(0);
+      setPlLat("11.378345");
+      setPlLng("106.168924");
+      setPlDisplayOrder("0");
     }
   }, [modalType, selectedItem]);
 
@@ -247,7 +247,7 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     const map = L.map(adminMapDivRef.current, {
       zoomControl: true,
       attributionControl: false
-    }).setView([plLat || 11.378345, plLng || 106.168924], 15);
+    }).setView([Number(plLat) || 11.378345, Number(plLng) || 106.168924], 15);
 
     adminMapInstanceRef.current = map;
 
@@ -256,7 +256,7 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
       minZoom: 13
     }).addTo(map);
 
-    const marker = L.marker([plLat || 11.378345, plLng || 106.168924], {
+    const marker = L.marker([Number(plLat) || 11.378345, Number(plLng) || 106.168924], {
       draggable: true
     }).addTo(map);
 
@@ -265,15 +265,15 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
     // Listen to marker drag events to update fields
     marker.on("dragend", () => {
       const position = marker.getLatLng();
-      setPlLat(Number(position.lat.toFixed(6)));
-      setPlLng(Number(position.lng.toFixed(6)));
+      setPlLat(String(Number(position.lat.toFixed(6))));
+      setPlLng(String(Number(position.lng.toFixed(6))));
     });
 
     // Listen to map clicks to update marker and fields
     map.on("click", (e: any) => {
       const { lat, lng } = e.latlng;
-      setPlLat(Number(lat.toFixed(6)));
-      setPlLng(Number(lng.toFixed(6)));
+      setPlLat(String(Number(lat.toFixed(6))));
+      setPlLng(String(Number(lng.toFixed(6))));
       marker.setLatLng([lat, lng]);
     });
   }, [adminLeafletLoaded]);
@@ -425,12 +425,11 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
           <div className="form-group">
             <label className="form-label">Thứ tự hiển thị ưu tiên (1 - Lên đầu, số nhỏ hơn hiển thị trước)</label>
             <input 
-              type="number" 
+              type="text" 
               className="form-input" 
-              min="0"
               required 
               value={plDisplayOrder} 
-              onChange={e => setPlDisplayOrder(Number(e.target.value))} 
+              onChange={e => setPlDisplayOrder(e.target.value)} 
             />
           </div>
           <div className="form-group">
@@ -650,23 +649,21 @@ export const PlaceModal: React.FC<PlaceModalProps> = ({
             <div className="form-group">
               <label className="form-label">Vĩ độ (Latitude)</label>
               <input 
-                type="number" 
-                step="0.000001" 
+                type="text" 
                 className="form-input" 
                 required 
                 value={plLat} 
-                onChange={e => setPlLat(Number(e.target.value))} 
+                onChange={e => setPlLat(e.target.value)} 
               />
             </div>
             <div className="form-group">
               <label className="form-label">Kinh độ (Longitude)</label>
               <input 
-                type="number" 
-                step="0.000001" 
+                type="text" 
                 className="form-input" 
                 required 
                 value={plLng} 
-                onChange={e => setPlLng(Number(e.target.value))} 
+                onChange={e => setPlLng(e.target.value)} 
               />
             </div>
           </div>

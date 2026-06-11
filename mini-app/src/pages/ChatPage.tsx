@@ -190,7 +190,10 @@ export const ChatPage: React.FC = () => {
     const now = Date.now();
     if (force || now - lastScrollTimeRef.current > THROTTLE_DELAY) {
       if (force || isNearBottom()) {
-        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+        const container = chatContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
         lastScrollTimeRef.current = now;
       }
     }
