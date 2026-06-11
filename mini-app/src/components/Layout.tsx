@@ -53,7 +53,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       page.scrollTo(0, 0);
     });
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+
+    // Dynamic background toggle to prevent overscroll bounce background leaks
+    const isDarkPage = path === "/chat" || path === "/map";
+    if (isDarkPage) {
+      document.documentElement.classList.add("dark-body-bg");
+      document.body.classList.add("dark-body-bg");
+    } else {
+      document.documentElement.classList.remove("dark-body-bg");
+      document.body.classList.remove("dark-body-bg");
+    }
+  }, [location.pathname, path]);
 
   const showBottomNav = path !== "/chat" && path !== "/map";
 

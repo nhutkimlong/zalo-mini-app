@@ -1,0 +1,19 @@
+{
+  "answer": "Tuyến cáp treo Vân Sơn đưa bạn lên đỉnh núi có giờ hoạt động cụ thể như sau:\n\n- Thứ 2 đến Thứ 6: Cáp chạy từ 07:00 đến 18:00.\n- Thứ 7 và Chủ Nhật: Cáp chạy từ 06:00 đến 21:00.\n\nNếu bạn đi vào dịp cuối tuần và lên đỉnh núi vào buổi tối, mình gợi ý bạn nên nán lại một chút để chiêm ngưỡng màn trình diễn ánh sáng LED nghệ thuật cực kỳ lung linh trên đỉnh núi nhé.",
+  "confidence_score": 0.715192394543149,
+  "sources": [
+    {
+      "article_id": "a1c3d359-fe2c-42da-9d19-d94dfcedb022",
+      "title": "Giờ hoạt động chi tiết của Khu du lịch Núi Bà Đen",
+      "category": "ve_va_gio_mo_cua",
+      "source": null
+    },
+    {
+      "article_id": "a1c3d359-fe2c-42da-9d19-d94dfcedb021",
+      "title": "Thông tin giá vé cáp treo Núi Bà Đen năm 2026",
+      "category": "ve_va_gio_mo_cua",
+      "source": null
+    }
+  ],
+  "created_at": "2026-06-11T08:19:24.426685"
+}

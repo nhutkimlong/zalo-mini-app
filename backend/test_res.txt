@@ -1,5 +1,62 @@
-Hello in Khmer is:
-
-**ជំរាបសួរ** (jumreap suor)
-
-This is the formal and most common way to say hello in Khmer, suitable for most situations.
+{
+  "title": "Hành trình Chinh phục Núi Bà Đen: Leo bộ tâm linh & Thưởng thức Buffet Đỉnh núi",
+  "total_duration_minutes": 435,
+  "steps": [
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb022",
+      "poi_name": "Chùa Trung (Linh Sơn Phước Trung Tự)",
+      "zone": "chan_nui",
+      "estimated_duration_minutes": 30,
+      "description": "Khởi hành tại chân núi, viếng Chùa Trung cổ kính để cầu bình an và chuẩn bị thể lực bắt đầu hành trình leo bộ."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb011",
+      "poi_name": "Chùa Bà (Linh Sơn Tiên Thạch Tự)",
+      "zone": "chua_ba",
+      "estimated_duration_minutes": 120,
+      "description": "Leo bộ theo đường mòn từ chân núi lên lưng chừng núi (khu vực Chùa Bà). Chiêm bái ngôi chùa cổ hơn 300 năm tuổi linh thiêng."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb021",
+      "poi_name": "Chùa Hang (Linh Sơn Long Châu Tự)",
+      "zone": "chua_ba",
+      "estimated_duration_minutes": 45,
+      "description": "Đi bộ lên khoảng 100 bậc tam cấp từ Chùa Bà để tham quan Chùa Hang thanh tịnh và ngắm cảnh sườn núi."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb015",
+      "poi_name": "Hệ thống Cáp treo Sun World BaDen Mountain",
+      "zone": "dinh_nui",
+      "estimated_duration_minutes": 30,
+      "description": "Di chuyển từ khu vực Chùa Bà (Ga Hòa Đồng) lên Đỉnh núi (Ga Vân Sơn) bằng tuyến cáp treo Vân Sơn."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb013",
+      "poi_name": "Tượng Phật Bà Tây Bổ Đà Sơn",
+      "zone": "dinh_nui",
+      "estimated_duration_minutes": 45,
+      "description": "Chiêm bái tượng Phật Bà bằng đồng cao nhất châu Á trên đỉnh núi và tham quan khu triển lãm Phật giáo dưới chân tượng."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb024",
+      "poi_name": "Tượng Đại Phật Di Lặc bằng đá sa thạch",
+      "zone": "dinh_nui",
+      "estimated_duration_minutes": 45,
+      "description": "Chiêm ngưỡng đại tượng Phật Di Lặc khổng lồ ghép từ hàng ngàn khối đá sa thạch và cầu mong hỷ lạc, may mắn."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb014",
+      "poi_name": "Đỉnh Núi Bà Đen (Độ cao 986m)",
+      "zone": "dinh_nui",
+      "estimated_duration_minutes": 90,
+      "description": "Check-in cột mốc 986m, dạo quanh vườn hoa rực rỡ và thưởng thức bữa trưa buffet thịnh soạn tại nhà hàng trên đỉnh núi (phục vụ từ 11h - 14h)."
+    },
+    {
+      "poi_id": "e1c3d359-fe2c-42da-9d19-d94dfcedb015",
+      "poi_name": "Hệ thống Cáp treo Sun World BaDen Mountain",
+      "zone": "chan_nui",
+      "estimated_duration_minutes": 30,
+      "description": "Lên cáp treo từ Ga Vân Sơn đi thẳng xuống Ga Bà Đen ở chân núi, kết thúc hành trình trải nghiệm trọn vẹn."
+    }
+  ]
+}
