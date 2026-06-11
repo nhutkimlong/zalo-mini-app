@@ -14,15 +14,25 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   useEffect(() => {
+    const updateHeight = () => {
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty("--app-height", `${height}px`);
+    };
+
     const handleResize = () => {
+      updateHeight();
       if (window.visualViewport) {
         setIsKeyboardOpen(window.visualViewport.height < window.innerHeight * 0.85);
       }
     };
+
     window.visualViewport?.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize);
     handleResize();
+
     return () => {
       window.visualViewport?.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -50,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div ref={pageContainerRef} className="page-container" style={showBottomNav ? {} : { paddingBottom: 0, height: "100%", overflow: "hidden" }}>
       {/* Dynamic Content */}
-      <main style={showBottomNav ? { minHeight: "calc(100dvh - 60px)" } : { height: "100%", overflow: "hidden", position: "relative" }}>
+      <main style={showBottomNav ? { minHeight: "calc(var(--app-height, 100dvh) - 60px)" } : { height: "100%", overflow: "hidden", position: "relative" }}>
         {children}
       </main>
 

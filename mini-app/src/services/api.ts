@@ -117,6 +117,29 @@ export interface KnowledgeArticle {
   content_km?: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  phone: string | null;
+  avatar_url: string | null;
+  role: string;
+  email?: string;
+  link_type?: string;
+}
+
+export interface UserItinerary {
+  id: string;
+  user_id: string;
+  itinerary_id: string;
+  created_at: string;
+}
+
+export interface RealtimeStatus {
+  weather_auto: boolean;
+  weather_status: string;
+  weather_temp: number;
+}
+
 // ─── API Client ───────────────────────────────────────────────────────────────
 class ApiClient {
   private backendUrl: string;
@@ -214,7 +237,7 @@ class ApiClient {
     return (data as Itinerary[]) ?? [];
   }
 
-  async getMyItineraries(): Promise<any[]> {
+  async getMyItineraries(): Promise<UserItinerary[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase
@@ -223,7 +246,7 @@ class ApiClient {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data as UserItinerary[]) ?? [];
   }
 
   // ─── Hướng dẫn viên 4.0 AI Chat ─ FastAPI RAG backend ───────
@@ -300,16 +323,12 @@ class ApiClient {
   }
 
   // ─── Option B: Real-time Status ────────────────────────
-  async getRealtimeStatus(): Promise<{
-    weather_auto: boolean;
-    weather_status: string;
-    weather_temp: number;
-  }> {
-    return this.backendRequest<any>("/api/tourism/realtime");
+  async getRealtimeStatus(): Promise<RealtimeStatus> {
+    return this.backendRequest<RealtimeStatus>("/api/tourism/realtime");
   }
 
   // ─── User Profile ──────────────────────────────────────
-  async getMyProfile(): Promise<any> {
+  async getMyProfile(): Promise<UserProfile | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     const { data, error } = await supabase
@@ -319,7 +338,7 @@ class ApiClient {
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (data) {
-      return { ...data, email: user.email };
+      return { ...(data as UserProfile), email: user.email };
     }
     
     // Fail-safe: Auto-create profile in app_users if not found
@@ -337,10 +356,10 @@ class ApiClient {
       .select()
       .single();
     if (insertError) throw new Error(insertError.message);
-    return { ...inserted, email: user.email };
+    return { ...(inserted as UserProfile), email: user.email };
   }
 
-  async updateMyProfile(profileData: { name?: string; phone?: string; avatar_url?: string }): Promise<any> {
+  async updateMyProfile(profileData: { name?: string; phone?: string; avatar_url?: string }): Promise<UserProfile> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not logged in");
     const { data, error } = await supabase
@@ -350,7 +369,7 @@ class ApiClient {
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { ...data, email: user.email };
+    return { ...(data as UserProfile), email: user.email };
   }
 
   async uploadAvatar(file: File): Promise<{ avatar_url: string }> {

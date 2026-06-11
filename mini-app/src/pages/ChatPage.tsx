@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header, Page } from "zmp-ui";
 import { Bot, Send, AlertCircle, UserCircle, Trash2 } from "lucide-react";
-import api, { ChatResponse, supabase } from "../services/api";
+import api, { ChatResponse, supabase, UserProfile } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import logoImageUrl from "../assets/logo.png";
 
@@ -83,7 +83,7 @@ const CHAT_HISTORY_STORAGE_KEY = "nui_ba_den_chat_history";
 
 export const ChatPage: React.FC = () => {
   const { language, t } = useLanguage();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   
   const getWelcomeText = (name?: string) => {
     if (language === "km") {
@@ -215,15 +215,17 @@ export const ChatPage: React.FC = () => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         api.getMyProfile().then(prof => {
-          setProfile(prof);
-          // Update welcome message if no user message has been sent yet
-          setMessages(prev => {
-            const hasUserMsgs = prev.some(m => m.sender === "user");
-            if (!hasUserMsgs) {
-              return prev.map(m => m.id === "welcome" ? createWelcomeMessage(prof.name) : m);
-            }
-            return prev;
-          });
+          if (prof) {
+            setProfile(prof);
+            // Update welcome message if no user message has been sent yet
+            setMessages(prev => {
+              const hasUserMsgs = prev.some(m => m.sender === "user");
+              if (!hasUserMsgs) {
+                return prev.map(m => m.id === "welcome" ? createWelcomeMessage(prof.name) : m);
+              }
+              return prev;
+            });
+          }
         }).catch(err => console.warn("[ChatPage] Profile lookup failed:", err));
       }
     });

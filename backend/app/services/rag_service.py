@@ -408,7 +408,8 @@ class RAGService:
 
         # Fetch active announcements to dynamically feed to chatbot context
         announcements_str = ""
-        if self.supabase:
+        # Only fetch announcements for the first question in the conversation (when conversation_history is empty)
+        if self.supabase and (not conversation_history or len(conversation_history) == 0):
             try:
                 ann_res = self.supabase.table("announcements").select("*").eq("status", "published").execute()
                 if ann_res.data:
