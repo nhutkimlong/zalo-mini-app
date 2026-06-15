@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str = ""
     ADMIN_PASSWORD: str = "admin123"
 
+    # Zalo Bot
+    ZALO_BOT_TOKEN: str = ""
+    ZALO_WEBHOOK_SECRET_TOKEN: str = ""
+
     # ─── Beeknoee AI (Primary provider) ──────────────────────────────────────
     BEEKNOEE_BASE_URL: str = "https://platform-api.beeknoee.com/v1"
     BEEKNOEE_API_KEY: str = ""
