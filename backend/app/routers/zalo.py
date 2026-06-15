@@ -53,12 +53,8 @@ async def send_zalo_message(bot_token: str, recipient_id: str, text: str):
     """Send text response back to the Zalo user via Zalo Bot Platform API."""
     url = f"https://bot-api.zaloplatforms.com/bot{bot_token}/sendMessage"
     payload = {
-        "recipient": {
-            "user_id": recipient_id
-        },
-        "message": {
-            "text": text
-        }
+        "chat_id": recipient_id,
+        "text": text
     }
     async with httpx.AsyncClient() as client:
         try:

@@ -126,8 +126,8 @@ async def test_send_zalo_message_success(mock_post):
 
     expected_url = "https://bot-api.zaloplatforms.com/bottest_token/sendMessage"
     expected_payload = {
-        "recipient": {"user_id": "user_abc"},
-        "message": {"text": "Hello world"}
+        "chat_id": "user_abc",
+        "text": "Hello world"
     }
     
     mock_post.assert_called_once_with(
