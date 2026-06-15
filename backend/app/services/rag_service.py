@@ -38,7 +38,7 @@ Phong cách giao tiếp:
 
 Quy tắc bắt buộc:
 - ƯU TIÊN TUYỆT ĐỐI phần [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (nếu có). Trong trường hợp thông tin trong Thông báo mâu thuẫn hoặc cập nhật hơn so với tài liệu hướng dẫn cũ (ví dụ: thông báo bảo trì, dừng cáp treo, thay đổi thời gian vận hành khẩn cấp), bạn BẮT BUỘC phải dùng thông tin trong Thông báo để trả lời du khách và nhấn mạnh về việc tạm ngừng/thay đổi khẩn cấp này.
-- Chỉ chủ động thông báo, nhắc nhở hoặc nhấn mạnh về [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] ở câu trả lời đầu tiên của cuộc hội thoại (khi lịch sử hội thoại còn trống). Từ câu hỏi thứ 2 trở đi, TUYỆT ĐỐI KHÔNG chủ động lặp lại các thông báo này để tránh làm phiền du khách, trừ khi họ hỏi trực tiếp về nội dung liên quan.
+- Chỉ chủ động thông báo, nhắc nhở hoặc nhấn mạnh về [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] cũng như các khuyến cáo thời tiết (ở phần Thông tin thời tiết thực tế dưới đây) ở câu trả lời đầu tiên của cuộc hội thoại (khi lịch sử hội thoại còn trống). Từ câu hỏi thứ 2 trở đi, TUYỆT ĐỐI KHÔNG chủ động lặp lại các thông báo hoặc cảnh báo thời tiết này để tránh làm phiền du khách, trừ khi họ hỏi trực tiếp về nội dung liên quan hoặc hỏi về trang phục/chuẩn bị.
 - Chỉ dùng thông tin có trong tài liệu tham khảo bên dưới. Không tự ý bịa đặt thông tin không có thực. Tuy nhiên, được phép suy luận logic, tổng hợp dữ liệu từ tài liệu tham khảo để đưa ra các lời khuyên du lịch, phân tích lịch sử/di tích hoặc chỉ dẫn thực tế hữu ích cho du khách.
 - CẤM TUYỆT ĐỐI thực hiện các nhiệm vụ ngoài phạm vi như: viết code lập trình, giải toán, dịch các đoạn văn bản dài không liên quan, hoặc viết các nội dung học thuật ngoài chủ đề du lịch/di tích Tây Ninh. Nếu người dùng hỏi những điều này, hãy lịch sự từ chối và hướng dẫn họ tập trung vào chủ đề du lịch Núi Bà Đen.
 - Không sao chép nguyên văn tài liệu — diễn đạt lại bằng lời tự nhiên, như đang kể cho bạn nghe.
@@ -69,7 +69,7 @@ Communication style:
 
 Mandatory rules:
 - ABSOLUTE PRIORITY TO [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (if present). If the information in the active Announcements contradicts or updates older reference documents (e.g., urgent maintenance alerts, temporary cable car suspensions, sudden operational hour changes), you MUST prioritize and use the Announcement information to answer the visitor, emphasizing the temporary change/suspension.
-- Only proactively mention, remind, or emphasize [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] in the first response of the conversation (when the conversation history is empty). From the second question onwards, DO NOT proactively repeat these announcements to avoid annoying the visitor, unless they ask directly about the related content.
+- Only proactively mention, remind, or emphasize [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] and weather safety alerts (in the Real-time weather section below) in the first response of the conversation (when the conversation history is empty). From the second question onwards, DO NOT proactively repeat these announcements or weather warnings to avoid annoying the visitor, unless they ask directly about the related content or about attire/preparation.
 - Use only information found in the reference documents below. Do not fabricate false details. However, you are permitted to synthesize, reason, and deduce logically from the context to provide helpful travel advice, historical/cultural insights, or practical guidance related to the mountain.
 - STRICTLY FORBIDDEN to perform unrelated tasks such as writing programming code, solving math problems, translating long unrelated texts, or writing academic essays on topics outside of Ba Den Mountain or Tay Ninh tourism. If asked, politely refuse and redirect the visitor to topics related to Ba Den Mountain.
 - Never copy text verbatim from the documents — always rephrase naturally in your own words.
@@ -100,7 +100,7 @@ SYSTEM_PROMPT_KM = """អ្នកគឺជា {name} — ជាមគ្គុ�
 
 ច្បាប់ដាច់ខាត៖
 - ផ្តល់អាទិភាពដាច់ខាតចំពោះ [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (ប្រសិនបើមាន)។ ប្រសិនបើព័ត៌មាននៅក្នុងសេចក្តីជូនដំណឹងផ្ទុយគ្នា ឬថ្មីជាងឯកសារយោងចាស់ៗ (ឧទាហរណ៍៖ ការជូនដំណឹងអំពីការថែទាំ ការផ្អាកឡានកាបជាបណ្តោះអាសន្ន ឬការផ្លាស់ប្តូរម៉ោងប្រតិបត្តិការបន្ទាន់) អ្នកត្រូវតែផ្តល់អាទិភាព និងប្រើប្រាស់ព័ត៌មានពីសេចក្តីជូនដំណឹងដើម្បីឆ្លើយតបទៅភ្ញៀវ ដោយសង្កត់ធ្ងន់លើការផ្លាស់ប្តូរបន្ទាន់/ការផ្អាកជាបណ្តោះអាសន្ននេះ។
-- គ្រាន់តែជូនដំណឹង រំលឹក ឬសង្កត់ធ្ងន់លើ [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] ជាវិជ្ជមាននៅក្នុងការឆ្លើយតបដំបូងនៃការសន្ទនា (នៅពេលដែលប្រវត្តិនៃការសន្ទនានៅទំនេរ)។ ចាប់ពីសំណួរទី ២ ទៅ សូមកុំនិយាយដដែលៗនូវសេចក្តីជូនដំណឹងទាំងនេះ ដើម្បីជៀសវាងការរំខានដល់ភ្ញៀវ លើកលែងតែពួកគេសួរដោយផ្ទាល់អំពីខ្លឹមសារពាក់ព័ន្ធ។
+- គ្រាន់តែជូនដំណឹង រំលឹក ឬសង្កត់ធ្ងន់លើ [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] និងការព្រមានអំពីសុវត្ថិភាពអាកាសធាតុ (នៅក្នុងផ្នែកព័ត៌មានអាកាសធាតុខាងក្រោម) ជាវិជ្ជមាននៅក្នុងការឆ្លើយតបដំបូងនៃការសន្ទនា (នៅពេលដែលប្រវត្តិនៃការសន្ទនានៅទំនេរ)។ ចាប់ពីសំណួរទី ២ ទៅ សូមកុំនិយាយដដែលៗនូវសេចក្តីជូនដំណឹង ឬការព្រមានទាំងនេះ ដើម្បីជៀសវាងការរំខានដល់ភ្ញៀវ លើកលែងតែពួកគេសួរដោយផ្ទាល់អំពីខ្លឹមសារពាក់ព័ន្ធ ឬអំពីសម្លៀកបំពាក់/ការរៀបចំខ្លួន។
 - ប្រើតែព័ត៌មានដែលមាននៅក្នុងឯកសារយោងខាងក្រោមប៉ុណ្ណោះ។ កុំបង្កើតព័ត៌មានមិនពិតឡើងដោយខ្លួនឯងឡើយ។ ទោះយ៉ាងណាក៏ដោយ អ្នកត្រូវបានអនុញ្ញាតឱ្យសំយោគ ពិភាក្សា និងសន្និដ្ឋានដោយសមហេតុផលពីបរិបទ ដើម្បីផ្តល់ដំបូន្មានធ្វើដំណើរ ការយល់ដឹងអំពីប្រវត្តិសាស្ត្រ/វប្បធម៌ ឬការណែនាំជាក់ស្តែង។
 - ត្រូវបានហាមឃាត់យ៉ាងតឹងរ៉ឹងចំពោះកិច្ចការដែលមិនទាក់ទងគ្នា ដូចជាការសរសេរកូដកម្មវិធី ការដោះស្រាយលំហាត់គណិតវិទ្យា ការបកប្រែអត្ថបទវែងៗដែលមិនទាក់ទង ឬសរសេរខ្លឹមសារសិក្សាក្រៅពីប្រធានបទទេសចរណ៍ភ្នំបាដិន។ ប្រសិនបើសួរ សូមបដិសេធដោយគួរសម ហើយណែនាំភ្ញៀវឱ្យផ្តោតលើប្រធានបទភ្នំបាដិនវិញ។
 - កុំចម្លងអត្ថបទទាំងស្រុងពីឯកសារយោង — ត្រូវតែនិយាយឡើងវិញដោយធម្មជាតិតាមរយៈពាក្យរបស់អ្នកផ្ទាល់។
@@ -441,6 +441,61 @@ class RAGService:
             except Exception as ann_err:
                 print(f"[{LOG_NAME}] Failed to fetch announcements for context: {ann_err}")
 
+        # Fetch dynamic cable car schedules and weather from database
+        schedules_json_str = ""
+        weather_status = "sunny"
+        weather_temp = "30"
+        if self.supabase:
+            try:
+                schedule_res = self.supabase.table("knowledge_articles").select("content").eq("id", "a1c3d359-fe2c-42da-9d19-d94dfcedb022").execute()
+                if schedule_res.data:
+                    import json
+                    raw_content = schedule_res.data[0].get("content", "")
+                    try:
+                        parsed = json.loads(raw_content)
+                        if "schedules" in parsed:
+                            schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
+                        else:
+                            schedules_json_str = raw_content
+                    except Exception:
+                        schedules_json_str = raw_content
+
+                # Fetch weather settings from database
+                weather_res = self.supabase.table("system_settings").select("key, value").in_("key", ["REALTIME_WEATHER_STATUS", "REALTIME_WEATHER_TEMP"]).execute()
+                if weather_res.data:
+                    for row in weather_res.data:
+                        if row["key"] == "REALTIME_WEATHER_STATUS":
+                            weather_status = row["value"]
+                        elif row["key"] == "REALTIME_WEATHER_TEMP":
+                            weather_temp = row["value"]
+            except Exception as e:
+                print(f"[{LOG_NAME}] Failed to fetch settings or weather for general chat: {e}")
+
+        if not schedules_json_str:
+            schedules_json_str = """[
+  {
+    "title": "Tuyến Đỉnh Vân Sơn",
+    "items": [
+      {"label": "Thứ 2 - Thứ 6", "hours": "07:00 - 18:00"},
+      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 21:00", "note": "Ngắm led đỉnh núi ban đêm"}
+    ]
+  },
+  {
+    "title": "Tuyến Chùa Hang ( Khu vực Chùa Bà - Điện Bà)",
+    "items": [
+      {"label": "Thứ 2 - Thứ 6", "hours": "06:00 - 18:00"},
+      {"label": "Thứ 7 - Chủ Nhật", "hours": "05:30 - 22:00"}
+    ]
+  },
+  {
+    "title": "Tuyến Tâm An ( Kết nối Đỉnh núi và Chùa Bà)",
+    "items": [
+      {"label": "Thứ 2 - Thứ 6", "note": "Đóng cửa"},
+      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 19:00"}
+    ]
+  }
+]"""
+
         chunks = self.retrieve_context(question_with_context)
         answer = ""
         confidence_score = 0.0
@@ -476,8 +531,145 @@ class RAGService:
                 confidence_score = 0.90 # High confidence for matching active announcements
 
             if self.llm_client:
+                # Get local current date and time (Vietnam GMT+7)
+                from datetime import datetime, timezone, timedelta
+                vn_tz = timezone(timedelta(hours=7))
+                now_vn = datetime.now(vn_tz)
+                
+                # Weekdays translations
+                weekdays_vi = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+                weekdays_en = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                weekdays_km = ["ថ្ងៃច័ន្ទ", "ថ្ងៃអង្គារ", "ថ្ងៃពុធ", "ថ្ងៃព្រហស្បតិ៍", "ថ្ងៃសុក្រ", "ថ្ងៃសៅរ៍", "ថ្ងៃអាទិត្យ"]
+                
+                current_date_str = now_vn.strftime("%d/%m/%Y")
+                current_time_str = now_vn.strftime("%H:%M")
+
+                try:
+                    weather_temp_val = float(weather_temp)
+                except Exception:
+                    weather_temp_val = 30.0
+
+                # Check if we should include weather alerts (first turn or explicitly asking)
+                def asks_about_weather_or_clothing(q: str) -> bool:
+                    q_l = q.lower()
+                    keywords = {
+                        "thời tiết", "nắng", "mưa", "nhiệt độ", "gió", "lạnh", "nóng", "khuyên", "cảnh báo thời tiết",
+                        "áo mưa", "mang gì", "mặc gì", "mang theo", "ô", "dù", "giày", "trang phục", "chuẩn bị gì",
+                        "weather", "rain", "sun", "temp", "temperature", "wind", "cold", "hot", "apparel", "wear",
+                        "clothing", "clothes", "umbrella", "raincoat", "shoes", "jacket", "forecast", "climate",
+                        "អាកាសធាតុ", "ភ្លៀង", "ថ្ងៃក្តៅ", "ខ្យល់", "សម្លៀកបំពាក់", "ឆ័ត្រ", "អាវភ្លៀង", "ស្បែកជើង"
+                    }
+                    return any(kw in q_l for kw in keywords)
+
+                is_first_question = not conversation_history or len(conversation_history) == 0
+                include_weather_warnings = is_first_question or asks_about_weather_or_clothing(question)
+
+                if language == "en":
+                    weather_status_desc = {
+                        "sunny": "Sunny",
+                        "cloudy": "Cloudy",
+                        "rainy": "Rainy",
+                        "windy": "Windy"
+                    }.get(weather_status, weather_status)
+                    
+                    weather_rules = ""
+                    if include_weather_warnings:
+                        if weather_status in ["rainy", "windy"]:
+                            weather_rules = (
+                                f"\n- WEATHER SAFETY ALERT: The current weather is {weather_status_desc}. "
+                                f"Advise the visitor to bring an umbrella/raincoat, wear high-grip shoes to prevent slipping on temple stone steps, "
+                                f"and beware of strong wind gusts at the peak. Warn them that the Alpine Coaster (máng trượt) and cable cars "
+                                f"may run slower or temporarily suspend operations for safety. Suggest sightseeing by cable car or indoors."
+                            )
+                        elif weather_temp_val >= 32.0:
+                            weather_rules = (
+                                f"\n- WEATHER SAFETY ALERT: The current temperature is hot ({weather_temp_val}°C). "
+                                f"Advise the visitor to wear a hat/cap, apply sunscreen, and carry enough water to stay hydrated."
+                            )
+
+                    current_weekday = weekdays_en[now_vn.weekday()]
+                    time_and_schedule_context = (
+                        f"[REAL-TIME SYSTEM TIME & CABLE CAR OPERATING SCHEDULE]\n"
+                        f"- Current system time: {current_time_str} ({current_weekday}, {current_date_str})\n"
+                        f"- Current weather: {weather_status_desc}, {weather_temp}°C{weather_rules}\n"
+                        f"- Cable Car schedules loaded dynamically from database:\n"
+                        f"{schedules_json_str}\n"
+                        f"- Routing logic rules during maintenance/closures:\n"
+                        f"  + Travel from Ba Temple to the Peak on weekdays: Since Tam An line is closed, visitors must take Chua Hang line down to the Ground, then take Van Son line to the Peak.\n"
+                        f"  + Travel from Ba Temple to the Peak on weekends: Visitors can take Tam An line directly.\n"
+                        f"  + If a line is undergoing maintenance or suspended per [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT], guide the visitor to take another route. E.g., if Van Son is closed on weekends, guide them to take Chua Hang to Ba Temple, then Tam An to the Peak. If Van Son is closed on weekdays, inform them that the Peak is currently unreachable and suggest visiting Ba Temple instead.\n"
+                    )
+                elif language == "km":
+                    weather_status_desc = {
+                        "sunny": "មេឃស្រឡះ",
+                        "cloudy": "មេឃមានពពក",
+                        "rainy": "មានភ្លៀងធ្លាក់",
+                        "windy": "មានខ្យល់បក់ខ្លាំង"
+                    }.get(weather_status, weather_status)
+                    
+                    weather_rules = ""
+                    if include_weather_warnings:
+                        if weather_status in ["rainy", "windy"]:
+                            weather_rules = (
+                                f"\n- ការព្រមានអំពីសុវត្ថិភាពអាកាសធាតុ៖ អាកាសធាតុបច្ចុប្បន្នគឺ {weather_status_desc}។ "
+                                f"ណែនាំភ្ញៀវឱ្យត្រៀមឆ័ត្រ/អាវភ្លៀង ពាក់ស្បែកជើងដែលមានភាពស្អិតល្អដើម្បីការពារការរអិលលើកាំជណ្តើរថ្មនៅវត្តលោកយាយ និងប្រុងប្រយ័ត្នខ្យល់បោកបក់ខ្លាំងនៅកំពូលភ្នំ។ "
+                                f"ព្រមានពួកគេថាម៉ាស៊ីនរអិល (Alpine Coaster) និងឡានកាបអាចដំណើរការយឺតជាងមុន ឬផ្អាកដំណើរការជាបណ្តោះអាសន្នដើម្បីសុវត្ថិភាព។ ណែនាំឱ្យទស្សនាតามឡានកាប ឬក្នុងផ្ទះ។"
+                            )
+                        elif weather_temp_val >= 32.0:
+                            weather_rules = (
+                                f"\n- ការព្រមានអំពីសុវត្ថិភាពអាកាសធាតុ៖ សីតុណ្ហភាពបច្ចុប្បន្នគឺក្តៅខ្លាំង ({weather_temp_val}°C)។ "
+                                f"ណែនាំឱ្យពាក់មួក លាបឡេការពារកម្តៅថ្ងៃ និងផឹកទឹកឱ្យបានគ្រប់គ្រាន់។"
+                            )
+
+                    current_weekday = weekdays_km[now_vn.weekday()]
+                    time_and_schedule_context = (
+                        f"[ព័ត៌មានពេលវេលាប្រព័ន្ធផ្ទាល់ & កាលវិភាគប្រតិបត្តិការឡានកាប]\n"
+                        f"- ម៉ោងប្រព័ន្ធបច្ចុប្បន្ន៖ {current_time_str} ({current_weekday}, ថ្ងៃទី {current_date_str})\n"
+                        f"- ស្ថានភាពអាកាសធាតុបច្ចុប្បន្ន៖ {weather_status_desc}, {weather_temp}°C{weather_rules}\n"
+                        f"- កាលវិភាគឡានកាបមកពីមូលដ្ឋានទិន្នន័យ៖\n"
+                        f"{schedules_json_str}\n"
+                        f"- តក្កវិជ្ជានៃការបង្វែរទិសដៅសម្រាប់ស្ថានភាពថែទាំ/បិទទ្វារ៖\n"
+                        f"  + ធ្វើដំណើរពីវត្តលោកយាយទៅកំពូលភ្នំនៅថ្ងៃធម្មតា៖ ដោយសារខ្សែឡានកាប Tâm An បិទ ភ្ញៀវត្រូវចុះទៅជើងភ្នំតាមខ្សែ Chùa Hang រួចឡើងកំពូលភ្នំតាមខ្សែ Vân Sơn។\n"
+                        f"  + ធ្វើដំណើរពីវត្តលោកយាយទៅកំពូលភ្នំនៅចុងសប្តាហ៍៖ អាចធ្វើដំណើរដោយផ្ទាល់តាមខ្សែឡានកាប Tâm An។\n"
+                        f"  + ប្រសិនបើខ្សែឡានកាបណាមួយត្រូវបានផ្អាក/ថែទាំតាម [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] ត្រូវណែនាំភ្ញៀវឱ្យប្រើប្រាស់ផ្លូវផ្សេង។ ឧទាហរណ៍៖ ប្រសិនបើ Vân Sơn ថែទាំនៅចុងសប្តាហ៍ ណែនាំឱ្យជិះ Chùa Hang ទៅវត្តលោកយាយ រួចជិះ Tâm An ឡើងកំពូលភ្នំ។ ប្រសិនបើ Vân Sơn ថែទាំនៅថ្ងៃធម្មតា ត្រូវប្រាប់ថាបច្ចុប្បន្នមិនអាចឡើងកំពូលភ្នំបានទេ ហើយណែនាំឱ្យទៅទស្សនាវត្តលោកយាយជំនួសវិញ។\n"
+                    )
+                else:
+                    weather_status_desc = {
+                        "sunny": "Nắng ráo",
+                        "cloudy": "Nhiều mây",
+                        "rainy": "Có mưa",
+                        "windy": "Có gió mạnh"
+                    }.get(weather_status, weather_status)
+                    
+                    weather_rules = ""
+                    if include_weather_warnings:
+                        if weather_status in ["rainy", "windy"]:
+                            weather_rules = (
+                                f"\n- CẢNH BÁO AN TOÀN THỜI TIẾT: Thời tiết hiện tại là {weather_status_desc}. "
+                                f"Nhắc nhở du khách chuẩn bị ô/áo mưa, đi giày có độ bám tốt để tránh trơn trượt trên các bậc đá tại Chùa Bà, và lưu ý máng trượt (Alpine Coaster) cùng cáp treo có thể vận hành chậm hơn hoặc tạm dừng hoạt động ngắn hạn để đảm bảo an toàn. Khuyên du khách nên ưu tiên tham quan bằng cáp treo hoặc trong nhà."
+                            )
+                        elif weather_temp_val >= 32.0:
+                            weather_rules = (
+                                f"\n- CẢNH BÁO AN TOÀN THỜI TIẾT: Thời tiết hiện tại đang nắng nóng ({weather_temp_val}°C). "
+                                f"Nhắc nhở du khách chuẩn bị mũ/nón, kem chống nắng và chuẩn bị đủ nước uống."
+                            )
+
+                    current_weekday = weekdays_vi[now_vn.weekday()]
+                    time_and_schedule_context = (
+                        f"[THÔNG TIN THỜI GIAN THỰC TẾ & LỊCH HOẠT ĐỘNG CÁP TREO]\n"
+                        f"- Thời gian hiện tại của hệ thống: {current_time_str} ({current_weekday}, ngày {current_date_str})\n"
+                        f"- Thời tiết hiện tại: {weather_status_desc}, {weather_temp}°C{weather_rules}\n"
+                        f"- Lịch hoạt động các tuyến cáp đọc từ cơ sở dữ liệu:\n"
+                        f"{schedules_json_str}\n"
+                        f"- Quy tắc điều hướng dự phòng khi có bảo trì/đóng cửa:\n"
+                        f"  + Đi từ Chùa Bà lên Đỉnh núi ngày thường: Do cáp Tâm An đóng cửa ngày thường, du khách phải đi cáp Chùa Hang (hoặc máng trượt/leo bộ) xuống Chân núi, sau đó đi cáp Vân Sơn lên Đỉnh.\n"
+                        f"  + Đi từ Chùa Bà lên Đỉnh núi cuối tuần: Có thể đi thẳng bằng cáp Tâm An.\n"
+                        f"  + Nếu một tuyến cáp bị bảo trì/dừng chạy khẩn cấp theo [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT], bạn phải hướng dẫn du khách đi tuyến khác. Ví dụ: Nếu cáp Vân Sơn bảo trì vào cuối tuần, hướng dẫn đi cáp Chùa Hang lên Chùa Bà rồi đi cáp Tâm An lên Đỉnh. Nếu cáp Vân Sơn bảo trì vào ngày thường, thông báo rõ là hiện tại không thể lên đỉnh núi (vì cáp Tâm An cũng đóng cửa ngày thường) và gợi ý tham quan Chùa Bà.\n"
+                    )
+
                 # Build context block
                 context_parts = []
+                context_parts.append(time_and_schedule_context)
                 if announcements_str:
                     context_parts.append("[THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT ĐANG DIỄN RA TẠI DI TÍCH NÚI BÀ ĐEN]\n" + announcements_str)
 

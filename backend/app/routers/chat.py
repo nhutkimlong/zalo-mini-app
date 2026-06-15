@@ -103,27 +103,145 @@ def generate_itinerary_endpoint(
             detail="Dịch vụ AI hiện thời chưa sẵn sàng."
         )
         
+    # Fetch active announcements
+    announcements_str = ""
+    try:
+        ann_res = db.table("announcements").select("title, content, type").eq("status", "published").execute()
+        if ann_res.data:
+            parts = []
+            for idx, ann in enumerate(ann_res.data, 1):
+                parts.append(f"[Thông báo & Cảnh báo số {idx} - Loại: {ann.get('type')} - Tiêu đề: {ann.get('title')}]\nNội dung: {ann.get('content')}")
+            announcements_str = "\n\n".join(parts)
+    except Exception as e:
+        print(f"Failed to fetch announcements for itinerary: {e}")
+
+    # Fetch dynamic cable car schedules from knowledge_articles table (article ID a1c3d359-fe2c-42da-9d19-d94dfcedb022)
+    schedules_data_str = ""
+    try:
+        schedule_res = db.table("knowledge_articles").select("content").eq("id", "a1c3d359-fe2c-42da-9d19-d94dfcedb022").execute()
+        if schedule_res.data:
+            import json
+            raw_content = schedule_res.data[0].get("content", "")
+            try:
+                parsed = json.loads(raw_content)
+                if "schedules" in parsed:
+                    schedules_data_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
+                else:
+                    schedules_data_str = raw_content
+            except Exception:
+                schedules_data_str = raw_content
+    except Exception as e:
+        print(f"Failed to fetch cable car schedules for itinerary: {e}")
+
+    if not schedules_data_str:
+        # Fallback in case of database issue
+        schedules_data_str = """[
+  {
+    "title": "Tuyến Đỉnh Vân Sơn",
+    "items": [
+      {"label": "Thứ 2 - Thứ 6", "hours": "07:00 - 18:00"},
+      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 21:00", "note": "Ngắm led đỉnh núi ban đêm"}
+    ]
+  },
+  {
+    "title": "Tuyến Chùa Hang ( Khu vực Chùa Bà - Điện Bà)",
+    "items": [
+      {"label": "Thứ 2 - Thứ 6", "hours": "06:00 - 18:00"},
+      {"label": "Thứ 7 - Chủ Nhật", "hours": "05:30 - 22:00"}
+    ]
+  },
+  {
+    "title": "Tuyến Tâm An ( Kết nối Đỉnh núi và Chùa Bà)",
+    "items": [
+      {"label": "Thứ 2 - Thứ 6", "note": "Đóng cửa"},
+      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 19:00"}
+    ]
+  }
+]"""
+
+    # Fetch weather settings from database
+    weather_status = "sunny"
+    weather_temp = "30"
+    try:
+        weather_res = db.table("system_settings").select("key, value").in_("key", ["REALTIME_WEATHER_STATUS", "REALTIME_WEATHER_TEMP"]).execute()
+        if weather_res.data:
+            for row in weather_res.data:
+                if row["key"] == "REALTIME_WEATHER_STATUS":
+                    weather_status = row["value"]
+                elif row["key"] == "REALTIME_WEATHER_TEMP":
+                    weather_temp = row["value"]
+    except Exception as e:
+        print(f"Failed to fetch weather for itinerary: {e}")
+
+    weather_desc = {
+        "sunny": "Nắng ráo",
+        "cloudy": "Nhiều mây",
+        "rainy": "Có mưa",
+        "windy": "Có gió mạnh"
+    }.get(weather_status, weather_status)
+
+    # Get local current date and time (Vietnam GMT+7)
+    from datetime import datetime, timezone, timedelta
+    vn_tz = timezone(timedelta(hours=7))
+    now_vn = datetime.now(vn_tz)
+    weekdays = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+    current_weekday = weekdays[now_vn.weekday()]
+    current_date_str = now_vn.strftime("%d/%m/%Y")
+    current_time_str = now_vn.strftime("%H:%M")
+
+    system_time_context = (
+        f"THỜI GIAN HỆ THỐNG HIỆN TẠI:\n"
+        f"- Ngày hiện tại: {current_date_str}\n"
+        f"- Thứ hiện tại: {current_weekday}\n"
+        f"- Giờ hiện tại: {current_time_str}\n"
+        f"- Thời tiết hiện tại: {weather_desc}, {weather_temp}°C\n\n"
+        f"BẢN TIN CẢNH BÁO & THÔNG BÁO QUAN TRỌNG (Hôm nay):\n"
+        f"{announcements_str if announcements_str else 'Không có thông báo đặc biệt nào.'}\n"
+    )
+
     system_prompt = f"""Bạn là Chuyên gia Lộ trình du lịch Núi Bà Đen.
     Hôm nay là thời điểm lập kế hoạch tham quan thực địa.
+
+    {system_time_context}
 
     BỐI CẢNH ĐỊA LÝ - 3 KHU VỰC CHÍNH (Xác định theo tên và mô tả):
     - 'chan_nui': Chân núi (xuất phát, mua vé, bãi xe, Ga Bà Đen)
     - 'chua_ba': Lưng chừng núi (Chùa Bà, Chùa Hang, Ga Chùa Hang, khu tâm linh giữa núi)
     - 'dinh_nui': Đỉnh núi (Tượng Phật Bà Tây Bổ Đà Sơn, nhà hàng buffet, đỉnh núi 986m, Ga Vân Sơn)
 
+    LỊCH HOẠT ĐỘNG CỦA CÁC TUYẾN CÁP ĐỌC TỪ CƠ SỞ DỮ LIỆU:
+    {schedules_data_str}
+
     CÁC TUYẾN DI CHUYỂN GIỮA KHU VỰC:
-    A) Cáp treo Chùa Hang (Ga Bà Đen → Ga Chùa Hang): Chân núi → Lưng chừng
-    B) Cáp treo Vân Sơn (Ga Hòa Đồng → Ga Vân Sơn): Lưng chừng → Đỉnh núi
-    C) Cáp treo Tâm An (Ga Hòa Đồng → Ga Tâm An): Lưng chừng → Đỉnh núi (tuyến phụ)
-    D) Máng trượt ống: Lưng chừng (Chùa Bà) → Chân núi (một chiều, xuống)
+    A) Cáp treo Chùa Hang (Ga Bà Đen ↔ Ga Chùa Hang): Kết nối Chân núi ↔ Lưng chừng (Chùa Bà)
+    B) Cáp treo Vân Sơn (Ga Bà Đen ↔ Ga Vân Sơn): Kết nối Chân núi ↔ Đỉnh núi (Trực tiếp)
+    C) Cáp treo Tâm An (Ga Hòa Đồng ↔ Ga Tâm An): Kết nối Lưng chừng (Chùa Bà) ↔ Đỉnh núi (Tuyến phụ)
+    D) Máng trượt ống: Lưng chừng (Chùa Bà) → Chân núi (một chiều, xuống) - Hoạt động hàng ngày.
     E) Leo bộ: CHỈ áp dụng từ Chân núi lên Lưng chừng (đường mòn). KHÔNG có đường leo bộ từ Lưng chừng lên Đỉnh và KHÔNG có đường leo bộ từ Đỉnh xuống.
 
-    QUY TẮC VÀNG (BẮT BUỘC):
-    1. TUẦN TỰ VẬT LÝ: Bước đi cáp treo từ A lên B → bước tiếp theo PHẢI ở khu vực B.
-    2. TUYỆT ĐỐI KHÔNG GỢI Ý LEO BỘ từ Lưng chừng lên Đỉnh, hoặc từ Đỉnh xuống. Nếu đã ở Đỉnh núi, phương tiện xuống duy nhất là cáp treo.
-    3. BUFFET: Chỉ có Buffet TRƯA (11h-14h) tại nhà hàng trên Đỉnh núi, KHÔNG có buffet sáng.
-    4. THỜI GIAN CÁP TREO: Cộng thêm 20-30 phút cho mỗi lần di chuyển cáp treo (bao gồm chờ + đi).
-    5. HỢP LÝ: Tránh lên xuống núi nhiều lần không cần thiết.
+    QUY TẮC PHÂN TÍCH THỜI GIAN VÀ ĐIỀU HƯỚNG LỘ TRÌNH (BẮT BUỘC):
+    1. XÁC ĐỊNH NGÀY THAM QUAN:
+       - Hãy đọc câu hỏi/yêu cầu của người dùng để xác định xem họ muốn đi vào ngày nào.
+       - Mặc định ngày tham quan là NGÀY HIỆN TẠI của hệ thống ({current_weekday}, {current_date_str}) nếu người dùng không chỉ định ngày cụ thể.
+       - Nếu người dùng yêu cầu lập kế hoạch cho một ngày cụ thể trong tương lai (ví dụ: "thứ bảy tuần sau", "ngày 20/06"), hãy dựa vào ngày hiện tại ({current_weekday}, {current_date_str}) để tính toán xem ngày đó là Thứ mấy và Ngày mấy, từ đó đối chiếu với LỊCH HOẠT ĐỘNG CỦA CÁC TUYẾN CÁP ở trên để áp dụng đúng giờ chạy của ngày đó.
+    2. ĐỐI CHIẾU THÔNG BÁO BẢO TRÌ/ĐÓNG CỬA:
+       - Đọc kỹ phần BẢN TIN CẢNH BÁO & THÔNG BÁO QUAN TRỌNG ở trên.
+       - Nếu có thông báo bảo trì hoặc tạm ngưng hoạt động của bất kỳ tuyến cáp nào ảnh hưởng đến ngày tham quan được chọn, bạn phải coi tuyến cáp đó là KHÔNG HOẠT ĐỘNG.
+    3. QUY TẮC THỜI TIẾT VÀ AN TOÀN (BẮT BUỘC ĐỐI CHIẾU):
+       - Nếu thời tiết hiện tại ở trên ghi là "Có mưa" (rainy) hoặc "Có gió mạnh" (windy):
+         - Bạn phải chủ động nhắc nhở du khách chuẩn bị ô/áo mưa, đi giày có độ bám tốt để chống trơn trượt trên các bậc đá ở Chùa Bà, và lưu ý máng trượt (Alpine Coaster) và cáp treo có thể vận hành chậm hơn hoặc tạm dừng hoạt động ngắn hạn để đảm bảo an toàn. Khuyên du khách nên tham quan bằng cáp treo hoặc trong nhà.
+       - Nếu thời tiết nắng nóng (nhiệt độ >= 32°C): Nhắc nhở mang mũ/nón, kem chống nắng và chuẩn bị nước uống đầy đủ.
+    4. LOGIC ĐIỀU HƯỚNG DỰ PHÒNG:
+       - **Di chuyển Chùa Bà ↔ Đỉnh núi:** 
+         - Đối chiếu lịch chạy chuẩn của Tuyến Tâm An ở trên. Nếu ngày tham quan rơi vào ngày thường mà tuyến này ghi "Đóng cửa" (hoặc không ghi giờ chạy), HOẶC tuyến Tâm An bị thông báo đóng cửa/bảo trì: Tuyến Tâm An KHÔNG hoạt động. Hành khách muốn đi từ Chùa Bà lên Đỉnh núi bắt buộc phải đi cáp Chùa Hang (hoặc máng trượt/đi bộ) xuống Chân núi, sau đó đi cáp Vân Sơn từ Chân núi lên Đỉnh núi.
+         - Nếu ngày tham quan rơi vào cuối tuần và tuyến Tâm An hoạt động bình thường, hành khách có thể đi thẳng bằng tuyến cáp Tâm An (Lưng chừng ↔ Đỉnh).
+       - **Trường hợp KHÔNG THỂ lên Đỉnh núi:**
+         - Nếu cả tuyến Vân Sơn và tuyến Tâm An đều không hoạt động vào ngày tham quan (ví dụ: ngày thường cáp Vân Sơn bảo trì, hoặc cả hai cáp đều bảo trì): du khách KHÔNG THỂ lên đỉnh núi.
+         - Bạn phải TỪ CHỐI lập lộ trình lên đỉnh núi. Phản hồi bằng một thông báo rõ ràng về lý do các tuyến cáp đóng cửa trong phần mô tả lộ trình, và gợi ý lộ trình thay thế chỉ tham quan Chùa Bà và Chân núi. Tuyệt đối không gợi ý leo bộ lên đỉnh hay đi cáp đã đóng cửa.
+    5. TUẦN TỰ VẬT LÝ: Bước đi cáp treo từ A lên B → bước tiếp theo PHẢI ở khu vực B.
+    6. BUFFET: Chỉ có Buffet TRƯA (11h-14h) tại nhà hàng trên Đỉnh núi, KHÔNG có buffet sáng.
+    7. THỜI GIAN CÁP TREO: Cộng thêm 20-30 phút cho mỗi lần di chuyển cáp treo (bao gồm chờ + đi).
+    8. HỢP LÝ: Tránh lên xuống núi nhiều lần không cần thiết.
 
     DANH SÁCH ĐỊA ĐIỂM HÔM NAY:
     {places_str}
