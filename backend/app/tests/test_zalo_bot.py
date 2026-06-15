@@ -58,6 +58,37 @@ def test_zalo_webhook_success_text_message(api_client: TestClient):
     finally:
         settings.ZALO_WEBHOOK_SECRET_TOKEN = original_secret
 
+def test_zalo_webhook_success_nested_result(api_client: TestClient):
+    """Verify webhook accepts result-wrapped message.text.received event and responds 200 OK immediately."""
+    original_secret = settings.ZALO_WEBHOOK_SECRET_TOKEN
+    settings.ZALO_WEBHOOK_SECRET_TOKEN = "test_secret_12345"
+
+    try:
+        payload = {
+            "ok": True,
+            "result": {
+                "event_name": "message.text.received",
+                "sender": {"id": "test_user_nested"},
+                "recipient": {"id": "test_bot"},
+                "message": {"text": "Giờ mở cửa?", "msg_id": "msg_888"},
+                "timestamp": "1648018958278"
+            }
+        }
+
+        with patch("app.routers.zalo.process_zalo_message") as mock_process:
+            response = api_client.post(
+                "/api/zalo/webhook",
+                json=payload,
+                headers={"X-Bot-Api-Secret-Token": "test_secret_12345"}
+            )
+            assert response.status_code == 200
+            assert response.json() == {"status": "success"}
+            
+            # Verify background task was scheduled with the correct parameters
+            mock_process.assert_called_once_with("test_user_nested", "Giờ mở cửa?")
+    finally:
+        settings.ZALO_WEBHOOK_SECRET_TOKEN = original_secret
+
 def test_zalo_webhook_ignores_other_events(api_client: TestClient):
     """Verify webhook returns 200 OK but schedules no background task for non-text events."""
     payload = {

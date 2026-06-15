@@ -61,11 +61,11 @@ async def send_zalo_message(bot_token: str, recipient_id: str, text: str):
             response = await client.post(url, json=payload, timeout=10.0)
             res_data = response.json()
             if not res_data.get("ok"):
-                print(f"[ZaloBot] Zalo API error: {res_data}")
+                print(f"[ZaloBot] Zalo API error: {res_data} | Bot Token (masked): {bot_token[:10]}... | Sent Payload: {payload}")
             else:
                 print(f"[ZaloBot] Response successfully sent to Zalo user {recipient_id}")
         except Exception as e:
-            print(f"[ZaloBot] Failed to send message via Zalo API: {e}")
+            print(f"[ZaloBot] Failed to send message via Zalo API: {e} | Sent Payload: {payload}")
 
 async def process_zalo_message(sender_id: str, message_text: str):
     """Asynchronous worker to process query with RAG service and reply to Zalo user."""
@@ -118,15 +118,25 @@ async def zalo_webhook(
 
     try:
         payload = await request.json()
+        print(f"[ZaloBot] Incoming Webhook Payload: {payload}")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
     event_name = payload.get("event_name")
+    event_data = payload
+    if not event_name and "result" in payload:
+        event_data = payload["result"]
+        event_name = event_data.get("event_name")
     
     # Process only text message events
     if event_name == "message.text.received":
-        sender_id = payload.get("sender", {}).get("id")
-        message_text = payload.get("message", {}).get("text")
+        # First try to get sender.id
+        sender_id = event_data.get("sender", {}).get("id")
+        # Fallback to chat.id in case sender.id is not present
+        if not sender_id:
+            sender_id = event_data.get("message", {}).get("chat", {}).get("id")
+            
+        message_text = event_data.get("message", {}).get("text")
         
         if sender_id and message_text:
             # Execute processing asynchronously in FastAPI background tasks to return 200 OK immediately
