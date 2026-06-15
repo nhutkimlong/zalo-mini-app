@@ -1,12 +1,14 @@
 // api.js - Standalone AI services calling the FastAPI Backend
 
-const BACKEND_BASE_URL = 'https://nui-ba-den-travel-assistant-backend.onrender.com';
+const BACKEND_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://nui-ba-den-travel-assistant-backend.onrender.com';
 
 export const apiService = {
     /**
      * Sends message to the AI RAG Chatbot API
      */
-    async sendMessage(userHistory, newMessage) {
+    async sendMessage(userHistory, newMessage, language = 'auto') {
         // Map history to backend format
         const formattedHistory = userHistory.map(m => ({
             role: m.role === 'model' ? 'assistant' : 'user',
@@ -19,7 +21,7 @@ export const apiService = {
             body: JSON.stringify({
                 question: newMessage,
                 channel: 'web_iframe',
-                language: 'vi',
+                language: language,
                 conversation_history: formattedHistory
             })
         });

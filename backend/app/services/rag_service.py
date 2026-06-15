@@ -117,6 +117,38 @@ SYSTEM_PROMPT_KM = """អ្នកគឺជា {name} — ជាមគ្គុ�
 {context}"""
 
 
+SYSTEM_PROMPT_TEMPLATE = """You are {name} — an AI tour guide for Ba Den Mountain (Sun World BaDen Mountain), Tay Ninh, Vietnam.
+
+Language requirement:
+- Always answer in {language_name}, even when the visitor asks in Vietnamese or the reference documents are written in Vietnamese.
+- Do not ask the visitor to use another language.
+
+Communication style:
+- Speak warmly and naturally in {language_name}, like a knowledgeable local guide having a real conversation with a visitor.
+- Be friendly and genuine — not promotional, not robotic.
+- When a piece of information is fascinating (a legend, a record, a unique feature), briefly share it to spark curiosity.
+- Keep answers focused. Use bullet points ONLY for listing prices, hours, or multiple distinct options.
+- No emojis. No repeating the system name.
+
+Mandatory rules:
+- ABSOLUTE PRIORITY TO [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] (if present). If the information in the active Announcements contradicts or updates older reference documents (e.g., urgent maintenance alerts, temporary cable car suspensions, sudden operational hour changes), you MUST prioritize and use the Announcement information to answer the visitor, emphasizing the temporary change/suspension.
+- Only proactively mention, remind, or emphasize [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] and weather safety alerts (in the Real-time weather section below) in the first response of the conversation (when the conversation history is empty). From the second question onwards, DO NOT proactively repeat these announcements or weather warnings to avoid annoying the visitor, unless they ask directly about the related content or about attire/preparation.
+- Use only information found in the reference documents below. Do not fabricate false details. However, you are permitted to synthesize, reason, and deduce logically from the context to provide helpful travel advice, historical/cultural insights, or practical guidance related to the mountain.
+- STRICTLY FORBIDDEN to perform unrelated tasks such as writing programming code, solving math problems, translating long unrelated texts, or writing academic essays on topics outside of Ba Den Mountain or Tay Ninh tourism. If asked, politely refuse and redirect the visitor to topics related to Ba Den Mountain.
+- Never copy text verbatim from the documents — always rephrase naturally in your own words in {language_name}.
+- Do not include source titles in your answer; the UI displays sources separately.
+- If the documents don't contain the answer and it cannot be reasonably deduced: honestly say you don't have official information on that in {language_name}, and suggest contacting the Management Board at (0276) 3823.378.
+- Do not guide unauthorized hiking or activities that violate park regulations.
+- GEOGRAPHICAL & OPERATIONAL RULES:
+  + Areas: Ba Den Mountain has 3 main areas: Ground level (chan_nui), Ba Temple (chua_ba - mid-mountain), Peak (dinh_nui).
+  + Hiking: Hiking is ONLY possible from the Ground level to Ba Temple. There is absolutely NO hiking trail from Ba Temple to the Peak or from the Peak down. Traveling to/from the Peak requires taking the cable car.
+  + Cable cars: Chua Hang line (Ground - Ba Temple), Tam An line (Ba Temple - Peak), Van Son line (Ground - Peak). Alpine Coaster is one-way down from Ba Temple to the Ground.
+  + Dining: Lunch buffet at the Peak is only served from 11:00 to 14:00. No breakfast or dinner buffet is available.
+
+Reference documents:
+{context}"""
+
+
 def _beeknoee_client() -> Optional[OpenAI]:
     """Create an OpenAI-compatible Beeknoee client."""
     if not settings.BEEKNOEE_API_KEY or not settings.BEEKNOEE_BASE_URL:
@@ -323,6 +355,82 @@ class RAGService:
             print(f"[{LOG_NAME}] Keyword search failed: {e}")
             return []
 
+    # ─── Language Detection & Translation ──────────────────────────────────────
+
+    def _detect_language(self, question: str) -> Dict[str, str]:
+        """
+        Detect language code and English name offline using langdetect.
+        Falls back to 'vi' on error or empty text.
+        """
+        default_lang = {"code": "vi", "name": "Vietnamese"}
+        cleaned_question = question.strip()
+        if not cleaned_question:
+            return default_lang
+
+        # Basic LANG_MAP
+        LANG_MAP = {
+            "vi": "Vietnamese",
+            "en": "English",
+            "km": "Khmer",
+            "ko": "Korean",
+            "ja": "Japanese",
+            "zh-cn": "Chinese",
+            "zh-tw": "Chinese",
+            "zh": "Chinese",
+            "fr": "French",
+            "de": "German",
+            "es": "Spanish",
+            "ru": "Russian",
+            "th": "Thai",
+            "lo": "Lao",
+        }
+
+        try:
+            from langdetect import detect
+            code = detect(cleaned_question)
+            if code:
+                code = code.strip().lower()
+                # Normalize zh codes
+                if code.startswith("zh"):
+                    code = "zh"
+                name = LANG_MAP.get(code, code.upper())
+                return {"code": code, "name": name}
+        except Exception as e:
+            print(f"[{LOG_NAME}] Offline language detection error: {e}")
+            
+        return default_lang
+
+    def _translate_no_info_response(self, language_name: str) -> str:
+        """Translate the standard 'no information' response into the target language using LLM."""
+        default_en = (
+            f"Currently, {CRAWBOT_NAME} does not have approved information on this topic. "
+            "Please contact the Management Board via phone at (0276) 3823.378 for direct assistance."
+        )
+        if not self.llm_client:
+            return default_en
+
+        prompt = (
+            f"Translate the following text into {language_name}. "
+            "Return ONLY the translated text. Do not add any greetings, introductory text, explanations, or quotes."
+        )
+        try:
+            dyn_config = self._get_dynamic_settings()
+            translated, _ = _call_llm(
+                client=self.llm_client,
+                system_prompt=prompt,
+                user_question=default_en,
+                model=dyn_config["model"],
+                input_cost_per_1m=dyn_config["input_cost"],
+                output_cost_per_1m=dyn_config["output_cost"],
+                temperature=0.2,
+                max_tokens=150,
+            )
+            if translated:
+                return translated.strip()
+        except Exception as e:
+            print(f"[{LOG_NAME}] Failed to translate no-info response: {e}")
+        return default_en
+
     # ─── No-Info Response ─────────────────────────────────────────────────────
 
     def _no_info_response(self, language: str) -> str:
@@ -346,15 +454,36 @@ class RAGService:
     def _small_talk_response(self, question: str, language: str) -> Optional[str]:
         normalized = re.sub(r"[^\w\s]", " ", question.lower()).strip()
         normalized = re.sub(r"\s+", " ", normalized)
-        greetings = {
+        
+        greetings_map = {
             "vi": {"xin chao", "chao", "hello", "hi", "alo", "cam on", "cảm ơn", "thanks"},
             "en": {"hello", "hi", "thanks", "thank you", "good morning", "good afternoon"},
-            "km": {"suosdei", "chao", "hello", "hi", "alo", "akun", "thanks", "thank you"}
+            "km": {"suosdei", "chao", "hello", "hi", "alo", "akun", "thanks", "thank you"},
+            "ko": {"안녕하세요", "안녕", "감사합니다", "고맙습니다"},
+            "ja": {"こんにちは", "ありがとう", "ありがとうございます"},
+            "zh": {"你好", "谢谢", "謝謝"}
         }
-        if normalized in greetings.get(language, greetings["vi"]):
-            if language == "km":
+        
+        is_greeting = False
+        matched_lang = None
+        for lang, words in greetings_map.items():
+            if normalized in words:
+                is_greeting = True
+                matched_lang = lang
+                break
+
+        if is_greeting:
+            target_lang = language if language in {"vi", "en", "km", "ko", "ja", "zh"} else (matched_lang or "en")
+            
+            if target_lang == "ko":
+                return "안녕하세요. 케이블카 티켓, 운영 시간, 이동 경로, 사찰 에티켓, 주요 명소 및 공식 안내 사항에 대한 정보를 제공해 드릴 수 있습니다. 무엇을 도와드릴까요?"
+            if target_lang == "ja":
+                return "こんにちは。ケーブルカーのチケット、営業時間、ルート、寺院の参拝マナー、観光スポット、公式案内などについてご案内できます。どのような情報がお知りになりたいですか？"
+            if target_lang == "zh":
+                return "您好！我可以为您提供关于缆车门票、开放时间、游览路线、寺庙礼仪、景点介绍以及官方通知等信息。请问有什么我可以帮您的？"
+            if target_lang == "km":
                 return "សួស្តីបង។ ខ្ញុំអាចជួយផ្តល់ព័ត៌មានអំពីតម្លៃសំបុត្រឡានកាប ម៉ោងបើកធ្វើការ ផ្លូវធ្វើដំណើរ បទប្បញ្ញត្តិទស្សនា កន្លែងទេសចរណ៍ និងសេចក្តីជូនដំណឹងផ្លូវការ។ តើបងចង់សួរអំពីខ្លឹមសារអ្វីដែរ?"
-            if language == "en":
+            if target_lang == "en":
                 return "Hello. I can help with cable car tickets, opening hours, directions, temple etiquette, attractions, and official visitor notices. What would you like to know?"
             return "Chào anh/chị. Mình có thể hỗ trợ thông tin về giá vé cáp treo, giờ hoạt động, đường đi, quy định tham quan, điểm tham quan và thông báo chính thức. Anh/chị muốn hỏi nội dung nào?"
         return None
@@ -390,6 +519,31 @@ class RAGService:
         2. Generate answer via Beeknoee LLM with fallback chain
         3. Log conversation to Supabase chat_logs
         """
+        # Auto-detect language of the question
+        detected_info = self._detect_language(question)
+        detected_code = detected_info["code"]
+        detected_name = detected_info["name"]
+
+        # Check if we should override manual language selection
+        # (Auto-detect activates if dropdown is 'auto', the default 'vi', OR if the user's question language is not vi, en, or km)
+        if language in {"auto", "vi"}:
+            resolved_lang = detected_code
+            resolved_lang_name = detected_name
+            print(f"[{LOG_NAME}] Dropdown is default/auto '{language}'. Auto-detected language: {resolved_lang} ({resolved_lang_name})")
+        else:
+            if detected_code not in {"vi", "en", "km"}:
+                resolved_lang = detected_code
+                resolved_lang_name = detected_name
+                print(f"[{LOG_NAME}] Question in non-supported language '{detected_code}' auto-activates language detection (overrides manual '{language}').")
+            else:
+                resolved_lang = language
+                lang_names_map = {"vi": "Vietnamese", "en": "English", "km": "Khmer"}
+                resolved_lang_name = lang_names_map.get(language, "Vietnamese")
+                print(f"[{LOG_NAME}] Respecting manual selection: {resolved_lang} ({resolved_lang_name})")
+
+        language = resolved_lang
+        language_name = resolved_lang_name
+
         history_context = self._format_conversation_history(conversation_history)
         question_with_context = question + history_context
 
@@ -509,7 +663,10 @@ class RAGService:
         }
 
         if not chunks and not announcements_str:
-            answer = self._no_info_response(language)
+            if language in {"vi", "en", "km"}:
+                answer = self._no_info_response(language)
+            else:
+                answer = self._translate_no_info_response(language_name)
             confidence_score = 0.0
         else:
             # Build deduplicated source list
@@ -564,7 +721,7 @@ class RAGService:
                 is_first_question = not conversation_history or len(conversation_history) == 0
                 include_weather_warnings = is_first_question or asks_about_weather_or_clothing(question)
 
-                if language == "en":
+                if language == "en" or language not in {"vi", "km"}:
                     weather_status_desc = {
                         "sunny": "Sunny",
                         "cloudy": "Cloudy",
@@ -678,7 +835,11 @@ class RAGService:
                     context_parts.append(f"[Tài liệu {i} — {title}]\n{chunk['text']}")
                 context_str = history_context + "\n\n" + "\n\n---\n\n".join(context_parts) if history_context else "\n\n---\n\n".join(context_parts)
 
-                sys_prompt_base = SYSTEM_PROMPT_KM if language == "km" else SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT_VI
+                if language in {"vi", "en", "km"}:
+                    sys_prompt_base = SYSTEM_PROMPT_KM if language == "km" else SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT_VI
+                else:
+                    sys_prompt_base = SYSTEM_PROMPT_TEMPLATE.replace("{language_name}", language_name)
+
                 if personalization_str:
                     sys_prompt_base = sys_prompt_base.replace("Tài liệu tham khảo:", f"Thông tin du khách & Cá nhân hóa:{personalization_str}\n\nTài liệu tham khảo:")
                     sys_prompt_base = sys_prompt_base.replace("Reference documents:", f"Visitor profile & Personalization:{personalization_str}\n\nReference documents:")
@@ -702,10 +863,23 @@ class RAGService:
                     # If LLM says "no info" → clear sources
                     no_info_markers = [
                         "chưa có thông tin chính xác",
+                        "chưa có thông tin chính thức",
+                        "không có thông tin chính thức",
+                        "không có thông tin",
                         "don't have official information",
+                        "does not have approved information",
+                        "no official information",
+                        "no information",
                         "មិនទាន់មានព័ត៌មានផ្លូវការ",
+                        "공식 정보",
+                        "정보가 없습니다",
+                        "公式情報",
+                        "情報はありません",
+                        "没有官方信息",
+                        "暂无官方信息",
+                        "没有相关信息"
                     ]
-                    if any(m in answer for m in no_info_markers):
+                    if any(m.lower() in answer.lower() for m in no_info_markers):
                         confidence_score = 0.1
                         sources = []
                 except Exception as e:

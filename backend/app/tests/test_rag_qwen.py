@@ -122,3 +122,44 @@ def test_rag_chat_qwen(api_client: TestClient, db_client: Client):
         db_client.table("knowledge_articles").delete().eq("id", str(unique_id)).execute()
         if chat_res_data:
             db_client.table("chat_logs").delete().eq("question", f"Đến viếng Chùa Bà Đen cần mặc trang phục như thế nào để đúng quy định {unique_id}?").execute()
+
+
+def test_rag_chat_multilingual(api_client: TestClient, db_client: Client):
+    """Test that the chatbot automatically detects query language and responds in the same language (English & Korean)."""
+    # 1. Test English question
+    en_question = "How much does a cable car ticket cost? Please answer briefly."
+    en_payload = {
+        "question": en_question,
+        "channel": "mini_app",
+        "language": "vi"  # Even though payload defaults to 'vi', it should auto-detect and reply in English
+    }
+    
+    response = api_client.post("/api/chat/", json=en_payload)
+    assert response.status_code == 200
+    res_data = response.json()
+    assert "answer" in res_data
+    answer_en = res_data["answer"].lower()
+    assert any(w in answer_en for w in ["cable", "car", "ticket", "price", "mount", "ba", "den", "temple"])
+    
+    # Clean up English log
+    db_client.table("chat_logs").delete().eq("question", en_question).execute()
+
+    # 2. Test Korean question
+    ko_question = "케이블카 티켓 가격은 얼마인가요? 간단히 답해주세요."
+    ko_payload = {
+        "question": ko_question,
+        "channel": "mini_app",
+        "language": "vi"
+    }
+    
+    response = api_client.post("/api/chat/", json=ko_payload)
+    assert response.status_code == 200
+    res_data_ko = response.json()
+    assert "answer" in res_data_ko
+    answer_ko = res_data_ko["answer"]
+    # Check that response contains Korean Hangul characters
+    assert any(ord(char) >= 0xac00 and ord(char) <= 0xd7a3 for char in answer_ko)
+    
+    # Clean up Korean log
+    db_client.table("chat_logs").delete().eq("question", ko_question).execute()
+

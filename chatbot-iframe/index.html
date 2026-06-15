@@ -46,14 +46,50 @@
                     <h1 class="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">AI Guide Bà Đen</h1>
                     <div class="flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-brand-500 rounded-full animate-pulse flex-shrink-0"></span>
-                        <span class="text-[9px] sm:text-[11px] font-medium text-brand-700 uppercase tracking-wider truncate">Đang trực tuyến</span>
+                        <span id="onlineStatusText" class="text-[9px] sm:text-[11px] font-medium text-brand-700 uppercase tracking-wider truncate">Đang trực tuyến</span>
                     </div>
                 </div>
             </div>
             
-            <button id="resetChatBtn" title="Làm mới hội thoại" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            </button>
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <div class="relative flex-shrink-0" id="langDropdown">
+                    <button id="langDropdownTrigger" class="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-lg pl-2 pr-6 py-1.5 text-xs font-semibold text-slate-600 outline-none cursor-pointer focus:border-brand-500/80 focus:ring-1 focus:ring-brand-500/20 transition-all select-none">
+                        <span id="langDropdownSelectedFlag" class="w-4 h-3 flex items-center justify-center">
+                            <!-- SVGs populated by main.js -->
+                        </span>
+                        <span id="langDropdownSelectedText">Tiếng Việt</span>
+                    </button>
+                    
+                    <div id="langDropdownMenu" class="hidden absolute right-0 mt-1.5 w-32 bg-white border border-slate-200/85 rounded-xl shadow-lg z-50 overflow-hidden py-1">
+                        <button data-value="vi" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-4 h-3 flex-shrink-0 flex items-center justify-center">
+                                <svg viewBox="0 0 30 20" class="w-full h-full rounded-sm overflow-hidden"><rect width="30" height="20" fill="#da251d"/><polygon points="15,4 16.2,8.8 21.2,8.8 17.2,11.8 18.7,16.6 15,13.6 11.3,16.6 12.8,11.8 8.8,8.8 13.8,8.8" fill="#ffff00"/></svg>
+                            </span>
+                            <span>Tiếng Việt</span>
+                        </button>
+                        <button data-value="en" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-4 h-3 flex-shrink-0 flex items-center justify-center">
+                                <svg viewBox="0 0 60 30" class="w-full h-full rounded-sm overflow-hidden" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="30" fill="#012169"/><path d="M0 0 L60 30 M0 30 L60 0" stroke="#fff" stroke-width="6"/><path d="M0 0 L60 30 M0 30 L60 0" stroke="#C8102E" stroke-width="2"/><path d="M30 0 V30 M0 15 H60" stroke="#fff" stroke-width="10"/><path d="M30 0 V30 M0 15 H60" stroke="#C8102E" stroke-width="6"/></svg>
+                            </span>
+                            <span>English</span>
+                        </button>
+                        <button data-value="km" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                            <span class="w-4 h-3 flex-shrink-0 flex items-center justify-center">
+                                <svg viewBox="0 0 25 16" class="w-full h-full rounded-sm overflow-hidden"><rect width="25" height="16" fill="#032ea1"/><rect y="4" width="25" height="8" fill="#e21c21"/><path d="M12.5 6.5 L14 9 H11 Z M10.5 7.5 L11.5 9.5 H9.5 Z M14.5 7.5 L15.5 9.5 H13.5 Z M9 10.5 H16 V11.5 H9 Z" fill="#fff"/></svg>
+                            </span>
+                            <span>Khmer</span>
+                        </button>
+                    </div>
+                    
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400">
+                        <svg class="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </div>
+                
+                <button id="resetChatBtn" title="Làm mới hội thoại" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -66,14 +102,14 @@
         <!-- Chat View -->
         <div id="chatView" class="flex flex-col h-full min-h-0">
             <!-- Messages scroll area -->
-            <div id="messagesContainer" class="flex-1 min-h-0 overflow-y-auto overscroll-contain w-full scroll-smooth flex flex-col justify-center">
+            <div id="messagesContainer" class="flex-1 min-h-0 overflow-y-auto overscroll-contain w-full scroll-smooth flex flex-col justify-start">
                 <div class="px-4 pt-4 pb-2 space-y-5 max-w-2xl mx-auto w-full">
                     <!-- Welcome Message -->
                     <div class="flex items-start gap-3">
                         <div style="width:36px;height:36px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                         </div>
-                        <div style="max-width:82%;padding:12px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:0.25rem 1rem 1rem 1rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                        <div id="welcomeText" style="max-width:82%;padding:12px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:0.25rem 1rem 1rem 1rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
                             <p style="font-size:15px;line-height:1.6;color:#1e293b;">Chào mừng bạn đến với <strong style="color:#15803d;">Khu du lịch quốc gia Núi Bà Đen</strong>! ⛰️<br>Tôi là trợ lý AI thông minh, rất vui được hỗ trợ bạn lên kế hoạch và tìm hiểu về Núi Bà Đen. Bạn cần hỏi gì ạ?</p>
                         </div>
                     </div>

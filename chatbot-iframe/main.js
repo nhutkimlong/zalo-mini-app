@@ -3,6 +3,59 @@ import { apiService } from './api.js';
 
 let messages = [];
 let isLoading = false;
+let currentLang = 'vi';
+
+const FLAGS_SVG = {
+    vi: `<svg viewBox="0 0 30 20" class="w-full h-full rounded-sm overflow-hidden"><rect width="30" height="20" fill="#da251d"/><polygon points="15,4 16.2,8.8 21.2,8.8 17.2,11.8 18.7,16.6 15,13.6 11.3,16.6 12.8,11.8 8.8,8.8 13.8,8.8" fill="#ffff00"/></svg>`,
+    auto: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 text-slate-500"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>`,
+    en: `<svg viewBox="0 0 60 30" class="w-full h-full rounded-sm overflow-hidden" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="30" fill="#012169"/><path d="M0 0 L60 30 M0 30 L60 0" stroke="#fff" stroke-width="6"/><path d="M0 0 L60 30 M0 30 L60 0" stroke="#C8102E" stroke-width="2"/><path d="M30 0 V30 M0 15 H60" stroke="#fff" stroke-width="10"/><path d="M30 0 V30 M0 15 H60" stroke="#C8102E" stroke-width="6"/></svg>`,
+    km: `<svg viewBox="0 0 25 16" class="w-full h-full rounded-sm overflow-hidden"><rect width="25" height="16" fill="#032ea1"/><rect y="4" width="25" height="8" fill="#e21c21"/><path d="M12.5 6.5 L14 9 H11 Z M10.5 7.5 L11.5 9.5 H9.5 Z M14.5 7.5 L15.5 9.5 H13.5 Z M9 10.5 H16 V11.5 H9 Z" fill="#fff"/></svg>`
+};
+
+const TRANSLATIONS = {
+    vi: {
+        online: "Đang trực tuyến",
+        placeholder: "Hỏi về Núi Bà Đen...",
+        resetConfirm: "Làm mới cuộc hội thoại này?",
+        welcome: "Chào mừng bạn đến với <strong style=\"color:#15803d;\">Khu du lịch quốc gia Núi Bà Đen</strong>! ⛰️<br>Tôi là trợ lý AI thông minh, rất vui được hỗ trợ bạn lên kế hoạch và tìm hiểu về Núi Bà Đen. Bạn cần hỏi gì ạ?",
+        welcomeReset: "Chào mừng bạn trở lại! ⛰️<br>Tôi đã sẵn sàng cho một cuộc trò chuyện mới. Bạn cần hỗ trợ gì ạ?",
+        suggestions: [
+            "Cáp treo vận hành lúc mấy giờ?",
+            "Combo buffet & vé cáp treo?",
+            "Săn mây vào giờ nào thì đẹp?",
+            "Cần chuẩn bị gì khi đi bộ lên núi?"
+        ],
+        errorMsg: "Rất tiếc, đã có lỗi kết nối. Anh/Chị vui lòng thử lại sau giây lát ạ!"
+    },
+    en: {
+        online: "Online",
+        placeholder: "Ask about Ba Den Mountain...",
+        resetConfirm: "Reset this conversation?",
+        welcome: "Welcome to <strong style=\"color:#15803d;\">Ba Den Mountain National Tourist Area</strong>! ⛰️<br>I am your smart AI assistant. I'm happy to help you plan your trip and learn about Ba Den Mountain. How can I help you?",
+        welcomeReset: "Welcome back! ⛰️<br>I am ready for a new conversation. What do you need help with?",
+        suggestions: [
+            "What time does the cable car operate?",
+            "Combo buffet & cable car tickets?",
+            "What is the best time to hunt for clouds?",
+            "What to prepare when hiking the mountain?"
+        ],
+        errorMsg: "Sorry, there was a connection error. Please try again in a moment!"
+    },
+    km: {
+        online: "អនឡាញ",
+        placeholder: "សួរអំពីភ្នំបាដិន...",
+        resetConfirm: "ធ្វើឱ្យការសន្ទនានេះស្រស់ឡើងវិញ?",
+        welcome: "សូមស្វាគមន៍មកកាន់ <strong style=\"color:#15803d;\">រមណីយដ្ឋានទេសចរណ៍ជាតិភ្នំបាដិន</strong>! ⛰️<br> ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ រីករាយនឹងជួយអ្នករៀបចំផែនការ និងស្វែងយល់អំពីភ្នំបាដិន។ តើអ្នកចង់សួរអ្វីដែរ?",
+        welcomeReset: "សូមស្វាគមន៍ត្រឡប់មកវិញ! ⛰️<br>ខ្ញុំរួចរាល់សម្រាប់ការសន្ទនាថ្មី។ តើអ្នកត្រូវការជំនួយអ្វីខ្លះ?",
+        suggestions: [
+            "តើឡានកាបបើកដំណើរការម៉ោងប៉ុន្មាន?",
+            "កញ្ចប់អាហារប៊ូហ្វេ និងសំបុត្រឡានកាប?",
+            "តើម៉ោងណាដែលស្អាតបំផុតសម្រាប់មើលពពក?",
+            "តើត្រូវរៀបចំអ្វីខ្លះពេលដើរឡើងភ្នំ?"
+        ],
+        errorMsg: "សុំទោស មានកំហុសក្នុងការតភ្ជាប់។ សូមព្យាយាមម្តងទៀតនៅពេលបន្តិចទៀត!"
+    }
+};
 
 
 // DOM Elements
@@ -10,12 +63,12 @@ const msgContainer = document.getElementById('messagesContainer');
 const chatForm = document.getElementById('chatForm');
 const userInput = document.getElementById('userInput');
 const suggestionsArea = document.getElementById('suggestions');
+const langDropdownTrigger = document.getElementById('langDropdownTrigger');
+const langDropdownMenu = document.getElementById('langDropdownMenu');
+const dropdownOptions = langDropdownMenu ? langDropdownMenu.querySelectorAll('button[data-value]') : [];
 
 function startChatSession() {
-    if (msgContainer.classList.contains('justify-center')) {
-        msgContainer.classList.remove('justify-center');
-        msgContainer.classList.add('justify-start');
-    }
+    // Keep it justify-start from start
 }
 
 userInput.onfocus = startChatSession;
@@ -72,7 +125,8 @@ function addMessage(role, text, isLoadingMsg = false) {
 }
 
 function updateSuggestions() {
-    const list = ["Cáp treo vận hành lúc mấy giờ?", "Combo buffet & vé cáp treo?", "Săn mây vào giờ nào thì đẹp?", "Cần chuẩn bị gì khi đi bộ lên núi?"];
+    const lang = currentLang === 'auto' ? 'vi' : currentLang;
+    const list = TRANSLATIONS[lang]?.suggestions || TRANSLATIONS.vi.suggestions;
     suggestionsArea.innerHTML = list.map(q =>
         `<button class="suggestion-btn whitespace-nowrap flex-shrink-0 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-brand-50 hover:text-brand-700 active:scale-95 border border-slate-100">${q}</button>`
     ).join('');
@@ -101,7 +155,7 @@ async function handleSend() {
     const loadingEl = addMessage('model', '', true);
     
     try {
-        const reply = await apiService.sendMessage(messages, text);
+        const reply = await apiService.sendMessage(messages, text, currentLang);
         loadingEl.remove();
         addMessage('model', reply);
         
@@ -113,10 +167,77 @@ async function handleSend() {
     } catch (err) {
         console.error(err);
         loadingEl.remove();
-        addMessage('model', "Rất tiếc, đã có lỗi kết nối. Anh/Chị vui lòng thử lại sau giây lát ạ!");
+        const activeLang = currentLang === 'auto' ? 'vi' : currentLang;
+        const errMsg = TRANSLATIONS[activeLang]?.errorMsg || TRANSLATIONS.vi.errorMsg;
+        addMessage('model', errMsg);
     } finally {
         isLoading = false;
     }
+}
+
+// ---------------- UI Translation ----------------
+
+function updateUILanguage(lang) {
+    currentLang = lang;
+    const activeLang = lang;
+    const trans = TRANSLATIONS[activeLang];
+    if (!trans) return;
+
+    // 1. Update online status text
+    const onlineText = document.getElementById('onlineStatusText');
+    if (onlineText) {
+        onlineText.textContent = trans.online;
+    }
+
+    // 2. Update userInput placeholder
+    if (userInput) {
+        userInput.placeholder = trans.placeholder;
+    }
+
+    // 3. Update welcome message if chat has not started (messages is empty)
+    const welcomeText = document.getElementById('welcomeText');
+    if (welcomeText && messages.length === 0) {
+        welcomeText.innerHTML = `<p style="font-size:15px;line-height:1.6;color:#1e293b;">${trans.welcome}</p>`;
+    }
+
+    // 4. Update suggestions list
+    updateSuggestions();
+
+    // 5. Update dropdown trigger display (SVG Flag and selection text)
+    const selectedFlag = document.getElementById('langDropdownSelectedFlag');
+    const selectedText = document.getElementById('langDropdownSelectedText');
+    if (selectedFlag) {
+        selectedFlag.innerHTML = FLAGS_SVG[lang] || '';
+    }
+    if (selectedText) {
+        let textToShow = "Tiếng Việt";
+        if (lang === 'vi') textToShow = "Tiếng Việt";
+        else if (lang === 'en') textToShow = "English";
+        else if (lang === 'km') textToShow = "Khmer";
+        selectedText.textContent = textToShow;
+    }
+}
+
+// Dropdown Toggle & Options Select
+if (langDropdownTrigger && langDropdownMenu) {
+    langDropdownTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        langDropdownMenu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!langDropdownMenu.classList.contains('hidden') && !e.target.closest('#langDropdown')) {
+            langDropdownMenu.classList.add('hidden');
+        }
+    });
+
+    dropdownOptions.forEach(opt => {
+        opt.addEventListener('click', () => {
+            const val = opt.getAttribute('data-value');
+            updateUILanguage(val);
+            langDropdownMenu.classList.add('hidden');
+        });
+    });
 }
 
 // ---------------- Reset Button ----------------
@@ -124,17 +245,20 @@ async function handleSend() {
 const resetChatBtn = document.getElementById('resetChatBtn');
 
 resetChatBtn.onclick = () => {
-    if (confirm("Làm mới cuộc hội thoại này?")) {
+    const lang = currentLang === 'auto' ? 'vi' : currentLang;
+    const trans = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+    if (confirm(trans.resetConfirm)) {
         messages = [];
-        msgContainer.classList.add('justify-center');
-        msgContainer.classList.remove('justify-start');
         msgContainer.innerHTML = `
-            <div class="flex items-start gap-4">
-                <div class="w-9 h-9 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 border border-brand-100">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div class="bg-white border border-slate-100 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm max-w-[85%]">
-                    <p class="text-[15px] leading-relaxed">Chào mừng bạn trở lại! ⛰️<br>Tôi đã sẵn sàng cho một cuộc trò chuyện mới. Bạn cần hỗ trợ gì ạ?</p>
+            <div class="px-4 pt-4 pb-2 space-y-5 max-w-2xl mx-auto w-full">
+                <!-- Welcome Message -->
+                <div class="flex items-start gap-3">
+                    <div style="width:36px;height:36px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div id="welcomeText" style="max-width:82%;padding:12px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:0.25rem 1rem 1rem 1rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                        <p style="font-size:15px;line-height:1.6;color:#1e293b;">${trans.welcomeReset}</p>
+                    </div>
                 </div>
             </div>
         `;
@@ -156,7 +280,7 @@ if (window.visualViewport) {
 }
 
 function init() {
-    updateSuggestions();
+    updateUILanguage(currentLang);
     msgContainer.scrollTop = 0;
 }
 
