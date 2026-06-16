@@ -1,63 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { Header, Page } from "zmp-ui";
+import { Header, Page } from "../components/WebPrimitives";
 import { Clock, Ticket, Navigation, ShieldCheck } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import api, { KnowledgeArticle } from "../services/api";
+import { useDragScroll } from "../hooks/useDragScroll";
 
 type TabType = "tickets" | "travel" | "rules";
 
-// --- Extraction Utilities for Dynamic Premium Content ---
-
-
-
 export interface TicketItem {
-
   name: string;
-
   price: string;
-
   priceOneway?: string;
-
 }
-
-
 
 export interface TicketSection {
-
   title: string;
-
   items: TicketItem[];
-
 }
-
-
 
 export interface OperatingScheduleItem {
-
   label: string;
-
   hours: string;
-
   note?: string;
-
 }
-
-
 
 export interface OperatingScheduleSection {
-
   title: string;
-
   items: OperatingScheduleItem[];
-
 }
 
-
-
 // 0. Parse Dynamic Tickets and Sections - NO HARDCODED DEFAULTS, data must come from DB
-
 const parseTickets = (articles: any[], lang: string): TicketSection[] => {
-  // No fallback: return empty array if no articles loaded yet
   if (!articles || articles.length === 0) return [];
 
   // 1. Prioritize article with "giá vé" / "ticket" / "price" / "សំបុត្រ" in the title
@@ -273,139 +246,76 @@ const parseOperatingSchedules = (articles: any[], lang: string): OperatingSchedu
 };
 
 // 2. Parse plain-text content from DB into structured list items
-
 const parseArticleContent = (content: string): Array<{ text: string; level: number; isHeading: boolean }> => {
-
   if (!content) return [];
 
   const lines = content.split("\n");
-
   const result: Array<{ text: string; level: number; isHeading: boolean }> = [];
 
-
-
   for (const line of lines) {
-
     const trimmed = line.trim();
-
     if (!trimmed) continue;
 
-
-
     const isNumberedSection = /^\d+\.\s+/.test(trimmed) && trimmed.endsWith(":");
-
     const isNumberedItem = /^\d+\.\s+/.test(trimmed) && !trimmed.endsWith(":");
-
     const isBullet = /^[-*•]\s+/.test(trimmed);
-
     const isHeadingLine = trimmed.endsWith(":") && !isBullet;
 
-
-
     if (isNumberedSection || isHeadingLine) {
-
       result.push({ text: trimmed, level: 0, isHeading: true });
-
     } else if (isNumberedItem) {
-
       result.push({ text: trimmed.replace(/^\d+\.\s+/, ""), level: 0, isHeading: false });
-
     } else if (isBullet) {
-
       result.push({ text: trimmed.replace(/^[-*•]\s+/, ""), level: 1, isHeading: false });
-
     } else if (trimmed.length > 3) {
-
       result.push({ text: trimmed, level: 0, isHeading: false });
-
     }
-
   }
 
   return result;
-
 };
 
-
-
-
-
 export const VisitInfoPage: React.FC = () => {
-
   const [activeTab, setActiveTab] = useState<TabType>("tickets");
-
   const { language, t } = useLanguage();
-
-
+  const tabsRef = useDragScroll();
 
   const [ticketArticles, setTicketArticles] = useState<KnowledgeArticle[]>([]);
-
   const [travelArticles, setTravelArticles] = useState<KnowledgeArticle[]>([]);
-
   const [rulesArticles, setRulesArticles] = useState<KnowledgeArticle[]>([]);
-
   const [ticketsLoading, setTicketsLoading] = useState(true);
 
   const parsedSections = parseTickets(ticketArticles, language);
-
   const scheduleSections = parseOperatingSchedules(ticketArticles, language);
 
-
-
   useEffect(() => {
-
     const fetchArticles = async () => {
-
       setTicketsLoading(true);
-
       try {
-
         const [tickets, travel, rules] = await Promise.all([
-
           api.getArticlesByCategory("ve_va_gio_mo_cua"),
-
           api.getArticlesByCategory("di_chuyen"),
-
           api.getArticlesByCategory("noi_quy")
-
         ]);
-
         setTicketArticles(tickets);
-
         setTravelArticles(travel);
-
         setRulesArticles(rules);
-
       } catch (err) {
-
         console.warn("Failed to fetch dynamic articles:", err);
-
       } finally {
-
         setTicketsLoading(false);
-
       }
-
     };
-
     fetchArticles();
-
   }, []);
 
-
-
   return (
-
     <Page>
-
       {/* Header */}
-
       <Header title={t("info.title")} showBackIcon={true} />
 
-
-
       {/* Tabs Switcher */}
-      <div className="custom-tabs">
+      <div className="custom-tabs" ref={tabsRef}>
         <button 
           className={`tab-btn ${activeTab === "tickets" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("tickets")}
@@ -428,37 +338,23 @@ export const VisitInfoPage: React.FC = () => {
         </button>
       </div>
 
-
-
       {/* Tab 1 Content: Tickets & Hours */}
-
       {activeTab === "tickets" && (
-
-        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-
+        <div className="info-tab-content">
           {ticketsLoading ? (
-
             /* Loading skeleton */
-
             [1, 2, 3].map(i => (
-
               <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
-
                 <div style={{ height: "18px", width: "60%", background: "rgba(0,0,0,0.08)", borderRadius: "6px", marginBottom: "14px" }} />
-
                 <div style={{ height: "12px", width: "100%", background: "rgba(0,0,0,0.06)", borderRadius: "4px", marginBottom: "8px" }} />
-
                 <div style={{ height: "12px", width: "80%", background: "rgba(0,0,0,0.06)", borderRadius: "4px" }} />
-
               </div>
-
             ))
-
           ) : parsedSections.length === 0 ? (
             /* Empty state */
-            <div className="glass-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-              <Ticket size={36} style={{ color: "var(--accent-gold)", opacity: 0.5, marginBottom: "12px" }} />
-              <p style={{ color: "var(--light-text)", fontSize: "14px", margin: 0 }}>
+            <div className="glass-card empty-state-text">
+              <Ticket size={36} style={{ color: "var(--site-gold)", opacity: 0.5, marginBottom: "12px" }} />
+              <p style={{ margin: 0 }}>
                 {language === "km" ? "ព័ត៌មានសំបុត្រកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Ticket information is being updated. Please check back soon." : "Thông tin vé đang được cập nhật. Vui lòng quay lại sau."}
               </p>
             </div>
@@ -467,16 +363,16 @@ export const VisitInfoPage: React.FC = () => {
               const hasOneway = section.items.some(item => !!item.priceOneway);
               return (
                 <div className="glass-card" key={sIdx}>
-                  <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-                    <Ticket size={18} style={{ color: "var(--accent-gold)" }} />
+                  <h3 className="info-section-header">
+                    <Ticket size={18} style={{ color: "var(--site-gold)" }} />
                     <span>{section.title}</span>
                   </h3>
 
-                  <table style={{ width: "100%", fontSize: "13.5px", borderCollapse: "collapse" }}>
+                  <table className="info-ticket-table">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.1)", textAlign: "left", color: "var(--light-text)" }}>
-                        <th style={{ padding: "6px 0" }}>{language === "km" ? "ប្រភេទភ្ញៀវទេសចរ" : language === "en" ? "Visitor Category" : "Đối tượng"}</th>
-                        <th style={{ padding: "6px 0" }}>
+                      <tr className="info-table-head-row">
+                        <th className="info-table-th">{language === "km" ? "ប្រភេទភ្ញៀវទេសចរ" : language === "en" ? "Visitor Category" : "Đối tượng"}</th>
+                        <th className="info-table-th">
                           {language === "km" 
                             ? "តម្លៃសំបុត្រទៅមក" 
                             : hasOneway 
@@ -484,7 +380,7 @@ export const VisitInfoPage: React.FC = () => {
                               : (language === "en" ? "Round-trip Price" : "Giá vé khứ hồi")}
                         </th>
                         {hasOneway && (
-                          <th style={{ padding: "6px 0" }}>{language === "km" ? "មួយផ្លូវ" : language === "en" ? "One-way" : "Một chiều"}</th>
+                          <th className="info-table-th">{language === "km" ? "មួយផ្លូវ" : language === "en" ? "One-way" : "Một chiều"}</th>
                         )}
                       </tr>
                     </thead>
@@ -492,59 +388,43 @@ export const VisitInfoPage: React.FC = () => {
                       {section.items.map((item, iIdx) => {
                         const isFree = item.price.toLowerCase().includes("miễn phí") || item.price.toLowerCase().includes("free") || item.price.toLowerCase().includes("mien phi") || item.price.toLowerCase().includes("ឥតគិតថ្លៃ");
                         return (
-                          <tr key={iIdx} style={iIdx > 0 ? { borderTop: "1px solid rgba(0,0,0,0.05)" } : {}}>
-                            <td style={{ padding: "8px 0", fontWeight: 600 }}>{item.name}</td>
-                            <td style={{ padding: "8px 0", color: isFree ? "green" : "var(--alert-red)", fontWeight: 700 }}>
+                          <tr key={iIdx} className="info-table-tr">
+                            <td className="info-table-td-name">{item.name}</td>
+                            <td className="info-table-td-price" style={{ color: isFree ? "green" : "var(--alert-red)" }}>
                               {item.price}
                             </td>
-
                             {hasOneway && (
-
-                              <td style={{ padding: "8px 0", fontWeight: 600 }}>
-
+                              <td className="info-table-td-name">
                                 {item.priceOneway || "-"}
-
                               </td>
-
                             )}
-
                           </tr>
-
                         );
-
                       })}
-
                     </tbody>
-
                   </table>
-
                 </div>
-
               );
-
             })
-
           )}
 
-
-
           {/* Giờ hoạt động */}
-          <div className="glass-card" style={{ background: "rgba(11, 37, 69, 0.02)" }}>
-            <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "10px" }}>
-              <Clock size={18} style={{ color: "var(--accent-gold)" }} />
+          <div className="glass-card info-schedule-card">
+            <h3 className="info-section-header">
+              <Clock size={18} style={{ color: "var(--site-gold)" }} />
               <span>{language === "km" ? "ម៉ោងដំណើរការខ្សែរថយន្តកាប៊ីនចុងក្រោយបង្អស់" : language === "en" ? "Latest Cable Car Operating Hours" : "Lịch vận hành cáp treo mới nhất"}</span>
             </h3>
 
             {scheduleSections.length === 0 ? (
-              <p style={{ color: "var(--light-text)", fontSize: "13px", margin: 0 }}>
+              <p style={{ color: "var(--site-muted)", fontSize: "13px", margin: 0 }}>
                 {language === "km" ? "ម៉ោងប្រតិបត្តិការកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Operating hours are being updated. Please check back soon." : "Lịch hoạt động đang được cập nhật. Vui lòng quay lại sau."}
               </p>
             ) : (
-              <ul style={{ paddingLeft: "18px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <ul className="info-schedule-list">
                 {scheduleSections.map((section, sIdx) => (
                   <li key={sIdx}>
                     <strong>{section.title}</strong>
-                    <div style={{ paddingLeft: "8px", marginTop: "2px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <div className="info-schedule-sublist">
                       {section.items.map((item, iIdx) => (
                         <span key={iIdx}>
                           • {item.label}{item.label && item.hours ? ": " : ""}<b>{item.hours}</b>{item.note ? ` ${item.note}` : ""}
@@ -557,19 +437,12 @@ export const VisitInfoPage: React.FC = () => {
             )}
           </div>
 
-
-
-
-
         </div>
-
       )}
-
-
 
       {/* Tab 2 Content: Travel Guides - rendered from DB */}
       {activeTab === "travel" && (
-        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="info-tab-content">
           {ticketsLoading ? (
             [1, 2].map(i => (
               <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
@@ -578,9 +451,9 @@ export const VisitInfoPage: React.FC = () => {
               </div>
             ))
           ) : travelArticles.length === 0 ? (
-            <div className="glass-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-              <Navigation size={36} style={{ color: "var(--accent-gold)", opacity: 0.5, marginBottom: "12px" }} />
-              <p style={{ color: "var(--light-text)", fontSize: "14px", margin: 0 }}>
+            <div className="glass-card empty-state-text">
+              <Navigation size={36} style={{ color: "var(--site-gold)", opacity: 0.5, marginBottom: "12px" }} />
+              <p style={{ margin: 0 }}>
                 {language === "km" ? "ការណែនាំអំពីការធ្វើដំណើរកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Travel guide is being updated. Please check back soon." : "Hướng dẫn di chuyển đang được cập nhật. Vui lòng quay lại sau."}
               </p>
             </div>
@@ -590,20 +463,20 @@ export const VisitInfoPage: React.FC = () => {
               const items = parseArticleContent(content);
               return (
                 <div className="glass-card" key={art.id || aIdx}>
-                  <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-                    <Navigation size={18} style={{ color: "var(--accent-gold)" }} />
+                  <h3 className="info-section-header">
+                    <Navigation size={18} style={{ color: "var(--site-gold)" }} />
                     <span>{language === "km" ? (art.title_km || art.title) : language === "en" ? (art.title_en || art.title) : art.title}</span>
                   </h3>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13.5px" }}>
+                  <div className="info-schedule-list">
                     {items.map((item, idx) => (
                       item.isHeading ? (
-                        <div key={idx} style={{ fontWeight: 700, color: "var(--primary-navy)", marginTop: idx > 0 ? "8px" : "0", borderLeft: "3px solid var(--accent-gold)", paddingLeft: "8px" }}>
+                        <div key={idx} className={`info-list-heading ${idx > 0 ? "has-margin" : ""}`}>
                           {item.text}
                         </div>
                       ) : (
-                        <div key={idx} style={{ display: "flex", gap: "6px", paddingLeft: item.level > 0 ? "14px" : "0", color: "var(--dark-text)" }}>
-                          <span style={{ color: "var(--accent-gold)", flexShrink: 0, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
+                        <div key={idx} className={`info-list-item ${item.level > 0 ? "level-1" : ""}`}>
+                          <span style={{ color: "var(--site-gold)", flexShrink: 0, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
                           <span>{item.text}</span>
                         </div>
                       )
@@ -618,7 +491,7 @@ export const VisitInfoPage: React.FC = () => {
 
       {/* Tab 3 Content: Rules & Etiquette - rendered from DB */}
       {activeTab === "rules" && (
-        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="info-tab-content">
           {ticketsLoading ? (
             [1, 2].map(i => (
               <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
@@ -627,9 +500,9 @@ export const VisitInfoPage: React.FC = () => {
               </div>
             ))
           ) : rulesArticles.length === 0 ? (
-            <div className="glass-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-              <ShieldCheck size={36} style={{ color: "var(--accent-gold)", opacity: 0.5, marginBottom: "12px" }} />
-              <p style={{ color: "var(--light-text)", fontSize: "14px", margin: 0 }}>
+            <div className="glass-card empty-state-text">
+              <ShieldCheck size={36} style={{ color: "var(--site-gold)", opacity: 0.5, marginBottom: "12px" }} />
+              <p style={{ margin: 0 }}>
                 {language === "km" ? "ព័ត៌មានបទប្បញ្ញត្តិកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Rules & etiquette information is being updated." : "Thông tin nội quy đang được cập nhật. Vui lòng quay lại sau."}
               </p>
             </div>
@@ -638,22 +511,22 @@ export const VisitInfoPage: React.FC = () => {
               const content = (language === "km" && art.content_km) ? art.content_km : (language === "en" && art.content_en) ? art.content_en : (art.content || "");
               const items = parseArticleContent(content);
               return (
-                <div className="glass-card" key={art.id || aIdx} style={{ borderLeft: "4px solid var(--accent-gold)" }}>
-                  <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", marginBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
-                    <ShieldCheck size={18} style={{ color: "var(--accent-gold)" }} />
+                <div className="glass-card info-rules-card" key={art.id || aIdx}>
+                  <h3 className="info-section-header">
+                    <ShieldCheck size={18} style={{ color: "var(--site-gold)" }} />
                     <span>{language === "km" ? (art.title_km || art.title) : language === "en" ? (art.title_en || art.title) : art.title}</span>
                   </h3>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13.5px" }}>
+                  <div className="info-schedule-list">
                     {items.map((item, idx) => (
                       item.isHeading ? (
-                        <div key={idx} style={{ fontWeight: 700, color: "var(--primary-navy)", marginTop: idx > 0 ? "10px" : "0", display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--accent-gold)", display: "inline-block", flexShrink: 0 }} />
+                        <div key={idx} className={`info-rules-heading ${idx > 0 ? "has-margin" : ""}`}>
+                          <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--site-gold)", display: "inline-block", flexShrink: 0 }} />
                           {item.text}
                         </div>
                       ) : (
-                        <div key={idx} style={{ display: "flex", gap: "8px", paddingLeft: item.level > 0 ? "12px" : "4px", color: "var(--dark-text)", lineHeight: 1.5 }}>
-                          <span style={{ color: item.level > 0 ? "var(--accent-gold)" : "var(--primary-navy)", flexShrink: 0, fontWeight: 600, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
+                        <div key={idx} className={`info-rules-item ${item.level > 0 ? "level-1" : ""}`}>
+                          <span style={{ color: item.level > 0 ? "var(--site-gold)" : "var(--site-navy)", flexShrink: 0, fontWeight: 600, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
                           <span>{item.text}</span>
                         </div>
                       )
@@ -665,28 +538,11 @@ export const VisitInfoPage: React.FC = () => {
           )}
 
           {/* App Info & Developer Compliance Section */}
-          <div className="glass-card" style={{ 
-            marginTop: "16px", 
-            marginBottom: "16px",
-            background: "linear-gradient(135deg, rgba(11, 37, 69, 0.03), rgba(19, 64, 116, 0.03))",
-            border: "1px dashed rgba(212, 175, 55, 0.4)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            fontSize: "12px",
-            color: "var(--dark-text)"
-          }}>
-            <h4 style={{ 
-              margin: 0, 
-              fontSize: "13px", 
-              fontWeight: 700, 
-              color: "var(--primary-navy)", 
-              borderBottom: "1px solid rgba(0,0,0,0.06)", 
-              paddingBottom: "4px" 
-            }}>
+          <div className="glass-card info-dev-section">
+            <h4 className="info-dev-header">
               {language === "km" ? "ព័ត៌មានអ្នកអភិវឌ្ឍន៍ & កម្មវិធី" : language === "en" ? "Developer & App Information (Mục 5.5)" : "Thông tin Nhà phát triển & Ứng dụng (Mục 5.5)"}
             </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px", opacity: 0.9 }}>
+            <div className="info-dev-grid">
               <div>
                 <strong>{language === "km" ? "បុគ្គលទទួលខុសត្រូវ:" : language === "en" ? "Responsible Individual:" : "Cá nhân chịu trách nhiệm:"}</strong>{" "}
                 Trương Kim Long
@@ -697,12 +553,12 @@ export const VisitInfoPage: React.FC = () => {
               </div>
               <div>
                 <strong>{language === "km" ? "អ៊ីមែលគាំទ្រ:" : language === "en" ? "Support Email:" : "Email hỗ trợ:"}</strong>{" "}
-                <a href="mailto:truongnklong@gmail.com" style={{ color: "var(--primary-navy)", fontWeight: 600, textDecoration: "none" }}>
+                <a href="mailto:truongnklong@gmail.com" style={{ color: "var(--site-navy)", fontWeight: 600, textDecoration: "none" }}>
                   truongnklong@gmail.com
                 </a>
               </div>
               <div>
-                <strong>{language === "km" ? "កំណែកម្មវិធី Mini App:" : language === "en" ? "Mini App Version:" : "Phiên bản Mini App:"}</strong> v1.0.0
+                <strong>{language === "km" ? "កំណែគេហទំព័រ:" : language === "en" ? "Website Version:" : "Phiên bản website:"}</strong> v1.0.0
               </div>
               <div>
                 <strong>{language === "km" ? "ការពិពណ៌នាសេវាកម្ម:" : language === "en" ? "Service Description:" : "Mô tả dịch vụ:"}</strong>{" "}
@@ -729,4 +585,3 @@ export const VisitInfoPage: React.FC = () => {
 };
 
 export default VisitInfoPage;
-

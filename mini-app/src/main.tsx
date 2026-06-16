@@ -4,6 +4,7 @@ import App from "./app";
 
 // Import global styles
 import "./index.css";
+import "./standalone.css";
 
 const container = document.getElementById("app")!;
 const root = createRoot(container);

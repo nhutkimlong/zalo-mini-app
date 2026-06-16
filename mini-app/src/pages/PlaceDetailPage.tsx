@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Header, Page } from "zmp-ui";
+import { Header, Page } from "../components/WebPrimitives";
 import { Play, Pause, RotateCcw, Volume2, Bot, Tag, Heart, MapPin, Check, AlertCircle, Sparkles } from "lucide-react";
 import api, { TouristPlace, getAudioGuideUrl, hasAudioGuide, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -75,10 +75,60 @@ export const PlaceDetailPage: React.FC = () => {
   }, [place]);
 
   // 3. Request User GPS location & calculate distance
-  const requestUserLocation = () => {
-    if (!navigator.geolocation || !place) return;
-    setGpsLoading(true);
+  const requestUserLocation = (isManual: boolean = false) => {
+    if (!place) return;
     
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (!window.isSecureContext && !isLocalhost) {
+      if (isManual) {
+        alert(
+          language === "en"
+            ? "GPS geolocation requires a secure connection (HTTPS). Please access via HTTPS."
+            : "Định vị GPS yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập qua địa chỉ HTTPS."
+        );
+      }
+      setDistance(null);
+      setGpsLoading(false);
+      return;
+    }
+
+    setGpsLoading(true);
+
+    // Try Permissions API query
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: "geolocation" }).then((status) => {
+        if (status.state === "denied") {
+          if (isManual) {
+            alert(
+              language === "en"
+                ? "Location access is blocked. Please enable location permissions in your browser settings to use this feature."
+                : "Quyền truy cập vị trí đã bị chặn. Vui lòng cấp quyền truy cập vị trí trong cài đặt trang web của trình duyệt để sử dụng tính năng này."
+            );
+          }
+          setDistance(null);
+          setGpsLoading(false);
+        } else {
+          triggerLocationRequest(isLocalhost, isManual);
+        }
+      }).catch((e) => {
+        console.warn("Permissions API query failed:", e);
+        triggerLocationRequest(isLocalhost, isManual);
+      });
+    } else {
+      triggerLocationRequest(isLocalhost, isManual);
+    }
+  };
+
+  const triggerLocationRequest = (isLocalhost: boolean, isManual: boolean) => {
+    if (!navigator.geolocation || !place) {
+      if (isManual) {
+        alert(language === "en" ? "Geolocation is not supported by your browser." : "Định vị GPS không được trình duyệt của bạn hỗ trợ.");
+      }
+      setDistance(null);
+      setGpsLoading(false);
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
@@ -91,9 +141,37 @@ export const PlaceDetailPage: React.FC = () => {
       },
       (error) => {
         console.warn("[GPS] Location permission denied or unavailable:", error);
+        
+        // Fallback to Mount Ba Den coordinates ONLY on localhost for development testing
+        if (isLocalhost) {
+          console.warn("[GPS] Localhost fallback: Defaulting to Mount Ba Den coordinates.");
+          const mockLat = 11.375641;
+          const mockLng = 106.174648;
+          setUserCoords({ latitude: mockLat, longitude: mockLng });
+          const dist = calculateDistance(mockLat, mockLng, place.latitude, place.longitude);
+          setDistance(dist);
+        } else {
+          setDistance(null);
+          if (isManual) {
+            const isPermissionError = error && (error.code === 1 || String(error.message).toLowerCase().includes("denied"));
+            if (isPermissionError) {
+              alert(
+                language === "en"
+                  ? "Location permission denied. Please allow location access in your browser settings."
+                  : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt để sử dụng tính năng này."
+              );
+            } else {
+              alert(
+                language === "en"
+                  ? "GPS access failed. Please ensure location services are enabled."
+                  : "Lỗi truy cập định vị GPS. Vui lòng kiểm tra dịch vụ vị trí của thiết bị."
+              );
+            }
+          }
+        }
         setGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -281,7 +359,7 @@ export const PlaceDetailPage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.places")} showBackIcon={true} />
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 120px)", color: "var(--primary-navy)" }}>
+        <div className="detail-loader-container">
           <div className="common-loading">{t("common.loading")}</div>
         </div>
       </Page>
@@ -292,9 +370,9 @@ export const PlaceDetailPage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.places")} showBackIcon={true} />
-        <div style={{ textAlign: "center", padding: "80px" }}>
+        <div className="detail-empty-container">
           <h3>{t("common.no_data")}</h3>
-          <Link to="/places" style={{ color: "var(--primary-navy)", fontWeight: 700 }}>
+          <Link to="/places" className="detail-empty-back-link">
             {language === "en" ? "Back to list" : "Quay lại danh sách"}
           </Link>
         </div>
@@ -329,52 +407,6 @@ export const PlaceDetailPage: React.FC = () => {
 
   return (
     <Page>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .audio-slider-input {
-          -webkit-appearance: none;
-          appearance: none;
-          flex: 1;
-          height: 6px;
-          border-radius: 3px;
-          outline: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        /* Webkit Thumb styles */
-        .audio-slider-input::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: var(--accent-gold);
-          border: 2.5px solid var(--primary-navy);
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-          cursor: pointer;
-          transition: transform 0.1s ease;
-        }
-
-        .audio-slider-input::-webkit-slider-thumb:hover {
-          transform: scale(1.25);
-        }
-
-        /* Firefox Thumb styles */
-        .audio-slider-input::-moz-range-thumb {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: var(--accent-gold);
-          border: 2.5px solid var(--primary-navy);
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-          cursor: pointer;
-          transition: transform 0.1s ease;
-        }
-
-        .audio-slider-input::-moz-range-thumb:hover {
-          transform: scale(1.25);
-        }
-      ` }} />
       {/* Header */}
       <Header 
         title={localizedName} 
@@ -382,57 +414,27 @@ export const PlaceDetailPage: React.FC = () => {
       />
 
       {/* Hero Image */}
-      <div style={{ width: "100%", height: "220px", overflow: "hidden", position: "relative" }}>
+      <div className="detail-hero-wrapper">
         <img 
           src={place.image_url} 
           alt={localizedName} 
           width={375}
           height={220}
           loading="eager"
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          className="detail-hero-img"
         />
 
         {/* Floating Heart Favorite Button */}
         <button
           onClick={handleToggleFavorite}
           disabled={favLoading}
-          style={{ 
-            position: "absolute",
-            top: "16px",
-            right: "16px",
-            background: "rgba(11, 37, 69, 0.75)", 
-            border: "1px solid var(--accent-gold)", 
-            cursor: "pointer", 
-            width: "40px",
-            height: "40px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: isFavorited ? "var(--alert-red)" : "var(--cream-white)",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-            zIndex: 10
-          }}
+          className={`detail-fav-btn ${isFavorited ? "is-favorited" : ""}`}
           aria-label="Thả tim lưu địa danh"
         >
           <Heart size={20} fill={isFavorited ? "var(--alert-red)" : "transparent"} />
         </button>
 
-        <div style={{ 
-          position: "absolute", 
-          bottom: "16px", 
-          left: "16px",
-          backgroundColor: "rgba(11, 37, 69, 0.8)",
-          border: "1px solid var(--accent-gold)",
-          color: "var(--accent-gold)",
-          padding: "4px 10px",
-          borderRadius: "6px",
-          fontSize: "12px",
-          fontWeight: 700,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px"
-        }}>
+        <div className="detail-category-badge">
           <Tag size={12} aria-hidden="true" />
           <span>{getCategoryName(place.category)}</span>
         </div>
@@ -440,24 +442,24 @@ export const PlaceDetailPage: React.FC = () => {
 
       {/* GPS Check-in Area for Stamp Rally */}
       {isLoggedIn && (
-      <div style={{ padding: "16px 16px 0 16px" }}>
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontWeight: 800, fontSize: "14px" }}>
-              <MapPin size={18} style={{ color: "var(--accent-gold)" }} />
+      <div className="detail-gps-container">
+        <div className="glass-card detail-card-content">
+          <div className="detail-gps-header">
+            <div className="detail-gps-title-wrapper">
+              <MapPin size={18} className="gold-text-icon" />
               <span>{language === "en" ? "GPS Heritage Check-in" : language === "km" ? "Check-in បេតិកភណ្ឌ GPS" : "Check-in GPS Di Sản"}</span>
             </div>
             
             {distance !== null && (
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--light-text)" }}>
+              <span className="detail-gps-distance-text">
                 Cách bạn: {distance < 1000 ? `${distance.toFixed(0)}m` : `${(distance / 1000).toFixed(1)}km`}
               </span>
             )}
           </div>
 
           {alreadyStamped && checkinStatus !== "success" ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981", fontSize: "13px", fontWeight: 700, backgroundColor: "rgba(16,185,129,0.08)", padding: "10px", borderRadius: "10px", border: "1px solid rgba(16,185,129,0.2)" }}>
-              <Check size={18} style={{ strokeWidth: 3 }} />
+            <div className="detail-gps-success-box">
+              <Check size={18} className="stroke-width-3" />
               <span>{t("place.checkin.already")}</span>
             </div>
           ) : (
@@ -466,28 +468,15 @@ export const PlaceDetailPage: React.FC = () => {
                 <button
                   onClick={handleCheckin}
                   disabled={checkinStatus === "checking"}
-                  className="submit-btn"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px" }}
+                  className="submit-btn detail-checkin-btn-content"
                 >
                   <MapPin size={16} />
                   <span>{checkinStatus === "checking" ? "..." : t("place.checkin.btn")}</span>
                 </button>
               ) : (
-                <div style={{
-                  padding: "10px",
-                  border: "1.5px dashed rgba(11,37,69,0.2)",
-                  borderRadius: "10px",
-                  backgroundColor: "rgba(0,0,0,0.01)",
-                  fontSize: "12px",
-                  color: "var(--light-text)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  lineHeight: "1.4"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
-                    <AlertCircle size={16} style={{ color: "var(--alert-orange)", flexShrink: 0 }} />
+                <div className="detail-gps-status-box">
+                  <div className="detail-gps-status-left">
+                    <AlertCircle size={16} className="alert-orange-icon" />
                     <span>
                       {gpsLoading ? (
                         language === "en"
@@ -507,18 +496,8 @@ export const PlaceDetailPage: React.FC = () => {
                   {!gpsLoading && (
                     <button
                       type="button"
-                      onClick={requestUserLocation}
-                      style={{
-                        padding: "4px 8px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        backgroundColor: "var(--primary-navy)",
-                        color: "var(--accent-gold)",
-                        border: "1px solid var(--accent-gold)",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap"
-                      }}
+                      onClick={() => requestUserLocation(true)}
+                      className="detail-gps-refresh-btn"
                     >
                       {language === "en" ? "Refresh" : language === "km" ? "ធ្វើបច្ចុប្បន្នភាព" : "Cập nhật"}
                     </button>
@@ -530,14 +509,14 @@ export const PlaceDetailPage: React.FC = () => {
 
           {/* Success Check-in Pop-up Notification */}
           {checkinStatus === "success" && (
-            <div className="fade-in-up" style={{ padding: "12px", backgroundColor: "rgba(16, 185, 129, 0.08)", color: "#10b981", borderRadius: "10px", border: "1.5px solid rgba(16, 185, 129, 0.3)", fontSize: "12.5px" }}>
-              <div style={{ fontWeight: 800, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", color: "#10b981" }}>
-                <Sparkles size={16} style={{ color: "var(--accent-gold)" }} />
+            <div className="detail-gps-success-box fade-in-up">
+              <div className="detail-checkin-success-header">
+                <Sparkles size={16} className="gold-text-icon" />
                 <span>{t("place.checkin.success")}</span>
               </div>
               {rewardGranted && (
-                <div style={{ marginTop: "8px", padding: "8px", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "8px", fontWeight: 700, fontSize: "12px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
-                  <Sparkles size={14} style={{ color: "var(--accent-gold)" }} />
+                <div className="detail-gps-success-reward">
+                  <Sparkles size={14} className="gold-text-icon" />
                   <span>
                     {language === "en" 
                       ? "You have collected all heritage stamps! Memory unlocked!"
@@ -559,21 +538,21 @@ export const PlaceDetailPage: React.FC = () => {
         if (!audioUrl) return null;
         return (
           <div className="audio-player-card">
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <Volume2 size={20} style={{ color: "var(--accent-gold)" }} aria-hidden="true" />
+            <div className="detail-audio-header">
+              <Volume2 size={20} className="gold-text-icon" aria-hidden="true" />
               <div>
-                <h3 style={{ fontSize: "14px", fontWeight: 700, margin: 0 }}>
+                <h3 className="detail-audio-title">
                   {language === "en" ? "Automated Audio Guide" : language === "km" ? "មគ្គុទ្ទេសក៍សំឡេងស្វ័យប្រវត្ត" : "Thuyết minh số tự động (Audio Guide)"}
                 </h3>
-                <p style={{ fontSize: "11px", opacity: 0.8, margin: 0 }}>
+                <p className="detail-audio-subtitle">
                   {language === "en" ? "Listen to the historical narration of this attraction" : language === "km" ? "ស្តាប់ការនិទានប្រវត្តិនៃទីកន្លែងទាក់ទាញនេះ" : "Nghe diễn giải câu chuyện lịch sử di tích"}
                 </p>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}>
-              <span style={{ fontSize: "11px", fontFamily: "monospace", color: "var(--cream-white)" }}>{currentTime}</span>
+            <div className="detail-audio-progress-bar">
+              <span className="detail-audio-time-label">{currentTime}</span>
               <input
                 type="range"
                 min={0}
@@ -583,18 +562,17 @@ export const PlaceDetailPage: React.FC = () => {
                 onChange={handleSeek}
                 className="audio-slider-input"
                 style={{
-                  background: `linear-gradient(to right, var(--accent-gold) 0%, var(--accent-gold) ${progress}%, rgba(255, 255, 255, 0.2) ${progress}%, rgba(255, 255, 255, 0.2) 100%)`
+                  background: `linear-gradient(to right, var(--site-gold) 0%, var(--site-gold) ${progress}%, rgba(255, 255, 255, 0.2) ${progress}%, rgba(255, 255, 255, 0.2) 100%)`
                 }}
               />
-              <span style={{ fontSize: "11px", fontFamily: "monospace", color: "var(--cream-white)" }}>{duration}</span>
+              <span className="detail-audio-time-label">{duration}</span>
             </div>
 
             {/* Controls */}
             <div className="audio-controls">
               <button
-                className="audio-btn"
+                className="audio-btn detail-audio-reset-btn"
                 onClick={handleReset}
-                style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}
                 aria-label={language === "en" ? "Restart audio narration" : "Nghe lại từ đầu"}
               >
                 <RotateCcw size={20} aria-hidden="true" />
@@ -606,23 +584,12 @@ export const PlaceDetailPage: React.FC = () => {
                 aria-label={isPlaying ? (language === "en" ? "Pause" : "Tạm dừng") : (language === "en" ? "Play" : "Phát")}
               >
                 {isPlaying
-                  ? <Pause size={22} style={{ fill: "var(--primary-navy)" }} aria-hidden="true" />
-                  : <Play size={22} style={{ fill: "var(--primary-navy)", marginLeft: "2px" }} aria-hidden="true" />}
+                  ? <Pause size={22} className="fill-navy" aria-hidden="true" />
+                  : <Play size={22} className="fill-navy margin-left-2" aria-hidden="true" />}
               </button>
 
               <button
-                className="audio-btn"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  padding: "0 16px",
-                  borderRadius: "22px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "44px"
-                }}
+                className="audio-btn detail-audio-play-text-btn"
                 onClick={handlePlayPause}
                 aria-label={isPlaying ? (language === "en" ? "Stop" : "Dừng") : (language === "en" ? "Play Narration" : "Nghe thuyết minh")}
               >
@@ -634,34 +601,19 @@ export const PlaceDetailPage: React.FC = () => {
       })()}
 
       {/* Description Text details */}
-      <div style={{ padding: "16px 16px 20px 16px" }}>
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <h2 style={{ fontSize: "16px", color: "var(--primary-navy)", fontWeight: 700, borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: "6px" }}>
+      <div className="detail-section-wrapper">
+        <div className="glass-card detail-card-content">
+          <h2 className="detail-section-title">
             {language === "en" ? "History & Narration" : language === "km" ? "ប្រវត្តិ និងការអធិប្បាយ" : "Lịch sử & Diễn giải di tích"}
           </h2>
-          <p style={{ fontSize: "14px", lineHeight: "1.6", color: "var(--dark-text)", whiteSpace: "pre-line" }}>
+          <p className="detail-body-text">
             {localizedDescription}
           </p>
 
           {/* Deep link button to chat */}
           <button 
             onClick={handleAskAI}
-            style={{
-              marginTop: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              width: "100%",
-              padding: "12px",
-              borderRadius: "10px",
-              backgroundColor: "var(--cream-white)",
-              color: "var(--primary-navy)",
-              border: "2px solid var(--accent-gold)",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
+            className="detail-ai-ask-btn"
           >
             <Bot size={16} />
             <span>

@@ -1,4 +1,4 @@
-# Design System: Chinh phục Núi Bà Đen (Mini App)
+# Design System: Chinh phục Núi Bà Đen (Website)
 
 ## 1. Visual Theme & Atmosphere
 A premium, culturally-attuned mobile interface representing the sacred spiritual heritage of Bà Đen Mountain. The atmosphere is a mixture of digital clarity and traditional elegance ("Sacred Gold & Navy Asymmetric Narrative"). Layouts are asymmetric and narrative-driven (Variance: 6, Density: 5, Motion: 6) with high whitespace usage, soft card corners, and tactile interaction feedback.

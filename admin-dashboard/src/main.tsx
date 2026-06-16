@@ -13,14 +13,23 @@ root.render(
 );
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((registration) => {
-        console.log("Service Worker registered successfully with scope: ", registration.scope);
-      })
-      .catch((error) => {
-        console.error("Service Worker registration failed: ", error);
-      });
-  });
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (let registration of registrations) {
+        registration.unregister();
+        console.log("[PWA] Unregistered Service Worker on localhost for development.");
+      }
+    });
+  } else {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.log("Service Worker registered successfully with scope: ", registration.scope);
+        })
+        .catch((error) => {
+          console.error("Service Worker registration failed: ", error);
+        });
+    });
+  }
 }

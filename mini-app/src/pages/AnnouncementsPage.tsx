@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Header, Page } from "zmp-ui";
+import { Header, Page } from "../components/WebPrimitives";
 import { Bell, ShieldAlert, CloudLightning, Calendar, Info, Search, ChevronDown, ChevronUp } from "lucide-react";
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import { useDragScroll } from "../hooks/useDragScroll";
 
 export const AnnouncementsPage: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -12,6 +13,7 @@ export const AnnouncementsPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { language, t } = useLanguage();
+  const tabsRef = useDragScroll();
 
   useEffect(() => {
     setLoading(true);
@@ -58,35 +60,27 @@ export const AnnouncementsPage: React.FC = () => {
     switch (type) {
       case "emergency":
         return {
-          bg: "rgba(217, 83, 79, 0.1)",
-          color: "var(--alert-red)",
-          border: "1px solid rgba(217, 83, 79, 0.3)",
+          className: "ann-badge-emergency",
           text: language === "km" ? "អាសន្ន" : language === "en" ? "Emergency" : "Khẩn cấp",
-          icon: <ShieldAlert size={14} className="ann-icon-red" />
+          icon: <ShieldAlert size={14} />
         };
       case "weather":
         return {
-          bg: "rgba(240, 173, 78, 0.1)",
-          color: "var(--alert-orange)",
-          border: "1px solid rgba(240, 173, 78, 0.3)",
+          className: "ann-badge-weather",
           text: language === "km" ? "អាកាសធាតុ" : language === "en" ? "Weather" : "Thời tiết",
-          icon: <CloudLightning size={14} className="ann-icon-orange" />
+          icon: <CloudLightning size={14} />
         };
       case "festival":
         return {
-          bg: "rgba(212, 175, 55, 0.1)",
-          color: "var(--accent-gold-dark)",
-          border: "1px solid rgba(212, 175, 55, 0.3)",
+          className: "ann-badge-festival",
           text: language === "km" ? "ពិធីបុណ្យ" : language === "en" ? "Festival" : "Lễ hội",
-          icon: <Calendar size={14} className="ann-icon-gold" />
+          icon: <Calendar size={14} />
         };
       default:
         return {
-          bg: "rgba(19, 64, 116, 0.1)",
-          color: "var(--secondary-blue)",
-          border: "1px solid rgba(19, 64, 116, 0.2)",
-          text: language === "km" ? "សេចក្តីជូនដំណឹង" : language === "en" ? "Notice" : "Thông báo",
-          icon: <Info size={14} className="ann-icon-blue" />
+          className: "ann-badge-general",
+          text: language === "km" ? "សេចក្តីជូនដំណឹង" : language === "en" ? "Notice" : "Thông tin",
+          icon: <Info size={14} />
         };
     }
   };
@@ -111,29 +105,15 @@ export const AnnouncementsPage: React.FC = () => {
       {/* Page Header */}
       <Header
         showBackIcon={true}
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Bell size={20} style={{ stroke: "var(--accent-gold)" }} aria-hidden="true" />
-            <span style={{ color: "var(--accent-gold)", fontWeight: 700 }}>
-              {t("announcements.title").toUpperCase()}
-            </span>
-          </div> as any
-        }
+        title={t("announcements.title")}
       />
 
       {/* Hero Accent */}
-      <div 
-        style={{ 
-          background: "linear-gradient(135deg, var(--primary-navy), var(--secondary-blue))",
-          padding: "20px 16px",
-          color: "var(--cream-white)",
-          borderBottom: "1px solid var(--accent-gold)"
-        }}
-      >
-        <h2 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px 0", color: "var(--accent-gold)" }}>
+      <div className="ann-hero-accent">
+        <h2 className="ann-hero-title">
           {language === "km" ? "ច្រកទ្វារព័ត៌មានផ្លូវការ" : language === "en" ? "Official Information Portal" : "Cổng thông tin chính thức"}
         </h2>
-        <p style={{ fontSize: "12px", opacity: 0.9, margin: 0 }}>
+        <p className="ann-hero-desc">
           {language === "km"
             ? "ការធ្វើបច្ចុប្បន្នភាពតាមពេលវេលាជាក់ស្តែងអំពីកាលវិភាគថែទាំកាប៊ីនឡាន ពិធីបុណ្យវប្បធម៌ និងសុវត្ថិភាពអាកាសធាតុពីគណៈគ្រប់គ្រង។"
             : language === "en"
@@ -143,71 +123,50 @@ export const AnnouncementsPage: React.FC = () => {
       </div>
 
       {/* Filter and Search Section */}
-      <div style={{ padding: "16px 16px 8px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div className="ann-filter-section">
         {/* Search Bar */}
-        <div style={{ position: "relative" }}>
+        <div className="ann-search-wrapper">
           <input
             type="text"
-            className="feedback-input"
+            className="feedback-input ann-search-input"
             placeholder={language === "km" ? "ស្វែងរកសេចក្តីជូនដំណឹង..." : language === "en" ? "Search announcements..." : "Tìm kiếm thông báo..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: "40px" }}
+            enterKeyHint="search"
+            autoComplete="off"
           />
-          <Search 
-            size={18} 
-            style={{ 
-              position: "absolute", 
-              left: "14px", 
-              top: "50%", 
-              transform: "translateY(-50%)", 
-              color: "var(--light-text)" 
-            }} 
-          />
+          <Search size={18} className="ann-search-icon" />
         </div>
 
         {/* Tab Buttons for Types */}
-        <div 
-          style={{ 
-            display: "flex", 
-            gap: "6px", 
-            overflowX: "auto", 
-            paddingBottom: "4px",
-            scrollbarWidth: "none"
-          }}
-        >
+        <div className="ann-tabs-scroll" ref={tabsRef}>
           <button 
             onClick={() => setSelectedType("all")}
-            className={`tab-btn ${selectedType === "all" ? "tab-btn-active" : ""}`}
-            style={{ minWidth: "75px", padding: "8px" }}
+            className={`tab-btn ann-tab-btn-override ${selectedType === "all" ? "tab-btn-active" : ""}`}
           >
             {t("places.all")}
           </button>
           <button 
             onClick={() => setSelectedType("emergency")}
-            className={`tab-btn ${selectedType === "emergency" ? "tab-btn-active" : ""}`}
-            style={{ minWidth: "90px", padding: "8px" }}
+            className={`tab-btn ann-tab-btn-override ${selectedType === "emergency" ? "tab-btn-active" : ""}`}
           >
             {language === "km" ? "អាសន្ន" : language === "en" ? "Emergency" : "Khẩn cấp"}
           </button>
           <button 
             onClick={() => setSelectedType("weather")}
-            className={`tab-btn ${selectedType === "weather" ? "tab-btn-active" : ""}`}
-            style={{ minWidth: "90px", padding: "8px" }}
+            className={`tab-btn ann-tab-btn-override ${selectedType === "weather" ? "tab-btn-active" : ""}`}
           >
             {language === "km" ? "អាកាសធាតុ" : language === "en" ? "Weather" : "Thời tiết"}
           </button>
           <button 
             onClick={() => setSelectedType("festival")}
-            className={`tab-btn ${selectedType === "festival" ? "tab-btn-active" : ""}`}
-            style={{ minWidth: "80px", padding: "8px" }}
+            className={`tab-btn ann-tab-btn-override ${selectedType === "festival" ? "tab-btn-active" : ""}`}
           >
             {language === "km" ? "ពិធីបុណ្យ" : language === "en" ? "Festival" : "Lễ hội"}
           </button>
           <button 
             onClick={() => setSelectedType("general")}
-            className={`tab-btn ${selectedType === "general" ? "tab-btn-active" : ""}`}
-            style={{ minWidth: "85px", padding: "8px" }}
+            className={`tab-btn ann-tab-btn-override ${selectedType === "general" ? "tab-btn-active" : ""}`}
           >
             {language === "km" ? "សេចក្តីជូនដំណឹង" : language === "en" ? "Notice" : "Thông tin"}
           </button>
@@ -215,23 +174,16 @@ export const AnnouncementsPage: React.FC = () => {
       </div>
 
       {/* Announcements List */}
-      <div style={{ padding: "8px 16px 24px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div className="ann-list-container">
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "var(--light-text)" }}>
-            <div className="spinner" style={{ margin: "0 auto 12px auto" }}></div>
+          <div className="ann-loading-box">
+            <div className="spinner ann-loading-spinner"></div>
             <span>{t("common.loading")}</span>
           </div>
         ) : filteredAnns.length === 0 ? (
-          <div 
-            className="glass-card" 
-            style={{ 
-              textAlign: "center", 
-              padding: "40px 20px", 
-              color: "var(--light-text)" 
-            }}
-          >
-            <Bell size={32} style={{ stroke: "rgba(11, 37, 69, 0.2)", marginBottom: "12px" }} />
-            <p style={{ margin: 0, fontWeight: 600 }}>
+          <div className="glass-card ann-empty-card">
+            <Bell size={32} className="ann-empty-icon" />
+            <p className="ann-empty-text">
               {language === "km" ? "រកមិនឃើញសេចក្តីជូនដំណឹងដែលត្រូវគ្នាទេ" : language === "en" ? "No matching announcements found" : "Không tìm thấy thông báo nào phù hợp"}
             </p>
           </div>
@@ -245,14 +197,8 @@ export const AnnouncementsPage: React.FC = () => {
             return (
               <div 
                 key={ann.id} 
-                className="glass-card fade-in-up" 
+                className={`glass-card fade-in-up ann-card ann-card-${ann.type}`} 
                 style={{ 
-                  padding: "16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  borderLeft: `4px solid ${badge.color}`,
-                  cursor: "pointer",
                   animationDelay: `${index * 0.05}s`
                 }}
                 onClick={() => toggleExpand(ann.id)}
@@ -267,52 +213,34 @@ export const AnnouncementsPage: React.FC = () => {
                 aria-expanded={isExpanded}
               >
                 {/* Announcement Top Info */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div 
-                    style={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      gap: "6px",
-                      backgroundColor: badge.bg,
-                      color: badge.color,
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      border: badge.border
-                    }}
-                  >
+                <div className="ann-card-header">
+                  <div className={`ann-card-badge ${badge.className}`}>
                     {badge.icon}
                     <span>{badge.text}</span>
                   </div>
-                  <span style={{ fontSize: "11px", color: "var(--light-text)", fontWeight: 500 }}>
+                  <span className="ann-card-date">
                     {formatDate(ann.published_at)}
                   </span>
                 </div>
 
                 {/* Title */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
-                  <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--primary-navy)", lineHeight: 1.4 }}>
+                <div className="ann-card-title-row">
+                  <h3 className="ann-card-title">
                     {titleText}
                   </h3>
                   {isExpanded ? (
-                    <ChevronUp size={18} style={{ color: "var(--light-text)", flexShrink: 0 }} />
+                    <ChevronUp size={18} className="ann-card-arrow" />
                   ) : (
-                    <ChevronDown size={18} style={{ color: "var(--light-text)", flexShrink: 0 }} />
+                    <ChevronDown size={18} className="ann-card-arrow" />
                   )}
                 </div>
 
                 {/* Content */}
                 <div 
+                  className="ann-card-content"
                   style={{ 
-                    fontSize: "13.5px", 
-                    color: "var(--dark-text)", 
-                    lineHeight: 1.5,
-                    overflow: "hidden",
                     maxHeight: isExpanded ? "500px" : "40px",
                     transition: "max-height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
-                    opacity: 0.9,
-                    marginTop: "4px"
                   }}
                 >
                   {contentText}

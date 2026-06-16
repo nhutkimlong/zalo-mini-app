@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { User, LogOut, Award, Heart, Check, Lock, Edit2, Save, X, Phone, Mail, Camera } from "lucide-react";
-import { Header, Page } from "zmp-ui";
+import { Header, Page } from "../components/WebPrimitives";
 import api, { TouristPlace, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -24,6 +24,8 @@ export const ProfilePage: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
+  const [authFieldErrors, setAuthFieldErrors] = useState<Record<string, string>>({});
+  const [profileNotice, setProfileNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   
   // Profile Edit State
   const [isEditing, setIsEditing] = useState(false);
@@ -38,6 +40,19 @@ export const ProfilePage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const authSubmitLabel = authLoading
+    ? language === "en" ? "Processing..." : "Đang xử lý..."
+    : authMode === "login"
+      ? language === "en" ? "Log In" : "Đăng nhập"
+      : language === "en" ? "Create Account" : "Tạo tài khoản";
+
+  const switchAuthMode = (mode: "login" | "signup") => {
+    setAuthMode(mode);
+    setAuthError("");
+    setAuthMessage("");
+    setAuthFieldErrors({});
+  };
+
   const fetchProfileData = async () => {
     setLoading(true);
     try {
@@ -47,7 +62,7 @@ export const ProfilePage: React.FC = () => {
       setEditName(prof ? prof.name || "" : "");
       setEditPhone(prof ? prof.phone || "" : "");
       
-      // Fetch favorites, stamps, itineraries, badge rules, leaderboard, and all places concurrently (instant Direct Supabase)
+      // Fetch favorites, stamps, itineraries, badge rules, leaderboard, and all places concurrently
       const [favs, stps, itins, bdgs, ldrbd, pls] = await Promise.all([
         api.getMyFavorites(),
         api.getMyStamps(),
@@ -98,29 +113,54 @@ export const ProfilePage: React.FC = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    const nextErrors: Record<string, string> = {};
+
+    if (authMode === "signup" && trimmedName.length < 2) {
+      nextErrors.name = language === "en" ? "Enter your full name." : "Vui lòng nhập họ và tên.";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      nextErrors.email = language === "en" ? "Enter a valid email address." : "Email chưa đúng định dạng.";
+    }
+
+    if (password.length < 6) {
+      nextErrors.password = language === "en" ? "Password must be at least 6 characters." : "Mật khẩu tối thiểu 6 ký tự.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setAuthFieldErrors(nextErrors);
+      setAuthError(language === "en" ? "Please check the highlighted fields." : "Vui lòng kiểm tra các trường được đánh dấu.");
+      return;
+    }
+
     setAuthLoading(true);
     setAuthError("");
     setAuthMessage("");
+    setAuthFieldErrors({});
     
     try {
       if (authMode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
         if (error) throw error;
         setAuthMessage("Đăng nhập thành công!");
       } else {
         const signUpRes = await supabase.auth.signUp({
-          email,
+          email: trimmedEmail,
           password,
           options: {
-            data: { name }
+            data: { name: trimmedName }
           }
         });
         if (signUpRes.error) throw signUpRes.error;
         
-        // If not logged in immediately (no session), auto sign in
         if (!signUpRes.data.session) {
-          const signInRes = await supabase.auth.signInWithPassword({ email, password });
-          if (signInRes.error) throw signInRes.error;
+          setAuthMode("login");
+          setAuthMessage(language === "en"
+            ? "Account created. Please check your email if confirmation is required, then log in."
+            : "Tài khoản đã được tạo. Nếu hệ thống yêu cầu xác nhận, vui lòng kiểm tra email rồi đăng nhập.");
+          return;
         }
         
         setAuthMessage("Đăng ký và đăng nhập thành công!");
@@ -132,7 +172,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
@@ -140,6 +179,7 @@ export const ProfilePage: React.FC = () => {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditLoading(true);
+    setProfileNotice(null);
     
     try {
       // 1. Update Profile fields
@@ -169,6 +209,7 @@ export const ProfilePage: React.FC = () => {
       }
       
       setIsEditing(false);
+      setProfileNotice({ type: "success", message: language === "en" ? "Profile updated successfully." : "Đã cập nhật hồ sơ." });
     } catch (err: any) {
       alert((language === "en" ? "Error" : "Lỗi") + ": " + err.message);
     } finally {
@@ -183,6 +224,7 @@ export const ProfilePage: React.FC = () => {
     try {
       const res = await api.uploadAvatar(file);
       setProfile((prev: any) => ({ ...prev, avatar_url: res.avatar_url }));
+      setProfileNotice({ type: "success", message: language === "en" ? "Avatar updated." : "Đã cập nhật ảnh đại diện." });
     } catch (err: any) {
       alert("Lỗi tải ảnh đại diện: " + err.message);
     } finally {
@@ -190,17 +232,25 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-
   // Check if a specific place is stamped
   const isPlaceStamped = (slug: string) => {
     return stamps.some(s => s.place_slug === slug);
+  };
+
+  const getCategoryName = (cat: string) => {
+    switch (cat) {
+      case "tam_linh": return t("places.tam_linh");
+      case "phong_canh": return t("places.phong_canh");
+      case "dich_vu": return t("places.dich_vu");
+      default: return cat.replace("_", " ");
+    }
   };
 
   if (loading) {
     return (
       <Page>
         <Header title={t("nav.profile")} showBackIcon={false} />
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 120px)", color: "var(--primary-navy)" }}>
+        <div className="profile-loading-box">
           <div className="common-loading">{t("common.loading")}</div>
         </div>
       </Page>
@@ -212,20 +262,20 @@ export const ProfilePage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.profile")} showBackIcon={false} />
-        <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="profile-logged-out-wrapper">
           
-          <div className="glass-card fade-in-up stagger-1" style={{ display: "flex", flexDirection: "column", gap: "16px", borderLeft: "4px solid var(--accent-gold)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "var(--primary-navy)" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "rgba(212,175,55,0.15)", color: "var(--accent-gold)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="glass-card fade-in-up stagger-1 profile-intro-card">
+            <div className="profile-intro-header">
+              <div className="profile-intro-icon-circle">
                 <User size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: "16px", fontWeight: 800 }}>{t("profile.title")}</h2>
-                <p style={{ fontSize: "12px", color: "var(--light-text)" }}>{t("profile.logged_out")}</p>
+                <h2 className="profile-intro-title">{t("profile.title")}</h2>
+                <p className="profile-intro-subtitle">{t("profile.logged_out")}</p>
               </div>
             </div>
             
-            <p style={{ fontSize: "13px", color: "var(--light-text)", margin: 0 }}>
+            <p className="profile-intro-desc">
               {language === "km" 
                 ? "សូមចូលគណនីរបស់អ្នកដើម្បីចូលរួមដំណើរការប្រមូលត្រាសញ្ញាបេតិកភណ្ឌ (Stamp Rally) និងចូលចិត្តទីកន្លែងដែលអ្នកស្រឡាញ់ដើម្បីរក្សាទុកការចងចាំដ៏ល្អរបស់អ្នក!"
                 : language === "en"
@@ -235,99 +285,103 @@ export const ProfilePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="glass-card fade-in-up stagger-2" style={{ padding: "20px" }}>
-            <div style={{ display: "flex", borderBottom: "1px solid rgba(11,37,69,0.1)", marginBottom: "18px" }}>
+          <div className="glass-card fade-in-up stagger-2 profile-auth-card">
+            <div className="profile-auth-tabs">
               <button 
-                onClick={() => setAuthMode("login")}
-                style={{ 
-                  flex: 1, 
-                  padding: "10px", 
-                  background: "transparent", 
-                  border: "none", 
-                  fontWeight: 700, 
-                  color: authMode === "login" ? "var(--primary-navy)" : "var(--light-text)",
-                  borderBottom: authMode === "login" ? "3px solid var(--accent-gold)" : "none",
-                  cursor: "pointer"
-                }}
+                type="button"
+                onClick={() => switchAuthMode("login")}
+                className={`profile-auth-tab-btn ${authMode === "login" ? "is-active" : ""}`}
               >
                 {language === "en" ? "LOG IN" : "ĐĂNG NHẬP"}
               </button>
               <button 
-                onClick={() => setAuthMode("signup")}
-                style={{ 
-                  flex: 1, 
-                  padding: "10px", 
-                  background: "transparent", 
-                  border: "none", 
-                  fontWeight: 700, 
-                  color: authMode === "signup" ? "var(--primary-navy)" : "var(--light-text)",
-                  borderBottom: authMode === "signup" ? "3px solid var(--accent-gold)" : "none",
-                  cursor: "pointer"
-                }}
+                type="button"
+                onClick={() => switchAuthMode("signup")}
+                className={`profile-auth-tab-btn ${authMode === "signup" ? "is-active" : ""}`}
               >
                 {language === "en" ? "SIGN UP" : "ĐĂNG KÝ KHÁCH"}
               </button>
             </div>
 
             {authError && (
-              <div style={{ padding: "10px", backgroundColor: "rgba(217, 83, 79, 0.1)", color: "var(--alert-red)", borderRadius: "8px", fontSize: "12px", marginBottom: "12px", border: "1px solid rgba(217, 83, 79, 0.2)" }}>
+              <div className="profile-auth-form-error" role="alert" aria-live="polite">
                 {authError}
               </div>
             )}
 
             {authMessage && (
-              <div style={{ padding: "10px", backgroundColor: "rgba(16, 185, 129, 0.1)", color: "green", borderRadius: "8px", fontSize: "12px", marginBottom: "12px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+              <div className="profile-auth-form-message" role="status" aria-live="polite">
                 {authMessage}
               </div>
             )}
 
-            <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <form onSubmit={handleAuth} className="profile-auth-form" noValidate>
               {authMode === "signup" && (
                 <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, marginBottom: "4px", color: "var(--primary-navy)" }}>
+                  <label className="profile-auth-label">
                     {language === "en" ? "FULL NAME" : "HỌ VÀ TÊN"}
                   </label>
                   <input 
+                    id="profile-auth-name"
                     type="text" 
+                    name="name"
                     className="feedback-input" 
                     value={name} 
                     onChange={e => setName(e.target.value)} 
+                    autoComplete="name"
+                    aria-invalid={!!authFieldErrors.name}
                     placeholder={language === "en" ? "John Doe" : "Nguyễn Văn A"}
                     required 
+                    enterKeyHint="next"
                   />
+                  {authFieldErrors.name && <div className="profile-auth-field-error">{authFieldErrors.name}</div>}
                 </div>
               )}
               
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, marginBottom: "4px", color: "var(--primary-navy)" }}>
+                <label className="profile-auth-label">
                   EMAIL
                 </label>
                 <input 
+                  id="profile-auth-email"
                   type="email" 
+                  name="email"
                   className="feedback-input" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
+                  autoComplete="email"
+                  inputMode="email"
+                  spellCheck={false}
+                  aria-invalid={!!authFieldErrors.email}
                   placeholder="name@example.com"
                   required 
+                  enterKeyHint="next"
                 />
+                {authFieldErrors.email && <div className="profile-auth-field-error">{authFieldErrors.email}</div>}
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, marginBottom: "4px", color: "var(--primary-navy)" }}>
+                <label className="profile-auth-label">
                   {language === "en" ? "PASSWORD" : "MẬT KHẨU"}
                 </label>
                 <input 
+                  id="profile-auth-password"
                   type="password" 
+                  name={authMode === "login" ? "current-password" : "new-password"}
                   className="feedback-input" 
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
+                  autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                  aria-invalid={!!authFieldErrors.password}
                   placeholder="••••••••"
                   required 
+                  enterKeyHint="done"
                 />
+                {authFieldErrors.password && <div className="profile-auth-field-error">{authFieldErrors.password}</div>}
               </div>
 
-              <button className="submit-btn" type="submit" disabled={authLoading} style={{ marginTop: "8px" }}>
-                {authLoading ? "..." : authMode === "login" ? t("profile.login_btn") : t("profile.login_btn")}
+              <button className="submit-btn profile-auth-submit-btn" type="submit" disabled={authLoading}>
+                {authSubmitLabel}
               </button>
             </form>
 
@@ -378,19 +432,10 @@ export const ProfilePage: React.FC = () => {
     }
   }
 
-  const getCategoryName = (cat: string) => {
-    switch (cat) {
-      case "tam_linh": return t("places.tam_linh");
-      case "phong_canh": return t("places.phong_canh");
-      case "dich_vu": return t("places.dich_vu");
-      default: return cat.replace("_", " ");
-    }
-  };
-
   return (
     <Page>
       <Header title={t("nav.profile")} showBackIcon={false} />
-      <div className="page-container" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div className="profile-page-container">
         
         {/* Hidden Avatar input */}
         <input 
@@ -398,111 +443,93 @@ export const ProfilePage: React.FC = () => {
           ref={avatarInputRef} 
           onChange={handleAvatarChange} 
           accept="image/*" 
-          style={{ display: "none" }} 
+          className="hidden-input" 
         />
 
+        {profileNotice && (
+          <div
+            className={`profile-notice profile-notice-${profileNotice.type}`}
+            role={profileNotice.type === "error" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {profileNotice.message}
+          </div>
+        )}
+
         {/* User Card */}
-        <div className="glass-card fade-in-up stagger-1" style={{ display: "flex", flexDirection: "column", gap: "16px", border: "1.5px solid var(--accent-gold)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", width: "100%" }}>
+        <div className="glass-card fade-in-up stagger-1 profile-user-card">
+          <div className="profile-user-card-top">
+            <div className="profile-user-card-info-row">
               
               {/* Interactive Avatar Container */}
-              <div 
+              <button 
+                type="button"
                 onClick={() => !avatarLoading && avatarInputRef.current?.click()}
-                style={{
-                  position: "relative",
-                  cursor: avatarLoading ? "default" : "pointer",
-                  transition: "all 0.2s"
-                }}
+                className={`profile-avatar-wrapper ${avatarLoading ? "is-loading" : ""}`}
+                disabled={avatarLoading}
+                aria-label={language === "en" ? "Change avatar" : "Đổi ảnh đại diện"}
                 title={language === "en" ? "Change Avatar" : "Đổi ảnh đại diện"}
               >
-                <div style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--primary-navy)",
-                  color: "var(--accent-gold)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "2px solid var(--accent-gold)",
-                  fontWeight: 800,
-                  fontSize: "20px",
-                  overflow: "hidden"
-                }}>
+                <div className="profile-avatar-circle">
                   {avatarLoading ? (
-                    <div style={{ fontSize: "10px", color: "var(--accent-gold)" }}>...</div>
+                    <div className="profile-avatar-loading-text">...</div>
                   ) : profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={profile.avatar_url} alt="Avatar" className="profile-avatar-img" />
                   ) : (
                     profile.name ? profile.name.charAt(0).toUpperCase() : "U"
                   )}
                 </div>
                 {!avatarLoading && (
-                  <div style={{
-                    position: "absolute",
-                    bottom: "-2px",
-                    right: "-2px",
-                    backgroundColor: "var(--accent-gold)",
-                    color: "var(--primary-navy)",
-                    borderRadius: "50%",
-                    width: "20px",
-                    height: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "1.5px solid white",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.15)"
-                  }}>
-                    <Camera size={10} style={{ strokeWidth: 3 }} />
+                  <div className="profile-avatar-camera-badge">
+                    <Camera size={10} className="stroke-width-3" />
                   </div>
                 )}
-              </div>
+              </button>
               
               {!isEditing ? (
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--primary-navy)", margin: 0 }}>
+                <div className="profile-details-wrapper">
+                  <h3 className="profile-details-name">
                     {profile.name || (language === "en" ? "Guest Tourist" : language === "km" ? "ភ្ញៀវទេសចរ" : "Khách du lịch")}
                   </h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginTop: "4px" }}>
+                  <div className="profile-details-contacts">
                     {profile.phone && (
-                      <span style={{ fontSize: "12px", color: "var(--light-text)", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span className="profile-details-contact-item">
                         <Phone size={12} /> {profile.phone}
                       </span>
                     )}
                     {profile.email && (
-                      <span style={{ fontSize: "12px", color: "var(--light-text)", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span className="profile-details-contact-item">
                         <Mail size={12} /> {profile.email}
                       </span>
                     )}
                   </div>
-                  <span className="badge badge-info" style={{ display: "inline-block", marginTop: "8px", fontSize: "10px", padding: "2px 8px", backgroundColor: "rgba(11,37,69,0.06)", color: "var(--primary-navy)", borderRadius: "10px", border: "1px solid rgba(11,37,69,0.1)", fontWeight: 700 }}>
-                    {profile.link_type || "Zalo Mini App"}
+                  <span className="profile-details-badge">
+                    {profile.link_type || "Email / Supabase"}
                   </span>
                 </div>
               ) : (
-                <form onSubmit={handleUpdateProfile} style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                <form onSubmit={handleUpdateProfile} className="profile-edit-form">
                   <input 
                     type="text" 
-                    className="feedback-input" 
+                    className="feedback-input profile-edit-input" 
                     value={editName} 
                     onChange={e => setEditName(e.target.value)} 
                     placeholder={language === "en" ? "Full name" : language === "km" ? "ឈ្មោះពេញ" : "Họ và tên"}
-                    style={{ padding: "6px 10px", fontSize: "13px" }}
                     required 
+                    enterKeyHint="next"
                   />
                   <input 
                     type="text" 
-                    className="feedback-input" 
+                    className="feedback-input profile-edit-input" 
                     value={editPhone} 
                     onChange={e => setEditPhone(e.target.value)} 
                     placeholder={language === "en" ? "Phone number" : language === "km" ? "លេខទូរស័ព្ទ" : "Số điện thoại"}
-                    style={{ padding: "6px 10px", fontSize: "13px" }}
+                    enterKeyHint="next"
                   />
                   
                   {/* Collapsible Password Change Section */}
-                  <div style={{ marginTop: "6px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--primary-navy)", cursor: "pointer" }}>
+                  <div className="profile-pw-checkbox-wrapper">
+                    <label className="profile-pw-label">
                       <input 
                         type="checkbox" 
                         checked={showPasswordChange} 
@@ -512,34 +539,34 @@ export const ProfilePage: React.FC = () => {
                     </label>
                     
                     {showPasswordChange && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px", paddingLeft: "16px", borderLeft: "2px solid var(--accent-gold)" }}>
+                      <div className="profile-pw-fields">
                         <input 
                           type="password" 
-                          className="feedback-input" 
+                          className="feedback-input profile-pw-input" 
                           value={newPassword} 
                           onChange={e => setNewPassword(e.target.value)} 
                           placeholder={language === "en" ? "New password (min 6 chars)" : language === "km" ? "លេខសម្ងាត់ថ្មី (យ៉ាងហោចណាស់ ៦ ខ្ទង់)" : "Mật khẩu mới (tối thiểu 6 ký tự)"}
-                          style={{ padding: "6px 10px", fontSize: "12px" }}
                           required={showPasswordChange}
+                          enterKeyHint="next"
                         />
                         <input 
                           type="password" 
-                          className="feedback-input" 
+                          className="feedback-input profile-pw-input" 
                           value={confirmPassword} 
                           onChange={e => setConfirmPassword(e.target.value)} 
                           placeholder={language === "en" ? "Confirm new password" : language === "km" ? "បញ្ជាក់លេខសម្ងាត់ថ្មី" : "Nhập lại mật khẩu mới"}
-                          style={{ padding: "6px 10px", fontSize: "12px" }}
                           required={showPasswordChange}
+                          enterKeyHint="done"
                         />
                       </div>
                     )}
                   </div>
 
-                  <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
-                    <button className="submit-btn" type="submit" disabled={editLoading} style={{ padding: "6px 12px", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px", width: "auto" }}>
+                  <div className="profile-edit-actions">
+                    <button className="submit-btn profile-save-btn" type="submit" disabled={editLoading}>
                       <Save size={14} /> {language === "en" ? "Save" : language === "km" ? "រក្សាទុក" : "Lưu"}
                     </button>
-                    <button type="button" onClick={() => { setIsEditing(false); setShowPasswordChange(false); }} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "10px", border: "1px solid rgba(0,0,0,0.15)", backgroundColor: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <button type="button" onClick={() => { setIsEditing(false); setShowPasswordChange(false); }} className="profile-cancel-btn">
                       <X size={14} /> {language === "en" ? "Cancel" : language === "km" ? "បោះបង់" : "Hủy"}
                     </button>
                   </div>
@@ -550,7 +577,7 @@ export const ProfilePage: React.FC = () => {
             {!isEditing && (
               <button 
                 onClick={() => setIsEditing(true)}
-                style={{ background: "transparent", border: "none", color: "var(--accent-gold-dark)", cursor: "pointer", padding: "4px" }}
+                className="profile-edit-btn"
                 aria-label={language === "en" ? "Edit Profile" : language === "km" ? "កែសម្រួលព័ត៌មាន" : "Sửa hồ sơ"}
               >
                 <Edit2 size={16} />
@@ -560,95 +587,52 @@ export const ProfilePage: React.FC = () => {
 
           {/* Gamification Stats Block (Premium UI) */}
           {profile && (
-            <div style={{
-              marginTop: "4px",
-              padding: "12px",
-              backgroundColor: "rgba(11,37,69,0.03)",
-              borderRadius: "12px",
-              border: "1px solid rgba(212,175,55,0.15)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px"
-            }}>
+            <div className="profile-journey-stats-card">
               {/* Title & Level */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Award size={16} style={{ color: "var(--accent-gold)" }} />
-                  <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--primary-navy)" }}>
+              <div className="profile-journey-stats-header">
+                <div className="profile-journey-title-wrapper">
+                  <Award size={16} className="gold-text-icon" />
+                  <span className="profile-xp-title">
                     {title}
                   </span>
                 </div>
-                <span style={{ 
-                  fontSize: "11px", 
-                  fontWeight: 800, 
-                  color: "var(--primary-navy)",
-                  backgroundColor: "rgba(212,175,55,0.15)",
-                  padding: "2px 8px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--accent-gold)"
-                }}>
+                <span className="profile-journey-level-badge">
                   {language === "en" ? `Level ${level}` : language === "km" ? `កម្រិត ${level}` : `Cấp ${level}`}
                 </span>
               </div>
               
               {/* XP Progress Bar */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", fontWeight: 700, color: "var(--light-text)" }}>
+              <div className="profile-xp-progress-wrapper">
+                <div className="profile-xp-text-row">
                   <span>XP: {xp} / {nextLevelXp}</span>
                   <span>{Math.round((xp / nextLevelXp) * 100)}%</span>
                 </div>
-                <div style={{ 
-                  width: "100%", 
-                  height: "8px", 
-                  backgroundColor: "rgba(0,0,0,0.05)", 
-                  borderRadius: "4px",
-                  overflow: "hidden"
-                }}>
-                  <div style={{ 
-                    width: `${Math.min(100, (xp / nextLevelXp) * 100)}%`, 
-                    height: "100%", 
-                    background: "linear-gradient(90deg, var(--accent-gold), #eab308)",
-                    borderRadius: "4px",
-                    transition: "width 0.5s ease-out"
-                  }} />
+                <div className="profile-xp-progress-bar">
+                  <div 
+                    className="profile-xp-progress-fill" 
+                    style={{ width: `${Math.min(100, (xp / nextLevelXp) * 100)}%` }} 
+                  />
                 </div>
               </div>
 
               {/* Detailed Achievements counts */}
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "repeat(3, 1fr)", 
-                gap: "8px", 
-                fontSize: "10px", 
-                fontWeight: 700, 
-                color: "var(--primary-navy)",
-                textAlign: "center",
-                marginTop: "4px",
-                borderTop: "1px dashed rgba(11,37,69,0.08)",
-                paddingTop: "6px"
-              }}>
+              <div className="profile-achievements-row">
                 <div>
-                  <span style={{ display: "block", fontSize: "12px", fontWeight: 850, color: "var(--accent-gold-dark)" }}>{stampsCount}/{allPlaces.length}</span>
-                  <span style={{ color: "var(--light-text)" }}>{language === "en" ? "Stamps" : language === "km" ? "ត្រាសញ្ញា" : "Dấu ấn"}</span>
+                  <span className="profile-achievement-val">{stampsCount}/{allPlaces.length}</span>
+                  <span className="profile-achievement-label">{language === "en" ? "Stamps" : language === "km" ? "ត្រាសញ្ញា" : "Dấu ấn"}</span>
                 </div>
                 <div>
-                  <span style={{ display: "block", fontSize: "12px", fontWeight: 850, color: "var(--accent-gold-dark)" }}>{favoritesCount}</span>
-                  <span style={{ color: "var(--light-text)" }}>{language === "en" ? "Favorites" : language === "km" ? "ចូលចិត្ត" : "Yêu thích"}</span>
+                  <span className="profile-achievement-val">{favoritesCount}</span>
+                  <span className="profile-achievement-label">{language === "en" ? "Favorites" : language === "km" ? "ចូលចិត្ត" : "Yêu thích"}</span>
                 </div>
                 <div>
-                  <span style={{ display: "block", fontSize: "12px", fontWeight: 850, color: "var(--accent-gold-dark)" }}>{itinerariesCount}</span>
-                  <span style={{ color: "var(--light-text)" }}>{language === "en" ? "Itineraries" : language === "km" ? "កម្មវិធីដំណើរ" : "Lịch trình"}</span>
+                  <span className="profile-achievement-val">{itinerariesCount}</span>
+                  <span className="profile-achievement-label">{language === "en" ? "Itineraries" : language === "km" ? "កម្មវិធីដំណើរ" : "Lịch trình"}</span>
                 </div>
               </div>
               
               {/* How to level up tip */}
-              <div style={{ 
-                fontSize: "9px", 
-                color: "var(--light-text)", 
-                fontStyle: "italic", 
-                textAlign: "center",
-                marginTop: "2px"
-              }}>
+              <div className="profile-achievement-tip">
                 {language === "en" 
                   ? "* Stamps = 1000 XP | Favorites = 100 XP | Itineraries = 200 XP" 
                   : language === "km"
@@ -658,21 +642,8 @@ export const ProfilePage: React.FC = () => {
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", borderTop: "1px dashed rgba(11,37,69,0.1)", paddingTop: "12px" }}>
-            <button 
-              onClick={handleSignOut}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--alert-red)",
-                fontWeight: 700,
-                fontSize: "12px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px"
-              }}
-            >
+          <div className="profile-signout-row">
+            <button onClick={handleSignOut} className="profile-signout-btn">
               <LogOut size={14} />
               {t("profile.logout_btn")}
             </button>
@@ -681,11 +652,11 @@ export const ProfilePage: React.FC = () => {
 
         {/* Stamp Rally Collection Card */}
         <div className="glass-card fade-in-up stagger-2">
-          <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", fontWeight: 800, marginBottom: "4px" }}>
-            <Award size={18} style={{ color: "var(--accent-gold)" }} />
+          <h3 className="profile-section-title">
+            <Award size={18} className="gold-text-icon" />
             <span>{t("profile.stamps")}</span>
           </h3>
-          <p style={{ fontSize: "12px", color: "var(--light-text)", marginBottom: "16px" }}>
+          <p className="profile-section-subtitle">
             {language === "en" 
               ? `Collected ${stamps.length}/${allPlaces.length} heritage stamps`
               : language === "km"
@@ -693,7 +664,7 @@ export const ProfilePage: React.FC = () => {
                 : `Đã tích lũy được ${stamps.length}/${allPlaces.length} dấu ấn`}
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+          <div className="profile-stamp-grid">
             {allPlaces.map((place, idx) => {
               const collected = isPlaceStamped(place.slug);
               const localizedName = language === "km" && place.name_km 
@@ -709,43 +680,20 @@ export const ProfilePage: React.FC = () => {
               return (
                 <div 
                   key={place.id}
-                  className={`fade-in-up stagger-${idx % 3 + 1}`}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    padding: "12px 6px",
-                    borderRadius: "14px",
-                    border: `1.5px solid ${collected ? "var(--accent-gold)" : "rgba(11,37,69,0.1)"}`,
-                    background: collected ? "linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.02))" : "rgba(0,0,0,0.02)",
-                    position: "relative",
-                    opacity: collected ? 1 : 0.65,
-                    transition: "all 0.3s ease"
-                  }}
+                  className={`profile-stamp-card fade-in-up stagger-${idx % 3 + 1} ${collected ? "is-collected" : "is-locked"}`}
                   title={localizedName}
                 >
-                  <div style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    backgroundColor: collected ? "var(--accent-gold)" : "#cbd5e1",
-                    color: collected ? "var(--primary-navy)" : "#94a3b8",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: collected ? "0 4px 8px rgba(212, 175, 55, 0.2)" : "none",
-                    marginBottom: "6px"
-                  }}>
+                  <div className={`profile-stamp-badge-circle ${collected ? "is-collected" : "is-locked"}`}>
                     {collected ? (
-                      <Check size={20} style={{ strokeWidth: 3 }} />
+                      <Check size={20} className="stroke-width-3" />
                     ) : (
                       <Lock size={14} />
                     )}
                   </div>
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--primary-navy)", textAlign: "center", minHeight: "30px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="profile-stamp-name">
                     {displayName}
                   </span>
-                  <span style={{ fontSize: "8px", color: "var(--light-text)", marginTop: "2px", textTransform: "uppercase", fontWeight: 650 }}>
+                  <span className="profile-stamp-status-badge">
                     {collected ? (language === "en" ? "STAMPED" : language === "km" ? "បានទទួល" : "ĐÃ CÓ") : (language === "en" ? "LOCKED" : language === "km" ? "មិនទាន់មាន" : "CHƯA CÓ")}
                   </span>
                 </div>
@@ -756,42 +704,18 @@ export const ProfilePage: React.FC = () => {
 
         {/* Heritage Journey Completed - Congrats Card */}
         {stamps.length >= 3 && (
-          <div 
-            className="glass-card fade-in-up" 
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "10px",
-              padding: "16px",
-              borderRadius: "14px",
-              border: "2.5px solid var(--accent-gold)",
-              background: "linear-gradient(135deg, var(--primary-navy), var(--secondary-blue))",
-              color: "var(--cream-white)",
-              textAlign: "center"
-            }}
-          >
-            <div style={{
-              width: "50px",
-              height: "50px",
-              borderRadius: "50%",
-              backgroundColor: "var(--accent-gold)",
-              color: "var(--primary-navy)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "4px"
-            }}>
+          <div className="glass-card fade-in-up profile-journey-complete-card">
+            <div className="profile-journey-icon-circle">
               <Award size={30} />
             </div>
-            <h4 style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: "var(--accent-gold)" }}>
+            <h4 className="profile-journey-title">
               {language === "en" 
                 ? "HERITAGE JOURNEY PROGRESS" 
                 : language === "km" 
                   ? "វឌ្ឍនភាពធ្វើដំណើរ" 
                   : "HÀNH TRÌNH DI SẢN XUẤT SẮC"}
             </h4>
-            <p style={{ fontSize: "12px", color: "var(--cream-white)", margin: 0, lineHeight: "1.4" }}>
+            <p className="profile-journey-desc">
               {language === "en"
                 ? `Congratulations! You have successfully visited and collected ${stamps.length} heritage stamps. Your journey is now preserved in your memory!`
                 : language === "km"
@@ -804,13 +728,13 @@ export const ProfilePage: React.FC = () => {
 
         {/* Heritage Explorer Leaderboard */}
         <div className="glass-card fade-in-up stagger-3">
-          <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", fontWeight: 800, marginBottom: "4px" }}>
-            <Award size={18} style={{ color: "var(--accent-gold)" }} />
+          <h3 className="profile-section-title">
+            <Award size={18} className="gold-text-icon" />
             <span>
               {language === "en" ? "Explorer Leaderboard" : language === "km" ? "តារាងពិន្ទុអ្នករុករក" : "Bảng Xếp Hạng Lữ Khách"}
             </span>
           </h3>
-          <p style={{ fontSize: "11px", color: "var(--light-text)", marginBottom: "16px" }}>
+          <p className="profile-section-subtitle">
             {language === "en" 
               ? "Top explorers based on stamps, favorites and itineraries" 
               : language === "km"
@@ -818,9 +742,9 @@ export const ProfilePage: React.FC = () => {
                 : "Top lữ khách tích cực khám phá, check-in di sản và thiết kế lộ trình"}
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="profile-leaderboard-list">
             {leaderboard.length === 0 ? (
-              <p style={{ fontSize: "12px", color: "var(--light-text)", margin: 0, textAlign: "center", fontStyle: "italic" }}>
+              <p className="profile-leaderboard-empty">
                 {language === "en" ? "No leaderboard data" : "Chưa có dữ liệu bảng xếp hạng"}
               </p>
             ) : (
@@ -828,7 +752,7 @@ export const ProfilePage: React.FC = () => {
                 const isCurrentUser = profile && item.id === profile.id;
                 const rank = idx + 1;
                 let rankBadgeColor = "";
-                let rankTextColor = "var(--primary-navy)";
+                let rankTextColor = "var(--site-navy)";
                 if (rank === 1) { rankBadgeColor = "#ffd700"; rankTextColor = "#856404"; }
                 else if (rank === 2) { rankBadgeColor = "#c0c0c0"; rankTextColor = "#495057"; }
                 else if (rank === 3) { rankBadgeColor = "#cd7f32"; rankTextColor = "#721c24"; }
@@ -836,80 +760,41 @@ export const ProfilePage: React.FC = () => {
                 return (
                   <div 
                     key={item.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "10px 12px",
-                      borderRadius: "10px",
-                      backgroundColor: isCurrentUser ? "rgba(212,175,55,0.12)" : "rgba(0,0,0,0.02)",
-                      border: isCurrentUser ? "1.5px solid var(--accent-gold)" : "1px solid rgba(0,0,0,0.04)",
-                      boxShadow: isCurrentUser ? "0 2px 8px rgba(212,175,55,0.15)" : "none",
-                      transition: "all 0.2s"
-                    }}
+                    className={`profile-leaderboard-item ${isCurrentUser ? "is-current" : ""}`}
                   >
                     {/* Rank number or medal */}
-                    <div style={{
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      backgroundColor: rankBadgeColor || "transparent",
-                      color: rankBadgeColor ? rankTextColor : "var(--light-text)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 800,
-                      fontSize: "12px",
-                      flexShrink: 0
-                    }}>
+                    <div 
+                      className="profile-leaderboard-rank"
+                      style={{
+                        backgroundColor: rankBadgeColor || "transparent",
+                        color: rankBadgeColor ? rankTextColor : "var(--site-muted)"
+                      }}
+                    >
                       {rank}
                     </div>
 
                     {/* Avatar */}
-                    <div style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      backgroundColor: isCurrentUser ? "var(--accent-gold)" : "var(--primary-navy)",
-                      color: isCurrentUser ? "var(--primary-navy)" : "var(--accent-gold)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 800,
-                      fontSize: "13px",
-                      border: "1.5px solid var(--accent-gold)",
-                      overflow: "hidden",
-                      flexShrink: 0
-                    }}>
+                    <div className={`profile-leaderboard-avatar ${isCurrentUser ? "is-current" : ""}`}>
                       {item.avatar_url ? (
-                        <img src={item.avatar_url} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={item.avatar_url} alt={item.name} className="profile-avatar-img" />
                       ) : (
                         item.name ? item.name.charAt(0).toUpperCase() : "U"
                       )}
                     </div>
 
                     {/* User details */}
-                    <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      <div style={{ 
-                        fontSize: "13px", 
-                        fontWeight: isCurrentUser ? 800 : 700, 
-                        color: "var(--primary-navy)" 
-                      }}>
+                    <div className="profile-leaderboard-info">
+                      <div className={`profile-leaderboard-name ${isCurrentUser ? "is-current" : ""}`}>
                         {item.name || (language === "en" ? "Guest Tourist" : language === "km" ? "ភ្ញៀវទេសចរ" : "Khách du lịch")} {isCurrentUser && (language === "en" ? " (You)" : language === "km" ? " (អ្នក)" : " (Bạn)")}
                       </div>
-                      <div style={{ fontSize: "10px", color: "var(--light-text)", display: "flex", gap: "8px", marginTop: "2px" }}>
+                      <div className="profile-leaderboard-stats">
                         <span>🏆 {item.stamps_count} {language === "en" ? "stamps" : language === "km" ? "ត្រា" : "dấu ấn"}</span>
                         <span>❤️ {item.favorites_count}</span>
                       </div>
                     </div>
 
                     {/* XP score */}
-                    <div style={{ 
-                      fontSize: "13px", 
-                      fontWeight: 800, 
-                      color: "var(--accent-gold-dark)",
-                      flexShrink: 0
-                    }}>
+                    <div className="profile-leaderboard-xp">
                       {item.total_xp.toLocaleString()} XP
                     </div>
                   </div>
@@ -921,47 +806,37 @@ export const ProfilePage: React.FC = () => {
 
         {/* Favorite Places List */}
         <div className="glass-card fade-in-up stagger-4">
-          <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--primary-navy)", fontSize: "15px", fontWeight: 800, marginBottom: "12px" }}>
-            <Heart size={18} style={{ color: "var(--alert-red)", fill: "var(--alert-red)" }} />
+          <h3 className="profile-section-title">
+            <Heart size={18} className="gold-fill-icon" />
             <span>{t("profile.favorites")}</span>
           </h3>
 
           {favorites.length === 0 ? (
-            <p style={{ fontSize: "12px", color: "var(--light-text)", margin: 0 }}>
+            <p className="profile-section-subtitle margin-0">
               {t("profile.no_favorites")}
             </p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="profile-favorites-list">
               {favorites.map((fav) => (
                 <Link 
                   key={fav.id}
                   to={`/places/${fav.slug}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    textDecoration: "none",
-                    color: "inherit",
-                    backgroundColor: "rgba(0,0,0,0.02)",
-                    borderRadius: "10px",
-                    padding: "8px",
-                    border: "1px solid rgba(0,0,0,0.04)"
-                  }}
+                  className="profile-favorite-item"
                 >
                   <img 
                     src={fav.image_url} 
                     alt={fav.name} 
-                    style={{ width: "50px", height: "50px", borderRadius: "8px", objectFit: "cover" }} 
+                    className="profile-favorite-img"
                   />
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary-navy)", margin: 0 }}>
+                  <div className="profile-favorite-info">
+                    <h4 className="profile-favorite-name">
                       {language === "km" && fav.name_km 
                         ? fav.name_km 
                         : language === "en" && fav.name_en 
                           ? fav.name_en 
                           : fav.name}
                     </h4>
-                    <span style={{ fontSize: "11px", color: "var(--light-text)" }}>
+                    <span className="profile-favorite-category">
                       {getCategoryName(fav.category)}
                     </span>
                   </div>

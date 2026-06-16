@@ -145,7 +145,10 @@ class ApiClient {
   private backendUrl: string;
 
   constructor() {
-    this.backendUrl = (import.meta.env.VITE_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
+    this.backendUrl = (
+      import.meta.env.VITE_BASE_URL ||
+      "https://nui-ba-den-travel-assistant-backend.onrender.com"
+    ).replace(/\/$/, "");
   }
 
   private async backendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {

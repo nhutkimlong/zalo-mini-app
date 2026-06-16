@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Header, Page } from "zmp-ui";
+import { Header, Page } from "../components/WebPrimitives";
 import { MapPin, Compass, Navigation, Info, Volume2 } from "lucide-react";
 import api, { MapPlace, hasAudioGuide, Itinerary } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
@@ -677,30 +677,73 @@ export const MapPage: React.FC = () => {
 
   // Activate GPS location using browser HTML5 Geolocation
   const handleActivateGPS = async (isAutoLoad: boolean = false) => {
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (!window.isSecureContext && !isLocalhost) {
+      if (!isAutoLoad) {
+        alert(
+          language === "en"
+            ? "GPS geolocation requires a secure connection (HTTPS). Please access via HTTPS."
+            : "Định vị GPS yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập qua địa chỉ HTTPS."
+        );
+      }
+      return;
+    }
+
     setGpsLoading(true);
     try {
       let latitude: number | undefined;
       let longitude: number | undefined;
 
-      // Try 1: HTML5 Browser Geolocation (Primary for PWA)
+      // Try Permissions API query to handle prompt / denied state gracefully
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const status = await navigator.permissions.query({ name: "geolocation" });
+          if (status.state === "denied") {
+            if (!isAutoLoad) {
+              alert(
+                language === "en"
+                  ? "Location access is blocked. Please enable location permissions in your browser settings to use this feature."
+                  : "Quyền truy cập vị trí đã bị chặn. Vui lòng cấp quyền truy cập vị trí trong cài đặt trang web của trình duyệt để sử dụng tính năng này."
+              );
+            }
+            setGpsLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn("Permissions API query failed:", e);
+        }
+      }
+
+      // Try HTML5 Browser Geolocation (Primary for PWA)
       if (navigator.geolocation) {
         try {
           const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 });
           });
           latitude = pos.coords.latitude;
           longitude = pos.coords.longitude;
           console.log("Acquired location via HTML5 browser geolocation:", latitude, longitude);
         } catch (geoError) {
           console.warn("Browser Geolocation failed/timed out:", geoError);
+          if (!isLocalhost) {
+            throw geoError;
+          }
+        }
+      } else {
+        if (!isLocalhost) {
+          throw new Error("Geolocation not supported by this browser");
         }
       }
 
-      // Try 3: Default mock (Mount Ba Den coordinates for development)
+      // Default mock (Mount Ba Den coordinates for development) only on localhost
       if (latitude === undefined || longitude === undefined) {
-        console.warn("Defaulting to Mount Ba Den coordinates for development.");
-        latitude = 11.375641;
-        longitude = 106.174648;
+        if (isLocalhost) {
+          console.warn("Defaulting to Mount Ba Den coordinates for local development.");
+          latitude = 11.375641;
+          longitude = 106.174648;
+        } else {
+          throw new Error("GPS position could not be retrieved");
+        }
       }
 
       setGpsLocation({ lat: latitude, lng: longitude });
@@ -772,14 +815,7 @@ export const MapPage: React.FC = () => {
   };
 
   return (
-    <Page
-      className="map-page-premium"
-      style={{
-        color: "#f4f7f6",
-        background: "radial-gradient(circle at 50% 0%, #17375e 0%, #06152a 100%)",
-        zIndex: 97
-      }}
-    >
+    <Page className="map-page-premium">
       <style dangerouslySetInnerHTML={{
         __html: `
         .leaflet-container {
@@ -878,7 +914,7 @@ export const MapPage: React.FC = () => {
       {/* Premium Header */}
       <Header
         title={
-          <span style={{ color: "var(--accent-gold)", fontWeight: 800 }}>
+          <span className="map-header-title">
             {language === "km" ? "ផែនទីឌីជីថលពិតប្រាកដ" : language === "en" ? "Real Geolocation Map" : "Bản Đồ Số Thực Địa"}
           </span> as any
         }
@@ -886,23 +922,9 @@ export const MapPage: React.FC = () => {
       />
 
       {/* Control bar */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        padding: "6px 12px 8px 12px",
-        background: "rgba(11, 37, 69, 0.85)",
-        borderBottom: "1px solid rgba(212, 175, 55, 0.25)",
-        zIndex: 10
-      }}>
+      <div className="map-control-bar">
         {/* AI route scrollable list */}
-        <div style={{
-          display: "flex",
-          gap: "6px",
-          overflowX: "auto",
-          paddingBottom: "2px",
-          scrollbarWidth: "none"
-        }}>
+        <div className="map-itinerary-list">
           {itineraries.map((itinerary) => (
             <button
               key={itinerary.id}
@@ -911,369 +933,177 @@ export const MapPage: React.FC = () => {
                 setSelectedPlace(null);
                 setSelectedMarker(null);
               }}
-              style={{
-                flexShrink: 0,
-                padding: "4px 10px",
-                fontSize: "10.5px",
-                fontWeight: 700,
-                borderRadius: "12px",
-                border: activeRouteId === itinerary.id ? `1.5px solid ${itinerary.color}` : "1px solid rgba(255, 255, 255, 0.12)",
-                backgroundColor: activeRouteId === itinerary.id ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.03)",
-                color: activeRouteId === itinerary.id ? itinerary.color : "#ffffff",
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
+              className={`map-itinerary-btn ${activeRouteId === itinerary.id ? "is-active" : ""}`}
+              style={{ "--route-color": itinerary.color } as React.CSSProperties}
             >
-              <Compass size={12} style={{ marginRight: "4px", display: "inline-block", verticalAlign: "middle" }} />
+              <Compass size={12} className="map-itinerary-btn-icon" />
               {language === "km" ? (itinerary.name_km || itinerary.name) : language === "en" ? (itinerary.name_en || itinerary.name) : itinerary.name} ({language === "km" ? (itinerary.duration_km || itinerary.duration) : language === "en" ? (itinerary.duration_en || itinerary.duration) : itinerary.duration})
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main Map Content DOM */}
-      <div style={{ flex: 1, position: "relative", width: "100%", minHeight: 0 }}>
-        {!leafletLoaded && (
-          <div style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "var(--primary-navy)",
-            color: "var(--accent-gold)",
-            zIndex: 5
-          }}>
-            <Compass size={40} style={{ animation: "spin 2s linear infinite", marginBottom: "12px" }} />
-            <p style={{ fontSize: "13px", fontWeight: 700 }}>
-              {language === "km" ? "កំពុងទាញយកផែនទីឌីជីថល..." : language === "en" ? "Loading Leaflet Map Tiles..." : "Đang tải bản đồ số..."}
-            </p>
-          </div>
-        )}
-
-        <div ref={mapDivRef} style={{ width: "100%", height: "100%", backgroundColor: "var(--primary-navy)" }} />
-
-        {/* Zoom and resetting viewport overlay tools */}
-        <div style={{
-          position: "absolute",
-          bottom: (selectedPlace || activeRoute)
-            ? "calc(min(240px, 35vh) + 16px)"
-            : "calc(54px + 16px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 8px)))",
-          right: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          zIndex: 1000,
-          transition: "bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)"
-        }}>
-          {/* GPS Locate Button */}
-          <button
-            onClick={() => handleActivateGPS(false)}
-            disabled={gpsLoading}
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "rgba(11, 37, 69, 0.9)",
-              color: "var(--accent-gold)",
-              border: gpsLocation ? "1.5px solid var(--accent-gold)" : "1px solid rgba(255, 255, 255, 0.25)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-              position: "relative",
-              transition: "all 0.2s ease",
-              outline: "none"
-            }}
-            title={language === "km" ? "កំណត់ទីតាំង GPS" : language === "en" ? "GPS Locate" : "Định Vị GPS"}
-          >
-            {gpsLoading ? (
-              <Compass size={18} style={{ animation: "spin 2s linear infinite", color: "var(--accent-gold)" }} />
-            ) : (
-              <Navigation size={18} style={{ 
-                transform: "rotate(45deg)", 
-                strokeWidth: 3, 
-                color: gpsLocation ? "var(--accent-gold)" : "#ffffff" 
-              }} />
-            )}
-            {gpsLocation && (
-              <span style={{
-                position: "absolute",
-                top: "4px",
-                right: "4px",
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                backgroundColor: "#22c55e",
-                boxShadow: "0 0 6px #22c55e"
-              }} />
-            )}
-          </button>
-
-          {/* Zoom In Button */}
-          <button
-            onClick={handleZoomIn}
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "rgba(11, 37, 69, 0.9)",
-              color: "#ffffff",
-              border: "1px solid rgba(255, 255, 255, 0.25)",
-              fontSize: "20px",
-              fontWeight: 800,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-              transition: "all 0.2s ease"
-            }}
-            title={language === "en" ? "Zoom In" : "Phóng to"}
-          >
-            +
-          </button>
-
-          {/* Zoom Out Button */}
-          <button
-            onClick={handleZoomOut}
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "rgba(11, 37, 69, 0.9)",
-              color: "#ffffff",
-              border: "1px solid rgba(255, 255, 255, 0.25)",
-              fontSize: "20px",
-              fontWeight: 800,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-              transition: "all 0.2s ease"
-            }}
-            title={language === "en" ? "Zoom Out" : "Thu nhỏ"}
-          >
-            -
-          </button>
-
-          {/* Reset Zoom / Center Button */}
-          <button
-            onClick={handleResetZoom}
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "rgba(11, 37, 69, 0.9)",
-              color: "var(--accent-gold)",
-              border: "1px solid var(--accent-gold)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-              transition: "all 0.2s ease"
-            }}
-            title={language === "km" ? "ទម្រង់ដើម" : language === "en" ? "Center Map" : "Thu Nhỏ / Trung Tâm"}
-          >
-            <Compass size={18} style={{ color: "var(--accent-gold)" }} />
-          </button>
-        </div>
-      </div>
-
-      {/* Pop-up bottom details sheet panel */}
-      <div style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: "var(--primary-navy)",
-        borderTop: "2.5px solid var(--accent-gold)",
-        padding: (selectedPlace || activeRoute)
-          ? "8px 16px calc(16px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 16px))) 16px"
-          : "4px 16px calc(8px + var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 8px))) 16px",
-        maxHeight: (selectedPlace || activeRoute) ? "min(240px, 35vh)" : "54px",
-        transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
-        overflowY: "auto",
-        zIndex: 1001,
-        boxShadow: "0 -10px 30px rgba(0, 0, 0, 0.4)",
-        display: "flex",
-        flexDirection: "column",
-        gap: (selectedPlace || activeRoute) ? "8px" : "2px"
-      }}>
-        {/* Fail-safe background extension: fills any iOS/PWA bottom safe area gap silently */}
-        <div style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          right: 0,
-          height: "100px",
-          backgroundColor: "var(--primary-navy)",
-          pointerEvents: "none"
-        }} />
-        {/* Drag handle */}
-        <div style={{
-          width: "40px",
-          height: "4px",
-          backgroundColor: "rgba(255, 255, 255, 0.2)",
-          borderRadius: "2px",
-          margin: "0 auto 6px auto",
-          flexShrink: 0
-        }} />
-
-        {selectedPlace && selectedMarker ? (
-          <div>
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-              <img
-                src={selectedPlace.image_url}
-                alt={selectedPlace.name}
-                width={64}
-                height={64}
-                loading="lazy"
-                decoding="async"
-                style={{ borderRadius: "8px", objectFit: "cover", border: "1px solid var(--accent-gold)", flexShrink: 0 }}
-              />
-
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent-gold)", margin: "0 0 2px 0" }}>
-                  {language === "km" && selectedPlace.name_km ? selectedPlace.name_km : language === "en" && selectedPlace.name_en ? selectedPlace.name_en : selectedPlace.name}
-                </h3>
-                <p style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.7)", margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <MapPin size={10} style={{ stroke: "var(--accent-gold)" }} />
-                  GPS: {selectedMarker.lat.toFixed(6)}, {selectedMarker.lng.toFixed(6)}
-                </p>
-                <p style={{
-                  fontSize: "11.5px",
-                  color: "var(--cream-white)",
-                  opacity: 0.85,
-                  margin: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  lineHeight: "1.3"
-                }}>
-                  {language === "km" && selectedPlace.short_description_km ? selectedPlace.short_description_km : language === "en" && selectedPlace.short_description_en ? selectedPlace.short_description_en : selectedPlace.short_description}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
-              <button
-                onClick={() => navigate(`/places/${selectedPlace.slug}`)}
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  backgroundColor: "rgba(255, 255, 255, 0.08)",
-                  color: "#ffffff",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  borderRadius: "8px",
-                  padding: "8px 12px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  minHeight: "36px"
-                }}
-              >
-                <Info size={14} />
-                <span>{language === "km" ? "មើលព័ត៌មានលម្អិត" : language === "en" ? "View Details" : "Lịch Sử Di Tích"}</span>
-              </button>
-
-              {hasAudioGuide(selectedPlace, language) && (
-                <button
-                  onClick={() => navigate(`/places/${selectedPlace.slug}`)}
-                  style={{
-                    flex: 1.2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    backgroundColor: "var(--accent-gold)",
-                    color: "var(--primary-navy)",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "8px 12px",
-                    fontSize: "12px",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    minHeight: "36px"
-                  }}
-                >
-                  <Volume2 size={14} />
-                  <span>{language === "km" ? "ស្តាប់ការអធិប្បាយ" : language === "en" ? "Audio Guide" : "Phát Thuyết Minh"}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        ) : activeRoute ? (
-          <div>
-            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "4px", marginBottom: "6px" }}>
-              <h3 style={{ fontSize: "13.5px", fontWeight: 700, color: activeRoute.color, margin: "0 0 2px 0" }}>
-                {language === "km" ? (activeRoute.name_km || activeRoute.name) : language === "en" ? (activeRoute.name_en || activeRoute.name) : activeRoute.name}
-              </h3>
-              <p style={{ fontSize: "10.5px", color: "var(--cream-white)", opacity: 0.8, margin: 0 }}>
-                {language === "km" ? "ជំហានធ្វើដំណើរដែលណែនាំដោយ AI:" : language === "en" ? "AI recommended travel steps:" : "Lộ trình đề xuất di chuyển chi tiết:"}
+      {/* Map Layout Wrapper for Responsive Desktop */}
+      <div className="map-responsive-wrapper">
+        {/* Main Map Content DOM */}
+        <div className="map-leaflet-wrapper">
+          {!leafletLoaded && (
+            <div className="map-loader-container">
+              <Compass size={40} className="map-loader-icon" />
+              <p className="map-loader-text">
+                {language === "km" ? "កំពុងទាញយកផែនទីឌីជីថល..." : language === "en" ? "Loading Leaflet Map Tiles..." : "Đang tải bản đồ số..."}
               </p>
             </div>
+          )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "110px" }}>
-              {activeRoute.steps.map((step, idx) => (
-                <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px" }}>
-                  <span style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "16px",
-                    height: "16px",
-                    borderRadius: "50%",
-                    backgroundColor: activeRoute.color,
-                    color: "var(--primary-navy)",
-                    fontSize: "9.5px",
-                    fontWeight: 800,
-                    marginTop: "2px",
-                    flexShrink: 0
-                  }}>
-                    {idx + 1}
-                  </span>
-                  <p style={{ margin: 0, color: "var(--cream-white)", opacity: 0.9, lineHeight: "1.35" }}>
-                    {language === "km" && step.km ? step.km : language === "en" ? step.en : step.vi}
+          <div ref={mapDivRef} className="map-div-container" />
+
+          {/* FAB Controls (GPS + Zoom) */}
+          <div
+            className={`map-fab-group ${(selectedPlace || activeRoute) ? "is-sheet-open" : "is-sheet-closed"}`}
+          >
+            {/* GPS Locate Button */}
+            <button
+              onClick={() => handleActivateGPS(false)}
+              disabled={gpsLoading}
+              id="map-gps-btn"
+              className={`map-fab-btn ${gpsLocation ? "is-active" : ""}`}
+              title={language === "km" ? "កំណត់ទីតាំង GPS" : language === "en" ? "GPS Locate" : "Định Vị GPS"}
+            >
+              {gpsLoading ? (
+                <Compass size={18} className="map-gps-icon-loading" />
+              ) : (
+                <Navigation size={18} className="map-gps-icon" style={{ color: gpsLocation ? "var(--accent-gold)" : "#ffffff" }} />
+              )}
+              {gpsLocation && (
+                <span className="map-gps-status-dot" />
+              )}
+            </button>
+
+            {/* Zoom In */}
+            <button
+              onClick={handleZoomIn}
+              id="map-zoom-in-btn"
+              className="map-fab-btn map-zoom-btn"
+              title={language === "en" ? "Zoom In" : "Phóng to"}
+            >
+              +
+            </button>
+
+            {/* Zoom Out */}
+            <button
+              onClick={handleZoomOut}
+              id="map-zoom-out-btn"
+              className="map-fab-btn map-zoom-btn"
+              title={language === "en" ? "Zoom Out" : "Thu nhỏ"}
+            >
+              -
+            </button>
+
+            {/* Reset Center */}
+            <button
+              onClick={handleResetZoom}
+              id="map-reset-btn"
+              className="map-fab-btn is-active"
+              title={language === "km" ? "ទម្រង់ដើម" : language === "en" ? "Center Map" : "Trung Tâm"}
+            >
+              <Compass size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Sheet Panel (Mobile) / Sidebar Panel (Desktop) */}
+        <div
+          id="map-bottom-sheet"
+          className={selectedPlace || activeRoute ? "is-expanded" : ""}
+        >
+          {/* Drag handle */}
+          <div className="map-sheet-handle" />
+
+          {selectedPlace && selectedMarker ? (
+            <div>
+              <div className="map-place-flex">
+                <img
+                  src={selectedPlace.image_url}
+                  alt={selectedPlace.name}
+                  width={64}
+                  height={64}
+                  loading="lazy"
+                  decoding="async"
+                  className="map-place-img"
+                />
+
+                <div className="map-place-body">
+                  <h3 className="map-place-title">
+                    {language === "km" && selectedPlace.name_km ? selectedPlace.name_km : language === "en" && selectedPlace.name_en ? selectedPlace.name_en : selectedPlace.name}
+                  </h3>
+                  <p className="map-place-meta">
+                    <MapPin size={10} className="map-place-pin" />
+                    GPS: {selectedMarker.lat.toFixed(6)}, {selectedMarker.lng.toFixed(6)}
+                  </p>
+                  <p className="map-place-desc">
+                    {language === "km" && selectedPlace.short_description_km ? selectedPlace.short_description_km : language === "en" && selectedPlace.short_description_en ? selectedPlace.short_description_en : selectedPlace.short_description}
                   </p>
                 </div>
-              ))}
+              </div>
+
+              <div className="map-place-buttons">
+                <button
+                  onClick={() => navigate(`/places/${selectedPlace.slug}`)}
+                  className="map-btn-info"
+                >
+                  <Info size={14} />
+                  <span>{language === "km" ? "មើលព័ត៌មានលម្អិត" : language === "en" ? "View Details" : "Lịch Sử Di Tích"}</span>
+                </button>
+
+                {hasAudioGuide(selectedPlace, language) && (
+                  <button
+                    onClick={() => navigate(`/places/${selectedPlace.slug}`)}
+                    className="map-btn-audio"
+                  >
+                    <Volume2 size={14} />
+                    <span>{language === "km" ? "ស្តាប់ការអធិប្បាយ" : language === "en" ? "Audio Guide" : "Phát Thuyết Minh"}</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "2px 0",
-            fontSize: "11.5px",
-            color: "var(--cream-white)",
-            opacity: 0.85,
-            textAlign: "center"
-          }}>
-            <Compass size={13} style={{ stroke: "var(--accent-gold)", animation: "spin 12s linear infinite" }} />
-            <span>
-              {language === "km"
-                ? "សូមប៉ះទីកន្លែង ឬជ្រើសរើសផ្លូវ AI ដើម្បីមើលព័ត៌មានលម្អិត។"
-                : language === "en"
-                  ? "Select a marker or an AI Itinerary to view route."
-                  : "Chạm địa danh hoặc chọn Lộ trình AI để xem chi tiết."}
-            </span>
-          </div>
-        )}
+          ) : activeRoute ? (
+            <div>
+              <div className="map-route-header">
+                <h3 className="map-route-title" style={{ color: activeRoute.color }}>
+                  {language === "km" ? (activeRoute.name_km || activeRoute.name) : language === "en" ? (activeRoute.name_en || activeRoute.name) : activeRoute.name}
+                </h3>
+                <p className="map-route-subtitle">
+                  {language === "km" ? "ជំហានធ្វើដំណើរដែលណែនាំដោយ AI:" : language === "en" ? "AI recommended travel steps:" : "Lộ trình đề xuất di chuyển chi tiết:"}
+                </p>
+              </div>
+
+              <div className="map-route-steps">
+                {activeRoute.steps.map((step, idx) => (
+                  <div key={idx} className="map-route-step-item">
+                    <span className="map-route-step-number" style={{ "--route-color": activeRoute.color } as React.CSSProperties}>
+                      {idx + 1}
+                    </span>
+                    <p className="map-route-step-text">
+                      {language === "km" && step.km ? step.km : language === "en" ? step.en : step.vi}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="map-sheet-placeholder">
+              <Compass size={13} className="map-sheet-placeholder-icon" />
+              <span>
+                {language === "km"
+                  ? "សូមប៉ះទីកន្លែង ឬជ្រើសរើសផ្លូវ AI ដើម្បីមើលព័ត៌មានលម្អិត។"
+                  : language === "en"
+                    ? "Select a marker or an AI Itinerary to view route."
+                    : "Chạm địa danh hoặc chọn Lộ trình AI để xem chi tiết."}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </Page>
   );
