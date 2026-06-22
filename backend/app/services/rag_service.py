@@ -4,6 +4,7 @@ LLM: Single model via BEEKNOEE_LLM_MODEL in .env
 All via Beeknoee (https://platform-api.beeknoee.com/v1)
 """
 import re
+import unicodedata
 from typing import List, Dict, Any, Tuple, Optional
 from uuid import UUID
 from openai import OpenAI
@@ -15,6 +16,15 @@ from app.models.chat import SourceCitation, ChatResponse
 # ─── CrawBot Identity ─────────────────────────────────────────────────────────
 CRAWBOT_NAME = "Hướng dẫn viên 4.0"
 LOG_NAME = "Huong dan vien 4.0"
+
+
+def remove_accents(input_str: str) -> str:
+    """Remove Vietnamese diacritics/accents from a string."""
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    s = "".join([c for c in nfkd_form if not unicodedata.combining(c)])
+    # Convert 'đ' -> 'd' and 'Đ' -> 'D'
+    s = s.replace('đ', 'd').replace('Đ', 'D')
+    return s
 
 
 
@@ -264,11 +274,12 @@ class RAGService:
     def retrieve_context(self, question: str, limit: int = 4) -> List[Dict[str, Any]]:
         """
         Retrieve relevant chunks from Supabase.
-        Strategy: pgvector semantic search → keyword full-text search.
+        Strategy: pgvector semantic search + diacritics-normalized keyword search fallback.
         """
         if not self.supabase:
             return []
 
+        vector_results = []
         # 1. Semantic vector search
         try:
             query_embedding = embedding_service.normalize_embedding_dim(
@@ -282,29 +293,45 @@ class RAGService:
             }).execute()
 
             if res.data:
-                results = []
                 for row in res.data:
                     try:
                         similarity = float(row.get("similarity", 0.0))
                     except (ValueError, TypeError):
                         similarity = 0.0
-                    results.append({
+                    vector_results.append({
                         "id": row.get("id"),
                         "article_id": row.get("article_id"),
                         "text": row.get("chunk_text", ""),
                         "metadata": row.get("metadata", {}),
                         "similarity": similarity,
                     })
-                print(f"[{LOG_NAME}] Vector search: {len(results)} chunks.")
-                return results
+                print(f"[{LOG_NAME}] Vector search: {len(vector_results)} chunks.")
         except Exception as e:
             print(f"[{LOG_NAME}] Vector search failed: {e}")
 
-        # 2. Keyword fallback
-        return self._keyword_search(question, limit)
+        # If we have enough vector results, return them directly
+        if len(vector_results) >= limit:
+            return vector_results
+
+        # 2. Keyword fallback to fill remaining slots
+        keyword_results = self._keyword_search(question, limit)
+        
+        # Merge vector results and keyword results
+        combined_results = list(vector_results)
+        seen_chunk_ids = {str(c["id"]) for c in vector_results if c.get("id")}
+        
+        for kw_chunk in keyword_results:
+            chunk_id = str(kw_chunk.get("id"))
+            if chunk_id not in seen_chunk_ids:
+                combined_results.append(kw_chunk)
+                seen_chunk_ids.add(chunk_id)
+                if len(combined_results) >= limit:
+                    break
+                    
+        return combined_results
 
     def _keyword_search(self, question: str, limit: int) -> List[Dict[str, Any]]:
-        """Score articles by keyword frequency across title + content."""
+        """Score chunks by keyword frequency across title + chunk_text with diacritics normalization."""
         if not self.supabase:
             return []
         try:
@@ -312,47 +339,72 @@ class RAGService:
             if not words:
                 return []
 
-            res = self.supabase.table("knowledge_articles") \
-                .select("id, title, content, category, source") \
-                .eq("visibility", "public") \
-                .eq("status", "published") \
+            # Retrieve all knowledge chunks and join with knowledge_articles
+            res = self.supabase.table("knowledge_chunks") \
+                .select("id, article_id, chunk_text, metadata, knowledge_articles(visibility, status, title, category, source)") \
                 .execute()
 
             if not res.data:
                 return []
 
+            words_no_accent = [remove_accents(w) for w in words]
             scored = []
-            for article in res.data:
+
+            for row in res.data:
+                article = row.get("knowledge_articles")
+                if not article:
+                    continue
+                # Ensure the article is public and published
+                if article.get("visibility") != "public" or article.get("status") != "published":
+                    continue
+
+                chunk_text = row.get("chunk_text", "")
+                title = article.get("title", "") or row.get("metadata", {}).get("title", "")
+
+                chunk_text_l = chunk_text.lower()
+                title_l = title.lower()
+
+                chunk_text_l_no_accent = remove_accents(chunk_text_l)
+                title_l_no_accent = remove_accents(title_l)
+
                 score = 0
-                title_l = article.get("title", "").lower()
-                content_l = article.get("content", "").lower()
-                for w in words:
+                for w, w_na in zip(words, words_no_accent):
+                    # Accented match (higher weight for title)
                     score += title_l.count(w) * 4
-                    score += content_l.count(w)
+                    score += chunk_text_l.count(w)
+                    # Non-accented match (fallback for typo/accent variations)
+                    score += title_l_no_accent.count(w_na) * 2
+                    score += chunk_text_l_no_accent.count(w_na)
+
                 if score > 0:
-                    scored.append((score, article))
+                    scored.append((score, row, title, article))
+
+            if not scored:
+                return []
 
             scored.sort(key=lambda x: x[0], reverse=True)
             max_score = scored[0][0] if scored else 1
 
             results = []
-            for score, art in scored[:limit]:
+            for score, row, title, article in scored[:limit]:
+                # Calculate similarity score based on normalized keyword frequency score
+                similarity = round(min(0.85, (score / max_score) * 0.85), 3)
                 results.append({
-                    "id": art["id"],
-                    "article_id": art["id"],
-                    "text": art["content"],
+                    "id": row.get("id"),
+                    "article_id": row.get("article_id"),
+                    "text": row.get("chunk_text", ""),
                     "metadata": {
-                        "title": art["title"],
-                        "category": art.get("category", "khac"),
-                        "source": art.get("source"),
+                        "title": title,
+                        "category": article.get("category", "khac"),
+                        "source": article.get("source"),
                     },
-                    "similarity": round(min(0.85, (score / max_score) * 0.85), 3),
+                    "similarity": similarity,
                 })
 
-            print(f"[{LOG_NAME}] Keyword search: {len(results)} articles.")
+            print(f"[{LOG_NAME}] Keyword search on chunks: {len(results)} chunks.")
             return results
         except Exception as e:
-            print(f"[{LOG_NAME}] Keyword search failed: {e}")
+            print(f"[{LOG_NAME}] Keyword search on chunks failed: {e}")
             return []
 
     # ─── Language Detection & Translation ──────────────────────────────────────
@@ -650,7 +702,7 @@ class RAGService:
   }
 ]"""
 
-        chunks = self.retrieve_context(question_with_context)
+        chunks = self.retrieve_context(question)
         answer = ""
         confidence_score = 0.0
         sources: List[SourceCitation] = []

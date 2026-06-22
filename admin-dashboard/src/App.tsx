@@ -9,7 +9,7 @@ import { AnnouncementsPanel } from "./components/panels/AnnouncementsPanel";
 import { FeedbacksPanel } from "./components/panels/FeedbacksPanel";
 import { ChatsPanel } from "./components/panels/ChatsPanel";
 import { UsagePanel } from "./components/panels/UsagePanel";
-import { Menu } from "lucide-react";
+import { Menu, RefreshCw } from "lucide-react";
 
 import { ArticleModal } from "./components/modals/ArticleModal";
 import { PlaceModal } from "./components/modals/PlaceModal";
@@ -101,6 +101,10 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [exchangeRate, setExchangeRate] = useState(25450);
 
+  // Auto/Manual Refresh states
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const closeModal = () => {
     setModalType(null);
     setModalResource(null);
@@ -190,6 +194,35 @@ export const App: React.FC = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [isAuthenticated]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadData();
+    } catch (err) {
+      console.error("Manual refresh failed:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Auto refresh effect
+  useEffect(() => {
+    if (!autoRefresh || !isAuthenticated) return;
+
+    const interval = setInterval(async () => {
+      setIsRefreshing(true);
+      try {
+        await loadData();
+      } catch (err) {
+        console.error("Auto refresh failed:", err);
+      } finally {
+        setIsRefreshing(false);
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, isAuthenticated]);
 
   const handleLoginSuccess = (token: string) => {
     localStorage.setItem("admin_token", token);
@@ -784,7 +817,37 @@ export const App: React.FC = () => {
             {activeTab === "badges" && "Quản Lý Huy Hiệu & Danh Hiệu Số (Supabase Database)"}
           </div>
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }} className="hide-on-mobile">
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }} className="hide-on-mobile">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", borderRight: "1px solid var(--border-slate)", paddingRight: "16px" }}>
+              <input
+                type="checkbox"
+                id="auto-refresh-toggle"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                style={{ width: "15px", height: "15px", accentColor: "var(--accent-gold)", cursor: "pointer" }}
+              />
+              <label htmlFor="auto-refresh-toggle" style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-light)", cursor: "pointer", userSelect: "none" }}>
+                Tự động cập nhật (10s)
+              </label>
+            </div>
+
+            <button
+              onClick={handleManualRefresh}
+              className="btn btn-secondary"
+              style={{
+                padding: "6px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "12px"
+              }}
+              title="Làm mới toàn bộ dữ liệu"
+              disabled={loading || isRefreshing}
+            >
+              <RefreshCw size={14} className={isRefreshing || loading ? "spinner" : ""} />
+              <span>{isRefreshing || loading ? "Đang tải..." : "Làm mới"}</span>
+            </button>
+
             <span style={{ fontSize: "12px", color: "var(--text-light)", fontWeight: 600 }}>Hệ thống:</span>
             <span className="badge badge-success">● Đang hoạt động</span>
           </div>
