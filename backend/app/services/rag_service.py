@@ -853,6 +853,7 @@ class RAGService:
                 if channel == "zalo_bot":
                     zalo_formatting_instruction = (
                         "\n\n[ZALO BOT FORMATTING RULES]\n"
+                        "- Keep your response concise. Strictly keep your entire answer under 1500 characters (prefer ~1000 characters) to ensure it fits on a single mobile screen and does not get split.\n"
                         "- Use Markdown formatting like **bold** (for prices, times, place names, or critical warnings) to make your response neat and professional.\n"
                         "- Use bullet points or ordered lists to break down information.\n"
                         "- You can use Zalo-specific color tags: {red}text{/red}, {green}text{/green}, {orange}text{/orange}, {yellow}text{/yellow} to highlight important notices or warnings.\n"

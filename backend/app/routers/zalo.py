@@ -1,7 +1,7 @@
 import asyncio
 import time
 import re
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 import httpx
 from fastapi import APIRouter, Request, Header, HTTPException, BackgroundTasks
 
@@ -65,6 +65,138 @@ def format_text_for_zalo(text: str) -> str:
     text = re.sub(r'^(?:#{5,6})\s+', '#### ', text, flags=re.MULTILINE)
     return text
 
+def get_open_tags(s: str) -> Tuple[bool, bool, List[str]]:
+    """
+    Scans a string to find currently open formatting tags:
+    Returns (bold_open, italic_open, open_zalo_tags_list)
+    """
+    bold_open = False
+    italic_open = False
+    zalo_stack = []
+    
+    # Matches: **, *, __, _, {green}, {/green}, {red}, {/red}, etc.
+    pattern = re.compile(
+        r'(\*\*|__|\*|_|\{[a-zA-Z0-9_]+\}|\{/[a-zA-Z0-9_]+\})'
+    )
+    
+    for match in pattern.finditer(s):
+        token = match.group(0)
+        
+        # Check if escaped (preceded by an odd number of backslashes)
+        start_idx = match.start()
+        backslash_count = 0
+        idx = start_idx - 1
+        while idx >= 0 and s[idx] == '\\':
+            backslash_count += 1
+            idx -= 1
+        if backslash_count % 2 == 1:
+            continue  # Escaped, ignore
+            
+        if token in ('**', '__'):
+            bold_open = not bold_open
+        elif token in ('*', '_'):
+            italic_open = not italic_open
+        elif token.startswith('{/') and token.endswith('}'):
+            # Closing tag
+            tag_name = token[2:-1]
+            if zalo_stack and zalo_stack[-1] == tag_name:
+                zalo_stack.pop()
+            elif tag_name in zalo_stack:
+                zalo_stack.remove(tag_name)
+        elif token.startswith('{') and token.endswith('}'):
+            # Opening tag
+            tag_name = token[1:-1]
+            if tag_name in ('green', 'red', 'orange', 'yellow', 'big', 'underline'):
+                zalo_stack.append(tag_name)
+                
+    return bold_open, italic_open, zalo_stack
+
+def split_message_for_zalo(text: str, max_chars: int = 1950) -> List[str]:
+    """
+    Split a long text into multiple chunks of at most max_chars.
+    Ensures that Markdown (bold/italic) and Zalo color/size tags are closed at
+    the end of each chunk and reopened at the start of the next chunk to prevent display errors.
+    """
+    if not text:
+        return []
+    if len(text) <= max_chars:
+        return [text]
+
+    chunks = []
+    remaining = text
+    current_prefix = ""
+    
+    while len(remaining) > max_chars:
+        # Find a split index within the limit, taking current_prefix length into account
+        limit = max_chars - len(current_prefix)
+        if limit <= 100:
+            # If the prefix is somehow extremely long (unlikely), reset limit
+            limit = max_chars // 2
+            
+        chunk_candidate = remaining[:limit]
+        
+        # Try to find the last paragraph break
+        split_idx = chunk_candidate.rfind("\n\n")
+        if split_idx == -1 or split_idx < limit // 2:
+            # Try to find the last line break
+            split_idx = chunk_candidate.rfind("\n")
+        if split_idx == -1 or split_idx < limit // 2:
+            # Try to find the last sentence end
+            split_idx = max(
+                chunk_candidate.rfind(". "),
+                chunk_candidate.rfind("? "),
+                chunk_candidate.rfind("! ")
+            )
+            if split_idx != -1:
+                split_idx += 1  # include the punctuation
+        if split_idx == -1 or split_idx < limit // 2:
+            # Fallback to space split
+            split_idx = chunk_candidate.rfind(" ")
+        if split_idx == -1:
+            # Hard cutoff
+            split_idx = limit
+
+        chunk_payload = remaining[:split_idx].strip()
+        remaining = remaining[split_idx:].strip()
+
+        # Combine with active prefix
+        full_chunk = (current_prefix + chunk_payload).strip() if current_prefix else chunk_payload
+
+        # Scan for open tags in the combined chunk
+        bold_open, italic_open, zalo_stack = get_open_tags(full_chunk)
+
+        # Close open tags at the end of the current chunk
+        closing_tags = ""
+        if italic_open:
+            closing_tags += "*"
+        if bold_open:
+            closing_tags += "**"
+        for tag in reversed(zalo_stack):
+            closing_tags += f"{{/{tag}}}"
+
+        if closing_tags:
+            full_chunk += closing_tags
+
+        chunks.append(full_chunk)
+
+        # Create prefix for the next chunk to reopen the open tags
+        next_prefix = ""
+        for tag in zalo_stack:
+            next_prefix += f"{{{tag}}}"
+        if bold_open:
+            next_prefix += "**"
+        if italic_open:
+            next_prefix += "*"
+            
+        current_prefix = next_prefix
+
+    if remaining:
+        full_chunk = (current_prefix + remaining).strip() if current_prefix else remaining
+        chunks.append(full_chunk)
+
+    return chunks
+
+
 async def send_zalo_message(bot_token: str, recipient_id: str, text: str):
     """Send text response back to the Zalo user via Zalo Bot Platform API."""
     url = f"https://bot-api.zaloplatforms.com/bot{bot_token}/sendMessage"
@@ -72,21 +204,25 @@ async def send_zalo_message(bot_token: str, recipient_id: str, text: str):
     # Format text to optimize display for Zalo Bot client limitations
     formatted_text = format_text_for_zalo(text)
     
-    payload = {
-        "chat_id": recipient_id,
-        "text": formatted_text,
-        "parse_mode": "markdown"
-    }
+    # Split message into chunks if it exceeds Zalo's 2000 character limit
+    chunks = split_message_for_zalo(formatted_text, max_chars=1990)
+    
     async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(url, json=payload, timeout=10.0)
-            res_data = response.json()
-            if not res_data.get("ok"):
-                print(f"[ZaloBot] Zalo API error: {res_data} | Bot Token (masked): {bot_token[:10]}... | Sent Payload: {payload}")
-            else:
-                print(f"[ZaloBot] Response successfully sent to Zalo user {recipient_id}")
-        except Exception as e:
-            print(f"[ZaloBot] Failed to send message via Zalo API: {e} | Sent Payload: {payload}")
+        for chunk in chunks:
+            payload = {
+                "chat_id": recipient_id,
+                "text": chunk,
+                "parse_mode": "markdown"
+            }
+            try:
+                response = await client.post(url, json=payload, timeout=10.0)
+                res_data = response.json()
+                if not res_data.get("ok"):
+                    print(f"[ZaloBot] Zalo API error: {res_data} | Bot Token (masked): {bot_token[:10]}... | Sent Payload: {payload}")
+                else:
+                    print(f"[ZaloBot] Response chunk successfully sent to Zalo user {recipient_id}")
+            except Exception as e:
+                print(f"[ZaloBot] Failed to send message chunk via Zalo API: {e} | Sent Payload: {payload}")
 
 async def send_zalo_chat_action(bot_token: str, recipient_id: str, action: str = "typing"):
     """Send chat action status (e.g. typing) back to the Zalo user."""
