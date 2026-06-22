@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 from app.core.config import settings
-from app.routers.zalo import zalo_sessions, get_zalo_conversation_history, add_zalo_message, send_zalo_message
+from app.routers.zalo import zalo_sessions, get_zalo_conversation_history, add_zalo_message, send_zalo_message, send_zalo_chat_action, format_text_for_zalo
 
 def test_zalo_webhook_unauthorized(api_client: TestClient):
     """Verify webhook returns 401 Unauthorized if the secret token header is invalid."""
@@ -158,7 +158,8 @@ async def test_send_zalo_message_success(mock_post):
     expected_url = "https://bot-api.zaloplatforms.com/bottest_token/sendMessage"
     expected_payload = {
         "chat_id": "user_abc",
-        "text": "Hello world"
+        "text": "Hello world",
+        "parse_mode": "markdown"
     }
     
     mock_post.assert_called_once_with(
@@ -166,3 +167,46 @@ async def test_send_zalo_message_success(mock_post):
         json=expected_payload,
         timeout=10.0
     )
+
+@pytest.mark.anyio
+@patch("httpx.AsyncClient.post")
+async def test_send_zalo_chat_action_success(mock_post):
+    """Verify that send_zalo_chat_action calls Zalo API endpoint with correct parameters."""
+    mock_post.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {"ok": True}
+    )
+
+    await send_zalo_chat_action(
+        bot_token="test_token",
+        recipient_id="user_abc",
+        action="typing"
+    )
+
+    expected_url = "https://bot-api.zaloplatforms.com/bottest_token/sendChatAction"
+    expected_payload = {
+        "chat_id": "user_abc",
+        "action": "typing"
+    }
+    
+    mock_post.assert_called_once_with(
+        expected_url,
+        json=expected_payload,
+        timeout=5.0
+    )
+
+def test_format_text_for_zalo():
+    """Verify that format_text_for_zalo converts Markdown elements correctly for Zalo."""
+    # Test link conversion
+    input_text = "Chào mừng, click [ở đây](https://example.com/test) để xem chi tiết hoặc [link này](http://hello.com)."
+    expected_text = "Chào mừng, click ở đây (https://example.com/test) để xem chi tiết hoặc link này (http://hello.com)."
+    assert format_text_for_zalo(input_text) == expected_text
+
+    # Test header level mappings
+    input_headers = "##### Tiêu đề cấp 5\n###### Tiêu đề cấp 6\n#### Tiêu đề cấp 4"
+    expected_headers = "#### Tiêu đề cấp 5\n#### Tiêu đề cấp 6\n#### Tiêu đề cấp 4"
+    assert format_text_for_zalo(input_headers) == expected_headers
+
+    # Test none or empty string
+    assert format_text_for_zalo("") == ""
+    assert format_text_for_zalo(None) is None

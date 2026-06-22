@@ -1,5 +1,6 @@
 import asyncio
 import time
+import re
 from typing import Dict, List, Any, Optional
 import httpx
 from fastapi import APIRouter, Request, Header, HTTPException, BackgroundTasks
@@ -49,12 +50,32 @@ async def add_zalo_message(sender_id: str, role: str, content: str):
         if len(session["messages"]) > 10:
             session["messages"] = session["messages"][-10:]
 
+def format_text_for_zalo(text: str) -> str:
+    """
+    Format standard Markdown text from LLM to match Zalo Bot Platform's supported Markdown.
+    - Converts [Text](URL) links to 'Text (URL)'
+    - Maps headers level 5 and 6 (##### and ######) to level 4 (####)
+    """
+    if not text:
+        return text
+    # 1. Convert Markdown links [Label](URL) -> Label (URL)
+    # This ensures links are clickable on Zalo while keeping the label text visible
+    text = re.sub(r'\[([^\]]+)\]\((https?://[^\s)]+)\)', r'\1 (\2)', text)
+    # 2. Map level 5 and 6 headers to level 4 headers (Zalo only supports # to ####)
+    text = re.sub(r'^(?:#{5,6})\s+', '#### ', text, flags=re.MULTILINE)
+    return text
+
 async def send_zalo_message(bot_token: str, recipient_id: str, text: str):
     """Send text response back to the Zalo user via Zalo Bot Platform API."""
     url = f"https://bot-api.zaloplatforms.com/bot{bot_token}/sendMessage"
+    
+    # Format text to optimize display for Zalo Bot client limitations
+    formatted_text = format_text_for_zalo(text)
+    
     payload = {
         "chat_id": recipient_id,
-        "text": text
+        "text": formatted_text,
+        "parse_mode": "markdown"
     }
     async with httpx.AsyncClient() as client:
         try:
@@ -67,12 +88,31 @@ async def send_zalo_message(bot_token: str, recipient_id: str, text: str):
         except Exception as e:
             print(f"[ZaloBot] Failed to send message via Zalo API: {e} | Sent Payload: {payload}")
 
+async def send_zalo_chat_action(bot_token: str, recipient_id: str, action: str = "typing"):
+    """Send chat action status (e.g. typing) back to the Zalo user."""
+    url = f"https://bot-api.zaloplatforms.com/bot{bot_token}/sendChatAction"
+    payload = {
+        "chat_id": recipient_id,
+        "action": action
+    }
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, timeout=5.0)
+            res_data = response.json()
+            if not res_data.get("ok"):
+                print(f"[ZaloBot] Zalo chat action error: {res_data} | Bot Token (masked): {bot_token[:10]}... | Sent Payload: {payload}")
+        except Exception as e:
+            print(f"[ZaloBot] Failed to send chat action via Zalo API: {e} | Sent Payload: {payload}")
+
 async def process_zalo_message(sender_id: str, message_text: str):
     """Asynchronous worker to process query with RAG service and reply to Zalo user."""
     bot_token = settings.ZALO_BOT_TOKEN
     if not bot_token:
         print("[ZaloBot] WARNING: ZALO_BOT_TOKEN is not configured.")
         return
+
+    # Send typing action to let the user know the bot is processing/typing
+    await send_zalo_chat_action(bot_token, sender_id, "typing")
 
     # 1. Fetch active history
     history = await get_zalo_conversation_history(sender_id)

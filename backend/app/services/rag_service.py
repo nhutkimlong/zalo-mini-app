@@ -850,6 +850,17 @@ class RAGService:
                     context=context_str,
                 )
 
+                if channel == "zalo_bot":
+                    zalo_formatting_instruction = (
+                        "\n\n[ZALO BOT FORMATTING RULES]\n"
+                        "- Use Markdown formatting like **bold** (for prices, times, place names, or critical warnings) to make your response neat and professional.\n"
+                        "- Use bullet points or ordered lists to break down information.\n"
+                        "- You can use Zalo-specific color tags: {red}text{/red}, {green}text{/green}, {orange}text{/orange}, {yellow}text{/yellow} to highlight important notices or warnings.\n"
+                        "- You can use {big}text{/big} for emphasis, and {underline}text{/underline} to underline key terms.\n"
+                        "- DO NOT use standard markdown link format like `[Label](URL)`. Instead, write raw links directly, e.g., `Label (URL)` or `Label: URL`."
+                    )
+                    prompt += zalo_formatting_instruction
+
                 try:
                     dyn_config = self._get_dynamic_settings()
                     answer, usage_data = _call_llm(
