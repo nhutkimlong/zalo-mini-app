@@ -129,8 +129,8 @@ def split_message_for_zalo(text: str, max_chars: int = 1950) -> List[str]:
     while len(remaining) > max_chars:
         # Find a split index within the limit, taking current_prefix length into account
         limit = max_chars - len(current_prefix)
-        if limit <= 100:
-            # If the prefix is somehow extremely long (unlikely), reset limit
+        if limit <= max_chars // 5:
+            # If the prefix takes too much space, reset limit to half of max_chars
             limit = max_chars // 2
             
         chunk_candidate = remaining[:limit]

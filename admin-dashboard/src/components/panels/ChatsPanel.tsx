@@ -84,10 +84,14 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
               return (
                 <tr key={c.id}>
                   <td>
-                    {c.channel === "web" || c.channel === "mini_app" ? (
+                    {c.channel === "web" ? (
                       <span className="badge badge-info">Web PWA</span>
+                    ) : c.channel === "mini_app" ? (
+                      <span className="badge badge-success">Mini App</span>
+                    ) : c.channel === "zalo_bot" ? (
+                      <span className="badge" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)", color: "#3B82F6" }}>Zalo Bot</span>
                     ) : (
-                      <span className="badge badge-success">Khác</span>
+                      <span className="badge" style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>{c.channel || "Khác"}</span>
                     )}
                   </td>
                   <td style={{ fontWeight: 600, color: "var(--cream-white)" }}>

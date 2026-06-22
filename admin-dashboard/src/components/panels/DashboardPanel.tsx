@@ -444,9 +444,17 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
                 <span style={{ color: "var(--text-light)" }}>Số câu hỏi chuyển tiếp BQL:</span>
                 <span style={{ fontWeight: 700, color: "var(--danger)" }}>{lowConfCount}</span>
               </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                <span style={{ color: "var(--text-light)" }}>Kênh Web PWA:</span>
+                <span style={{ fontWeight: 700 }}>{chats.filter(c => c.channel === "web").length}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                <span style={{ color: "var(--text-light)" }}>Kênh Mini App:</span>
+                <span style={{ fontWeight: 700, color: "var(--success)" }}>{chats.filter(c => c.channel === "mini_app").length}</span>
+              </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                <span style={{ color: "var(--text-light)" }}>Nguồn câu hỏi Web PWA:</span>
-                <span style={{ fontWeight: 700 }}>{chats.filter(c => c.channel === "web" || c.channel === "mini_app").length}</span>
+                <span style={{ color: "var(--text-light)" }}>Kênh Zalo Bot:</span>
+                <span style={{ fontWeight: 700, color: "#3B82F6" }}>{chats.filter(c => c.channel === "zalo_bot").length}</span>
               </div>
             </div>
           </div>

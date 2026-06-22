@@ -136,7 +136,10 @@ export const App: React.FC = () => {
 
       if (results[2].status === "fulfilled") setAnnouncements(results[2].value);
       if (results[3].status === "fulfilled") setFeedbacks(results[3].value);
-      if (results[4].status === "fulfilled") setChats(results[4].value);
+      if (results[4].status === "fulfilled") {
+        const userChats = results[4].value.filter((c: AdminChatLog) => c.channel !== "backend_rag");
+        setChats(userChats);
+      }
       if (results[5].status === "fulfilled") setUsageSummary(results[5].value);
       if (results[6].status === "fulfilled") setItineraries(results[6].value);
 

@@ -239,7 +239,7 @@ def test_split_message_for_zalo():
     # Prefix: "Chào mừng **bạn đến" -> bold is open, so it should close it with "**"
     # Suffix: " với Núi Bà Đen**." -> bold is reopened at start of suffix with "**"
     chunks = split_message_for_zalo(text_with_bold, max_chars=25)
-    assert chunks == ["Chào mừng **bạn đến**", "**với Núi Bà Đen**."]
+    assert chunks == ["Chào mừng **bạn đến với**", "**Núi Bà Đen**."]
 
     # Color tags balance test
     text_with_color = "Đây là {green}văn bản màu xanh rất dài{/green}."
