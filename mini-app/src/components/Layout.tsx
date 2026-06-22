@@ -16,6 +16,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const pageContainerRef = useRef<HTMLElement>(null);
 
+  const lastHeightRef = useRef<number>(0);
+  const lastTopRef = useRef<number>(0);
+  const lastLeftRef = useRef<number>(0);
+  const lastKeyboardOpenRef = useRef<boolean>(false);
+
   const getPageTitle = () => {
     if (path === "/") return "";
     if (path === "/places") return t("places.title");
@@ -35,28 +40,45 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const updateHeight = () => {
       const vv = window.visualViewport;
       const height = vv ? vv.height : window.innerHeight;
-      document.documentElement.style.setProperty("--app-height", `${height}px`);
+      const offsetTop = vv ? vv.offsetTop : 0;
+      const offsetLeft = vv ? vv.offsetLeft : 0;
+
+      if (
+        height !== lastHeightRef.current ||
+        offsetTop !== lastTopRef.current ||
+        offsetLeft !== lastLeftRef.current
+      ) {
+        lastHeightRef.current = height;
+        lastTopRef.current = offsetTop;
+        lastLeftRef.current = offsetLeft;
+
+        document.documentElement.style.setProperty("--app-height", `${height}px`);
+        document.documentElement.style.setProperty("--app-top", `${offsetTop}px`);
+        document.documentElement.style.setProperty("--app-left", `${offsetLeft}px`);
+      }
 
       // Detect keyboard open (visual viewport height shrinks significantly)
       const isKeyboardOpen = vv ? vv.height < window.innerHeight - 140 : false;
-      if (isKeyboardOpen) {
-        document.documentElement.classList.add("keyboard-open");
-        document.body.classList.add("keyboard-open");
-      } else {
-        document.documentElement.classList.remove("keyboard-open");
-        document.body.classList.remove("keyboard-open");
+      if (isKeyboardOpen !== lastKeyboardOpenRef.current) {
+        lastKeyboardOpenRef.current = isKeyboardOpen;
+        if (isKeyboardOpen) {
+          document.documentElement.classList.add("keyboard-open");
+          document.body.classList.add("keyboard-open");
+        } else {
+          document.documentElement.classList.remove("keyboard-open");
+          document.body.classList.remove("keyboard-open");
+        }
       }
     };
 
-    const handleResize = () => {
+    const handleViewportChange = () => {
       updateHeight();
-      // Instantly scroll window back to 0 on resize to block keyboard pan offsets
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo(0, 0);
       }
     };
 
-    const handleScroll = () => {
+    const handleWindowScroll = () => {
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo(0, 0);
       }
@@ -70,25 +92,36 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           target.tagName === "TEXTAREA" ||
           target.tagName === "SELECT")
       ) {
-        // Exclude the bottom chat input from scrollIntoView('center')
-        // to keep it anchored right at the bottom (directly above the keyboard)
+        document.documentElement.classList.add("keyboard-open");
+        document.body.classList.add("keyboard-open");
+
+        // Force an immediate layout update
+        window.scrollTo(0, 0);
+        updateHeight();
+
+        // Exclude the bottom chat input from scrollIntoView
         if (target.id === "chat-input") {
-          setTimeout(() => {
-            window.scrollTo(0, 0);
-          }, 80);
           return;
         }
 
-        // Prevent default window panning behavior on iOS/Webview
-        // By calling scrollIntoView with block: "nearest" after the keyboard has fully opened (200ms)
-        setTimeout(() => {
-          target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        // Instantly snap scroll position on focus to avoid WebKit page panning
+        const container = target.closest(".app-scroll-container");
+        if (container) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const relativeTop = targetRect.top - containerRect.top + container.scrollTop;
+          const targetScrollTop = relativeTop - 40; // Align input 40px from the top of scroll container
+
+          container.scrollTo({
+            top: Math.max(0, targetScrollTop),
+            behavior: "auto" // Instant alignment!
+          });
+        }
+        
+        // Final sanity-lock scroll check
+        requestAnimationFrame(() => {
           window.scrollTo(0, 0);
-          // Additional safety scroll reset after smooth transition starts
-          setTimeout(() => {
-            window.scrollTo(0, 0);
-          }, 150);
-        }, 200);
+        });
       }
     };
 
@@ -103,23 +136,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             active.tagName !== "SELECT")
         ) {
           window.scrollTo(0, 0);
+          document.documentElement.classList.remove("keyboard-open");
+          document.body.classList.remove("keyboard-open");
+          updateHeight();
         }
       }, 100);
     };
 
-    window.visualViewport?.addEventListener("resize", handleResize);
-    window.visualViewport?.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleWindowScroll);
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("focusout", handleFocusOut);
-    handleResize();
+    updateHeight();
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", handleResize);
-      window.visualViewport?.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleWindowScroll);
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("focusout", handleFocusOut);
       // Clean up classes on unmount
@@ -173,7 +209,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className={`app-layout-wrapper ${isFullscreenPage ? "is-fullscreen-route" : ""}`}>
       <header className={`site-header ${path !== "/" ? "is-subpage-header" : ""}`}>
-        {path !== "/" && (
+        {path !== "/" && !menuOpen && (
           <button
             type="button"
             className="layout-back-button mobile-only"
@@ -184,7 +220,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </button>
         )}
 
-        <Link to="/" className={`site-brand ${path !== "/" ? "desktop-only" : ""}`} aria-label="Trang chủ Núi Bà Đen">
+        <Link to="/" className={`site-brand ${path !== "/" && !menuOpen ? "desktop-only" : ""}`} aria-label="Trang chủ Núi Bà Đen">
           <img src={logoImageUrl} alt="Núi Bà Đen" className="site-logo" />
           <span>
             <strong>Núi Bà Đen</strong>
@@ -192,7 +228,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </Link>
 
-        {path !== "/" && (
+        {path !== "/" && !menuOpen && (
           <div className="layout-mobile-title mobile-only">
             {getPageTitle()}
           </div>

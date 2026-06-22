@@ -31,9 +31,11 @@ export const FeedbackPage: React.FC = () => {
       const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       if (!window.isSecureContext && !isLocalhost) {
         alert(
-          language === "en"
-            ? "GPS geolocation requires a secure connection (HTTPS). Please access via HTTPS."
-            : "Định vị GPS yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập qua địa chỉ HTTPS."
+          language === "km"
+            ? "ការកំណត់ទីតាំង GPS តម្រូវឱ្យមានការតភ្ជាប់សុវត្ថិភាព (HTTPS)។ សូមចូលប្រើប្រាស់តាមរយៈ HTTPS។"
+            : language === "en"
+              ? "GPS geolocation requires a secure connection (HTTPS). Please access via HTTPS."
+              : "Định vị GPS yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập qua địa chỉ HTTPS."
         );
         return;
       }
@@ -48,9 +50,11 @@ export const FeedbackPage: React.FC = () => {
             const status = await navigator.permissions.query({ name: "geolocation" });
             if (status.state === "denied") {
               alert(
-                language === "en"
-                  ? "Location access is blocked. Please enable location permissions in your browser settings to use this feature."
-                  : "Quyền truy cập vị trí đã bị chặn. Vui lòng cấp quyền truy cập vị trí trong cài đặt trang web của trình duyệt để sử dụng tính năng này."
+                language === "km"
+                  ? "សិទ្ធិចូលប្រើប្រាស់ទីតាំងត្រូវបានរារាំង។ សូមបើកសិទ្ធិទីតាំងនៅក្នុងការកំណត់កម្មវិធីរុករករបស់អ្នក ដើម្បីប្រើប្រាស់មុខងារនេះ។"
+                  : language === "en"
+                    ? "Location access is blocked. Please enable location permissions in your browser settings to use this feature."
+                    : "Quyền truy cập vị trí đã bị chặn. Vui lòng cấp quyền truy cập vị trí trong cài đặt trang web của trình duyệt để sử dụng tính năng này."
               );
               return;
             }
@@ -103,14 +107,19 @@ export const FeedbackPage: React.FC = () => {
         
         if (isPermissionError) {
           alert(
-            language === "en"
-              ? "GPS permission denied. Please allow location access in your browser settings to use this feature."
-              : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt của bạn để sử dụng tính năng này."
+            language === "km"
+              ? "សិទ្ធិ GPS ត្រូវបានបដិសេធ។ សូមអនុញ្ញាតសិទ្ធិចូលប្រើប្រាស់ទីតាំងនៅក្នុងការកំណត់កម្មវិធីរុករករបស់អ្នក ដើម្បីប្រើប្រាស់មុខងារនេះ។"
+              : language === "en"
+                ? "GPS permission denied. Please allow location access in your browser settings to use this feature."
+                : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt của bạn để sử dụng tính năng này."
           );
         } else {
-          alert(language === "en" 
-            ? "Unable to get location. Please allow GPS access and try again." 
-            : "Không thể lấy vị trí. Vui lòng cấp quyền truy cập GPS và thử lại."
+          alert(
+            language === "km"
+              ? "មិនអាចទទួលបានទីតាំងទេ។ សូមអនុញ្ញាតឱ្យចូលប្រើ GPS ហើយព្យាយាមម្តងទៀត។"
+              : language === "en"
+                ? "Unable to get location. Please allow GPS access and try again."
+                : "Không thể lấy vị trí. Vui lòng cấp quyền truy cập GPS và thử lại."
           );
         }
       }
@@ -145,15 +154,17 @@ export const FeedbackPage: React.FC = () => {
           uploadedUrl = await api.uploadImage(selectedFile);
         } catch (uploadErr: any) {
           console.error("Storage upload failed, fallback to text-only submission:", uploadErr);
-          alert(language === "en" 
-            ? "Image upload failed. We will submit your feedback text without the image." 
-            : "Tải ảnh lên thất bại. Chúng tôi sẽ gửi phản ánh của bạn dưới dạng văn bản không có ảnh."
+          alert(language === "km"
+            ? "ការផ្ទុករូបភាពឡើងបានបរាជ័យ។ យើងខ្ញុំនឹងផ្ញើមតិយោបល់របស់អ្នកជាអក្សរដោយគ្មានរូបភាព។"
+            : language === "en"
+              ? "Image upload failed. We will submit your feedback text without the image."
+              : "Tải ảnh lên thất bại. Chúng tôi sẽ gửi phản ánh của bạn dưới dạng văn bản không có ảnh."
           );
         }
       }
 
       const res = await api.submitFeedback({
-        reporter_name: name || (language === "en" ? "Anonymous Tourist" : "Du khách ẩn danh"),
+        reporter_name: name || (language === "km" ? "ភ្ញៀវទេសចរលាក់មុខ" : language === "en" ? "Anonymous Tourist" : "Du khách ẩn danh"),
         phone: phone || undefined,
         report_type: reportType,
         content: content,
@@ -166,9 +177,11 @@ export const FeedbackPage: React.FC = () => {
       setIsSubmitted(true);
     } catch (error) {
       console.error("Submission failed:", error);
-      alert(language === "en" 
-        ? "Could not submit feedback. Please check your connection and try again." 
-        : "Không thể gửi phản ánh. Vui lòng kiểm tra kết nối mạng và thử lại."
+      alert(language === "km"
+        ? "មិនអាចផ្ញើមតិយោបល់បានទេ។ សូមពិនិត្យការតភ្ជាប់បណ្តាញរបស់អ្នក ហើយព្យាយាមម្តងទៀត។"
+        : language === "en"
+          ? "Could not submit feedback. Please check your connection and try again."
+          : "Không thể gửi phản ánh. Vui lòng kiểm tra kết nối mạng và thử lại."
       );
     } finally {
       setIsSubmitting(false);
@@ -176,7 +189,18 @@ export const FeedbackPage: React.FC = () => {
   };
 
   const getReportTypeName = (tType: ReportType) => {
-    if (language === "en") {
+    if (language === "km") {
+      switch (tType) {
+        case "ve_sinh": return "អនាម័យ និងបរិស្ថាន";
+        case "gia_ca": return "តម្លៃ និងសេវាកម្ម";
+        case "cheo_keo": return "ការបង្ខំ និងរំខាន";
+        case "an_ninh": return "សន្តិសុខ និងសណ្តាប់ធ្នាប់";
+        case "thai_do": return "ឥរិយាបថបុគ្គលិក";
+        case "ha_tang": return "ហេដ្ឋារចនាសម្ព័ន្ធ និងផ្លាកសញ្ញា";
+        case "gop_y": return "មតិទូទៅ";
+        default: return "បញ្ហាផ្សេងៗ";
+      }
+    } else if (language === "en") {
       switch (tType) {
         case "ve_sinh": return "Sanitation & Environment";
         case "gia_ca": return "Pricing & Services";
@@ -205,30 +229,32 @@ export const FeedbackPage: React.FC = () => {
     return (
       <Page>
         <Header
-          title={language === "en" ? "Feedback Sent Successfully" : "Gửi phản ánh thành công"}
+          title={language === "km" ? "បានផ្ញើមតិយោបល់ដោយជោគជ័យ" : language === "en" ? "Feedback Sent Successfully" : "Gửi phản ánh thành công"}
           showBackIcon={true}
         />
 
         <div className="feedback-success-wrapper">
           <CheckCircle size={60} className="feedback-success-icon" />
           <h2 className="feedback-success-title">
-            {language === "en" ? "Submission Successful" : "Tiếp nhận thông tin thành công"}
+            {language === "km" ? "ការបញ្ជូនបានជោគជ័យ" : language === "en" ? "Submission Successful" : "Tiếp nhận thông tin thành công"}
           </h2>
           <p className="feedback-success-desc">
-            {language === "en"
-              ? "Thank you for your feedback. Black Lady Mountain Relic Board has received your report and will coordinate with professional units to resolve it as soon as possible."
-              : "Cảm ơn quý khách đã gửi phản ánh kiến nghị. Ban quản lý Khu du lịch Núi Bà Đen đã tiếp nhận thông tin và sẽ điều phối đơn vị nghiệp vụ xử lý sớm nhất."}
+            {language === "km"
+              ? "សូមអរគុណចំពោះការផ្តល់មតិយោបល់របស់អ្នក។ គណៈគ្រប់គ្រងភ្នំ Ba Den បានទទួលរបាយការណ៍របស់អ្នក ហើយនឹងសហការជាមួយអង្គភាពជំនាញដើម្បីដោះស្រាយឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។"
+              : language === "en"
+                ? "Thank you for your feedback. Black Lady Mountain Relic Board has received your report and will coordinate with professional units to resolve it as soon as possible."
+                : "Cảm ơn quý khách đã gửi phản ánh kiến nghị. Ban quản lý Khu du lịch Núi Bà Đen đã tiếp nhận thông tin và sẽ điều phối đơn vị nghiệp vụ xử lý sớm nhất."}
           </p>
 
           <div className="glass-card feedback-success-card">
             <div className="feedback-success-card-label">
-              {language === "en" ? "Reference Code:" : "Mã hồ sơ tiếp nhận:"}
+              {language === "km" ? "លេខកូដយោង៖" : language === "en" ? "Reference Code:" : "Mã hồ sơ tiếp nhận:"}
             </div>
             <div className="feedback-success-card-code">{trackingId}</div>
           </div>
 
           <Link to="/" className="submit-btn feedback-success-back-btn">
-            {language === "en" ? "Back to Homepage" : "Quay lại trang chủ"}
+            {language === "km" ? "ត្រឡប់ទៅទំព័រដើម" : language === "en" ? "Back to Homepage" : "Quay lại trang chủ"}
           </Link>
         </div>
       </Page>
@@ -256,9 +282,11 @@ export const FeedbackPage: React.FC = () => {
         {/* Intro */}
         <div className="glass-card feedback-notice-card">
           <p className="feedback-notice-text">
-            {language === "en"
-              ? "Visitors can report issues directly regarding sanitation, pricing, security, solicitation, or infrastructure. The Board will receive and handle it immediately."
-              : "Du khách có thể phản ánh trực tiếp các vấn đề về vệ sinh, giá cả, an ninh trật tự, chèo kéo hoặc hạ tầng. BQL sẽ tiếp nhận và phản hồi ngay lập tức."}
+            {language === "km"
+              ? "ភ្ញៀវទេសចរអាចរាយការណ៍ដោយផ្ទាល់អំពីបញ្ហាពាក់ព័ន្ធនឹងអនាម័យ តម្លៃ សន្តិសុខ ការរំខាន ឬហេដ្ឋារចនាសម្ព័ន្ធ។ គណៈគ្រប់គ្រងនឹងទទួលយក និងដោះស្រាយភ្លាមៗ។"
+              : language === "en"
+                ? "Visitors can report issues directly regarding sanitation, pricing, security, solicitation, or infrastructure. The Board will receive and handle it immediately."
+                : "Du khách có thể phản ánh trực tiếp các vấn đề về vệ sinh, giá cả, an ninh trật tự, chèo kéo hoặc hạ tầng. BQL sẽ tiếp nhận và phản hồi ngay lập tức."}
           </p>
         </div>
 
@@ -267,12 +295,12 @@ export const FeedbackPage: React.FC = () => {
           
           <div>
             <label className="feedback-form-label">
-              {language === "en" ? "Visitor Name (Optional)" : "Họ tên du khách (Tùy chọn)"}
+              {language === "km" ? "ឈ្មោះភ្ញៀវទេសចរ (មិនបង្ខំ)" : language === "en" ? "Visitor Name (Optional)" : "Họ tên du khách (Tùy chọn)"}
             </label>
             <input 
               type="text" 
               className="feedback-input" 
-              placeholder={language === "en" ? "Enter your name..." : "Nhập họ và tên..."} 
+              placeholder={language === "km" ? "បញ្ចូលឈ្មោះរបស់អ្នក..." : language === "en" ? "Enter your name..." : "Nhập họ và tên..."} 
               value={name}
               onChange={(e) => setName(e.target.value)}
               enterKeyHint="next"
@@ -281,12 +309,12 @@ export const FeedbackPage: React.FC = () => {
 
           <div>
             <label className="feedback-form-label">
-              {language === "en" ? "Contact Phone Number" : "Số điện thoại liên hệ"}
+              {language === "km" ? "លេខទូរស័ព្ទទំនាក់ទំនង" : language === "en" ? "Contact Phone Number" : "Số điện thoại liên hệ"}
             </label>
             <input 
               type="tel" 
               className="feedback-input" 
-              placeholder={language === "en" ? "Enter your phone number..." : "Nhập số điện thoại..."} 
+              placeholder={language === "km" ? "បញ្ចូលលេខទូរស័ព្ទរបស់អ្នក..." : language === "en" ? "Enter your phone number..." : "Nhập số điện thoại..."} 
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               enterKeyHint="next"
@@ -295,7 +323,7 @@ export const FeedbackPage: React.FC = () => {
 
           <div>
             <label className="feedback-form-label">
-              {language === "en" ? "Feedback Category" : "Loại phản ánh kiến nghị"}
+              {language === "km" ? "ប្រភេទមតិយោបល់" : language === "en" ? "Feedback Category" : "Loại phản ánh kiến nghị"}
             </label>
             <select 
               className="feedback-input" 
@@ -316,12 +344,12 @@ export const FeedbackPage: React.FC = () => {
 
           <div>
             <label className="feedback-form-label">
-              {language === "en" ? "Detailed Description *" : "Nội dung chi tiết phản ánh *"}
+              {language === "km" ? "ការពិពណ៌នាលម្អិត *" : language === "en" ? "Detailed Description *" : "Nội dung chi tiết phản ánh *"}
             </label>
             <textarea 
               className="feedback-input" 
               rows={4}
-              placeholder={language === "en" ? "Describe details of the event, location, time..." : "Mô tả chi tiết sự việc, địa điểm, thời gian phát sinh..."} 
+              placeholder={language === "km" ? "ពិពណ៌នាអំពីព័ត៌មានលម្អិតនៃព្រឹត្តិការណ៍ ទីតាំង ពេលវេលា..." : language === "en" ? "Describe details of the event, location, time..." : "Mô tả chi tiết sự việc, địa điểm, thời gian phát sinh..."} 
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
@@ -332,7 +360,7 @@ export const FeedbackPage: React.FC = () => {
           {/* Photo upload */}
           <div>
             <label className="feedback-form-label">
-              {language === "en" ? "Attach Photo Evidence" : "Ảnh đính kèm minh chứng"}
+              {language === "km" ? "ភ្ជាប់ភស្តុតាងរូបថត" : language === "en" ? "Attach Photo Evidence" : "Ảnh đính kèm minh chứng"}
             </label>
             <div className="feedback-photo-row">
               <input 
@@ -350,8 +378,8 @@ export const FeedbackPage: React.FC = () => {
                 <Image size={16} aria-hidden="true" />
                 <span>
                   {imageFile 
-                    ? (language === "en" ? "Change photo" : "Đổi ảnh") 
-                    : (language === "en" ? "Select photo" : "Chọn ảnh chụp")}
+                    ? (language === "km" ? "ប្តូររូបថត" : language === "en" ? "Change photo" : "Đổi ảnh") 
+                    : (language === "km" ? "ជ្រើសរើសរូបថត" : language === "en" ? "Select photo" : "Chọn ảnh chụp")}
                 </span>
               </button>
               {imageFile && <span className="feedback-photo-status">✓ {imageFile}</span>}
@@ -362,12 +390,12 @@ export const FeedbackPage: React.FC = () => {
           <div className="feedback-gps-row">
             <div>
               <h4 className="feedback-gps-heading">
-                {language === "en" ? "Attach Event Location Coordinates" : "Đính kèm tọa độ vị trí sự việc"}
+                {language === "km" ? "ភ្ជាប់កូអរដោនេទីតាំង" : language === "en" ? "Attach Event Location Coordinates" : "Đính kèm tọa độ vị trí sự việc"}
               </h4>
               <p className="feedback-gps-desc">
                 {gpsEnabled && coords.lat 
-                  ? `${language === "en" ? "Coordinates:" : "Tọa độ:"} ${coords.lat.toFixed(6)}, ${coords.lng?.toFixed(6)}` 
-                  : (language === "en" ? "Automatically acquire your current GPS coordinates" : "Tự động lấy vị trí GPS hiện tại của bạn")}
+                  ? `${language === "km" ? "កូអរដោនេ៖" : language === "en" ? "Coordinates:" : "Tọa độ:"} ${coords.lat.toFixed(6)}, ${coords.lng?.toFixed(6)}` 
+                  : (language === "km" ? "ទទួលបានកូអរដោនេ GPS បច្ចុប្បន្នរបស់អ្នកដោយស្វ័យប្រវត្តិ" : language === "en" ? "Automatically acquire your current GPS coordinates" : "Tự động lấy vị trí GPS hiện tại của bạn")}
               </p>
             </div>
             <button 
@@ -389,8 +417,8 @@ export const FeedbackPage: React.FC = () => {
               <MapPin size={12} />
               <span>
                 {gpsEnabled 
-                  ? (language === "en" ? "Attached" : "Đang đính kèm") 
-                  : (language === "en" ? "Get Location" : "Lấy vị trí")}
+                  ? (language === "km" ? "បានភ្ជាប់" : language === "en" ? "Attached" : "Đang đính kèm") 
+                  : (language === "km" ? "យកទីតាំង" : language === "en" ? "Get Location" : "Lấy vị trí")}
               </span>
             </button>
           </div>
@@ -405,8 +433,8 @@ export const FeedbackPage: React.FC = () => {
           disabled={isSubmitting}
         >
           {isSubmitting 
-            ? (language === "en" ? "Submitting..." : "Đang gửi...") 
-            : (language === "en" ? "Submit Feedback" : "Gửi Phản Ánh")}
+            ? (language === "km" ? "កំពុងផ្ញើ..." : language === "en" ? "Submitting..." : "Đang gửi...") 
+            : (language === "km" ? "ផ្ញើមតិយោបល់" : language === "en" ? "Submit Feedback" : "Gửi Phản Ánh")}
         </button>
 
       </form>

@@ -41,10 +41,10 @@ export const ProfilePage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const authSubmitLabel = authLoading
-    ? language === "en" ? "Processing..." : "Đang xử lý..."
+    ? language === "km" ? "កំពុងដំណើរការ..." : language === "en" ? "Processing..." : "Đang xử lý..."
     : authMode === "login"
-      ? language === "en" ? "Log In" : "Đăng nhập"
-      : language === "en" ? "Create Account" : "Tạo tài khoản";
+      ? language === "km" ? "ចូលគណនី" : language === "en" ? "Log In" : "Đăng nhập"
+      : language === "km" ? "បង្កើតគណនី" : language === "en" ? "Create Account" : "Tạo tài khoản";
 
   const switchAuthMode = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -118,20 +118,20 @@ export const ProfilePage: React.FC = () => {
     const nextErrors: Record<string, string> = {};
 
     if (authMode === "signup" && trimmedName.length < 2) {
-      nextErrors.name = language === "en" ? "Enter your full name." : "Vui lòng nhập họ và tên.";
+      nextErrors.name = language === "km" ? "សូមបញ្ចូលឈ្មោះពេញរបស់អ្នក។" : language === "en" ? "Enter your full name." : "Vui lòng nhập họ và tên.";
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      nextErrors.email = language === "en" ? "Enter a valid email address." : "Email chưa đúng định dạng.";
+      nextErrors.email = language === "km" ? "សូមបញ្ចូលអាសយដ្ឋានអ៊ីមែលដែលមានសុពលភាព។" : language === "en" ? "Enter a valid email address." : "Email chưa đúng định dạng.";
     }
 
     if (password.length < 6) {
-      nextErrors.password = language === "en" ? "Password must be at least 6 characters." : "Mật khẩu tối thiểu 6 ký tự.";
+      nextErrors.password = language === "km" ? "លេខសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៦ ខ្ទង់។" : language === "en" ? "Password must be at least 6 characters." : "Mật khẩu tối thiểu 6 ký tự.";
     }
 
     if (Object.keys(nextErrors).length > 0) {
       setAuthFieldErrors(nextErrors);
-      setAuthError(language === "en" ? "Please check the highlighted fields." : "Vui lòng kiểm tra các trường được đánh dấu.");
+      setAuthError(language === "km" ? "សូមពិនិត្យមើលវាលដែលបានសម្គាល់។" : language === "en" ? "Please check the highlighted fields." : "Vui lòng kiểm tra các trường được đánh dấu.");
       return;
     }
 
@@ -144,7 +144,7 @@ export const ProfilePage: React.FC = () => {
       if (authMode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
         if (error) throw error;
-        setAuthMessage("Đăng nhập thành công!");
+        setAuthMessage(language === "km" ? "ចូលគណនីជោគជ័យ!" : language === "en" ? "Login successful!" : "Đăng nhập thành công!");
       } else {
         const signUpRes = await supabase.auth.signUp({
           email: trimmedEmail,
@@ -157,16 +157,18 @@ export const ProfilePage: React.FC = () => {
         
         if (!signUpRes.data.session) {
           setAuthMode("login");
-          setAuthMessage(language === "en"
-            ? "Account created. Please check your email if confirmation is required, then log in."
-            : "Tài khoản đã được tạo. Nếu hệ thống yêu cầu xác nhận, vui lòng kiểm tra email rồi đăng nhập.");
+          setAuthMessage(language === "km"
+            ? "គណនីត្រូវបានបង្កើត។ សូមពិនិត្យមើលអ៊ីមែលរបស់អ្នកសម្រាប់តំណភ្ជាប់បញ្ជាក់ ប្រសិនបើចាំបាច់ បន្ទាប់មកចូលគណនី។"
+            : language === "en"
+              ? "Account created. Please check your email if confirmation is required, then log in."
+              : "Tài khoản đã được tạo. Nếu hệ thống yêu cầu xác nhận, vui lòng kiểm tra email rồi đăng nhập.");
           return;
         }
         
-        setAuthMessage("Đăng ký và đăng nhập thành công!");
+        setAuthMessage(language === "km" ? "ចុះឈ្មោះ និងចូលគណនីជោគជ័យ!" : language === "en" ? "Sign up and login successful!" : "Đăng ký và đăng nhập thành công!");
       }
     } catch (err: any) {
-      setAuthError(err.message || "Đã xảy ra lỗi khi xác thực.");
+      setAuthError(err.message || (language === "km" ? "មានកំហុសក្នុងការផ្ទៀងផ្ទាត់។" : language === "en" ? "An error occurred during authentication." : "Đã xảy ra lỗi khi xác thực."));
     } finally {
       setAuthLoading(false);
     }
@@ -189,12 +191,12 @@ export const ProfilePage: React.FC = () => {
       // 2. Optional Password Update
       if (showPasswordChange) {
         if (newPassword.length < 6) {
-          alert(language === "en" ? "Password must be at least 6 characters." : "Mật khẩu mới phải từ 6 ký tự trở lên.");
+          alert(language === "km" ? "លេខសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៦ ខ្ទង់។" : language === "en" ? "Password must be at least 6 characters." : "Mật khẩu mới phải từ 6 ký tự trở lên.");
           setEditLoading(false);
           return;
         }
         if (newPassword !== confirmPassword) {
-          alert(language === "en" ? "Passwords do not match." : "Mật khẩu xác nhận không khớp.");
+          alert(language === "km" ? "លេខសម្ងាត់មិនត្រូវគ្នាទេ។" : language === "en" ? "Passwords do not match." : "Mật khẩu xác nhận không khớp.");
           setEditLoading(false);
           return;
         }
@@ -202,16 +204,16 @@ export const ProfilePage: React.FC = () => {
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) throw error;
         
-        alert(language === "en" ? "Password updated successfully!" : "Đổi mật khẩu thành công!");
+        alert(language === "km" ? "លេខសម្ងាត់ត្រូវបានធ្វើបច្ចុប្បន្នភាពជោគជ័យ!" : language === "en" ? "Password updated successfully!" : "Đổi mật khẩu thành công!");
         setNewPassword("");
         setConfirmPassword("");
         setShowPasswordChange(false);
       }
       
       setIsEditing(false);
-      setProfileNotice({ type: "success", message: language === "en" ? "Profile updated successfully." : "Đã cập nhật hồ sơ." });
+      setProfileNotice({ type: "success", message: language === "km" ? "ប្រវត្តិរូបត្រូវបានធ្វើបច្ចុប្បន្នភាពជោគជ័យ។" : language === "en" ? "Profile updated successfully." : "Đã cập nhật hồ sơ." });
     } catch (err: any) {
-      alert((language === "en" ? "Error" : "Lỗi") + ": " + err.message);
+      alert((language === "km" ? "កំហុស" : language === "en" ? "Error" : "Lỗi") + ": " + err.message);
     } finally {
       setEditLoading(false);
     }
@@ -224,9 +226,9 @@ export const ProfilePage: React.FC = () => {
     try {
       const res = await api.uploadAvatar(file);
       setProfile((prev: any) => ({ ...prev, avatar_url: res.avatar_url }));
-      setProfileNotice({ type: "success", message: language === "en" ? "Avatar updated." : "Đã cập nhật ảnh đại diện." });
+      setProfileNotice({ type: "success", message: language === "km" ? "រូបតំណាងត្រូវបានធ្វើបច្ចុប្បន្នភាព។" : language === "en" ? "Avatar updated." : "Đã cập nhật ảnh đại diện." });
     } catch (err: any) {
-      alert("Lỗi tải ảnh đại diện: " + err.message);
+      alert((language === "km" ? "កំហុសក្នុងការផ្ទុករូបតំណាង: " : language === "en" ? "Error uploading avatar: " : "Lỗi tải ảnh đại diện: ") + err.message);
     } finally {
       setAvatarLoading(false);
     }
@@ -292,14 +294,14 @@ export const ProfilePage: React.FC = () => {
                 onClick={() => switchAuthMode("login")}
                 className={`profile-auth-tab-btn ${authMode === "login" ? "is-active" : ""}`}
               >
-                {language === "en" ? "LOG IN" : "ĐĂNG NHẬP"}
+                {language === "km" ? "ចូលគណនី" : language === "en" ? "LOG IN" : "ĐĂNG NHẬP"}
               </button>
               <button 
                 type="button"
                 onClick={() => switchAuthMode("signup")}
                 className={`profile-auth-tab-btn ${authMode === "signup" ? "is-active" : ""}`}
               >
-                {language === "en" ? "SIGN UP" : "ĐĂNG KÝ KHÁCH"}
+                {language === "km" ? "ចុះឈ្មោះភ្ញៀវ" : language === "en" ? "SIGN UP" : "ĐĂNG KÝ KHÁCH"}
               </button>
             </div>
 
@@ -319,7 +321,7 @@ export const ProfilePage: React.FC = () => {
               {authMode === "signup" && (
                 <div>
                   <label className="profile-auth-label">
-                    {language === "en" ? "FULL NAME" : "HỌ VÀ TÊN"}
+                    {language === "km" ? "ឈ្មោះពេញ" : language === "en" ? "FULL NAME" : "HỌ VÀ TÊN"}
                   </label>
                   <input 
                     id="profile-auth-name"
@@ -340,7 +342,7 @@ export const ProfilePage: React.FC = () => {
               
               <div>
                 <label className="profile-auth-label">
-                  EMAIL
+                  {language === "km" ? "អ៊ីមែល" : "EMAIL"}
                 </label>
                 <input 
                   id="profile-auth-email"
@@ -362,7 +364,7 @@ export const ProfilePage: React.FC = () => {
 
               <div>
                 <label className="profile-auth-label">
-                  {language === "en" ? "PASSWORD" : "MẬT KHẨU"}
+                  {language === "km" ? "លេខសម្ងាត់" : language === "en" ? "PASSWORD" : "MẬT KHẨU"}
                 </label>
                 <input 
                   id="profile-auth-password"

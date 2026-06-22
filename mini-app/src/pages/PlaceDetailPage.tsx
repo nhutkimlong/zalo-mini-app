@@ -82,9 +82,11 @@ export const PlaceDetailPage: React.FC = () => {
     if (!window.isSecureContext && !isLocalhost) {
       if (isManual) {
         alert(
-          language === "en"
-            ? "GPS geolocation requires a secure connection (HTTPS). Please access via HTTPS."
-            : "Định vị GPS yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập qua địa chỉ HTTPS."
+          language === "km"
+            ? "ការកំណត់ទីតាំង GPS តម្រូវឱ្យមានការតភ្ជាប់សុវត្ថិភាព (HTTPS)។ សូមចូលប្រើប្រាស់តាមរយៈ HTTPS។"
+            : language === "en"
+              ? "GPS geolocation requires a secure connection (HTTPS). Please access via HTTPS."
+              : "Định vị GPS yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập qua địa chỉ HTTPS."
         );
       }
       setDistance(null);
@@ -100,9 +102,11 @@ export const PlaceDetailPage: React.FC = () => {
         if (status.state === "denied") {
           if (isManual) {
             alert(
-              language === "en"
-                ? "Location access is blocked. Please enable location permissions in your browser settings to use this feature."
-                : "Quyền truy cập vị trí đã bị chặn. Vui lòng cấp quyền truy cập vị trí trong cài đặt trang web của trình duyệt để sử dụng tính năng này."
+              language === "km"
+                ? "សិទ្ធិចូលប្រើប្រាស់ទីតាំងត្រូវបានរារាំង។ សូមបើកសិទ្ធិទីតាំងនៅក្នុងការកំណត់កម្មវិធីរុករករបស់អ្នក ដើម្បីប្រើប្រាស់មុខងារនេះ។"
+                : language === "en"
+                  ? "Location access is blocked. Please enable location permissions in your browser settings to use this feature."
+                  : "Quyền truy cập vị trí đã bị chặn. Vui lòng cấp quyền truy cập vị trí trong cài đặt trang web của trình duyệt để sử dụng tính năng này."
             );
           }
           setDistance(null);
@@ -122,7 +126,13 @@ export const PlaceDetailPage: React.FC = () => {
   const triggerLocationRequest = (isLocalhost: boolean, isManual: boolean) => {
     if (!navigator.geolocation || !place) {
       if (isManual) {
-        alert(language === "en" ? "Geolocation is not supported by your browser." : "Định vị GPS không được trình duyệt của bạn hỗ trợ.");
+        alert(
+          language === "km"
+            ? "ការកំណត់ទីតាំង GPS មិនត្រូវបានគាំទ្រដោយកម្មវិធីរុករករបស់អ្នកទេ។"
+            : language === "en"
+              ? "Geolocation is not supported by your browser."
+              : "Định vị GPS không được trình duyệt của bạn hỗ trợ."
+        );
       }
       setDistance(null);
       setGpsLoading(false);
@@ -156,15 +166,19 @@ export const PlaceDetailPage: React.FC = () => {
             const isPermissionError = error && (error.code === 1 || String(error.message).toLowerCase().includes("denied"));
             if (isPermissionError) {
               alert(
-                language === "en"
-                  ? "Location permission denied. Please allow location access in your browser settings."
-                  : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt để sử dụng tính năng này."
+                language === "km"
+                  ? "សិទ្ធិទីតាំងត្រូវបានបដិសេធ។ សូមអនុញ្ញាតសិទ្ធិចូលប្រើប្រាស់ទីតាំងនៅក្នុងការកំណត់កម្មវិធីរុករករបស់អ្នក។"
+                  : language === "en"
+                    ? "Location permission denied. Please allow location access in your browser settings."
+                    : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt để sử dụng tính năng này."
               );
             } else {
               alert(
-                language === "en"
-                  ? "GPS access failed. Please ensure location services are enabled."
-                  : "Lỗi truy cập định vị GPS. Vui lòng kiểm tra dịch vụ vị trí của thiết bị."
+                language === "km"
+                  ? "ការចូលប្រើប្រាស់ GPS បានបរាជ័យ។ សូមប្រាកដថាសេវាកម្មទីតាំងត្រូវបានបើក។"
+                  : language === "en"
+                    ? "GPS access failed. Please ensure location services are enabled."
+                    : "Lỗi truy cập định vị GPS. Vui lòng kiểm tra dịch vụ vị trí của thiết bị."
               );
             }
           }
@@ -301,7 +315,7 @@ export const PlaceDetailPage: React.FC = () => {
       setIsFavorited(res.favorited);
     } catch (err: any) {
       console.error(err);
-      alert("Lỗi thả tim: " + err.message);
+      alert((language === "km" ? "កំហុសក្នុងការចុចចូលចិត្ត: " : language === "en" ? "Error favoriting: " : "Lỗi thả tim: ") + err.message);
     } finally {
       setFavLoading(false);
     }
@@ -452,7 +466,7 @@ export const PlaceDetailPage: React.FC = () => {
             
             {distance !== null && (
               <span className="detail-gps-distance-text">
-                Cách bạn: {distance < 1000 ? `${distance.toFixed(0)}m` : `${(distance / 1000).toFixed(1)}km`}
+                {language === "km" ? "ចម្ងាយពីអ្នក: " : language === "en" ? "Away: " : "Cách bạn: "}{distance < 1000 ? `${distance.toFixed(0)}m` : `${(distance / 1000).toFixed(1)}km`}
               </span>
             )}
           </div>
@@ -573,7 +587,7 @@ export const PlaceDetailPage: React.FC = () => {
               <button
                 className="audio-btn detail-audio-reset-btn"
                 onClick={handleReset}
-                aria-label={language === "en" ? "Restart audio narration" : "Nghe lại từ đầu"}
+                aria-label={language === "km" ? "សារឡើងវិញសំឡេងណែនាំ" : language === "en" ? "Restart audio narration" : "Nghe lại từ đầu"}
               >
                 <RotateCcw size={20} aria-hidden="true" />
               </button>
@@ -581,7 +595,7 @@ export const PlaceDetailPage: React.FC = () => {
               <button
                 className="audio-btn audio-play-pause"
                 onClick={handlePlayPause}
-                aria-label={isPlaying ? (language === "en" ? "Pause" : "Tạm dừng") : (language === "en" ? "Play" : "Phát")}
+                aria-label={isPlaying ? (language === "km" ? "ផ្អាក" : language === "en" ? "Pause" : "Tạm dừng") : (language === "km" ? "ចាក់សំឡេង" : language === "en" ? "Play" : "Phát")}
               >
                 {isPlaying
                   ? <Pause size={22} className="fill-navy" aria-hidden="true" />
@@ -591,7 +605,7 @@ export const PlaceDetailPage: React.FC = () => {
               <button
                 className="audio-btn detail-audio-play-text-btn"
                 onClick={handlePlayPause}
-                aria-label={isPlaying ? (language === "en" ? "Stop" : "Dừng") : (language === "en" ? "Play Narration" : "Nghe thuyết minh")}
+                aria-label={isPlaying ? (language === "km" ? "បញ្ឈប់" : language === "en" ? "Stop" : "Dừng") : (language === "km" ? "ចាក់សំឡេងណែនាំ" : language === "en" ? "Play Narration" : "Nghe thuyết minh")}
               >
                 {isPlaying ? (language === "en" ? "Playing..." : "Đang phát...") : (language === "en" ? "Play Narration" : language === "km" ? "ចាក់សំឡេង" : "Phát Thuyết Minh")}
               </button>

@@ -759,9 +759,11 @@ export const MapPage: React.FC = () => {
 
       if (isRemote && !isAutoLoad) {
         alert(
-          language === "en"
-            ? `You are exploring remotely (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Map centered on your position.`
-            : `Bạn đang ở vị trí từ xa (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Bản đồ đã định vị tiêu điểm về bạn.`
+          language === "km"
+            ? `អ្នកកំពុងរុករកពីចម្ងាយ (${latitude.toFixed(4)}, ${longitude.toFixed(4)})។ ផែនទីត្រូវបានកំណត់ទីតាំងចំចំណុចរបស់អ្នក។`
+            : language === "en"
+              ? `You are exploring remotely (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Map centered on your position.`
+              : `Bạn đang ở vị trí từ xa (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Bản đồ đã định vị tiêu điểm về bạn.`
         );
       }
     } catch (error: any) {
@@ -771,15 +773,19 @@ export const MapPage: React.FC = () => {
 
         if (isPermissionError) {
           alert(
-            language === "en"
-              ? "GPS permission denied. Please allow location access in your browser settings to use this feature."
-              : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt của bạn để sử dụng tính năng này."
+            language === "km"
+              ? "សិទ្ធិ GPS ត្រូវបានបដិសេធ។ សូមអនុញ្ញាតសិទ្ធិចូលប្រើប្រាស់ទីតាំងនៅក្នុងការកំណត់កម្មវិធីរុករករបស់អ្នក ដើម្បីប្រើប្រាស់មុខងារនេះ។"
+              : language === "en"
+                ? "GPS permission denied. Please allow location access in your browser settings to use this feature."
+                : "Quyền định vị bị từ chối. Vui lòng cấp quyền truy cập vị trí trên trình duyệt của bạn để sử dụng tính năng này."
           );
         } else {
           alert(
-            language === "en"
-              ? "GPS access failed. Please ensure location services are enabled."
-              : "Lỗi kích hoạt định vị GPS. Vui lòng kiểm tra dịch vụ vị trí của thiết bị."
+            language === "km"
+              ? "ការចូលប្រើប្រាស់ GPS បានបរាជ័យ។ សូមប្រាកដថាសេវាកម្មទីតាំងត្រូវបានបើក។"
+              : language === "en"
+                ? "GPS access failed. Please ensure location services are enabled."
+                : "Lỗi kích hoạt định vị GPS. Vui lòng kiểm tra dịch vụ vị trí của thiết bị."
           );
         }
       }
@@ -985,7 +991,7 @@ export const MapPage: React.FC = () => {
               onClick={handleZoomIn}
               id="map-zoom-in-btn"
               className="map-fab-btn map-zoom-btn"
-              title={language === "en" ? "Zoom In" : "Phóng to"}
+              title={language === "km" ? "ពង្រីក" : language === "en" ? "Zoom In" : "Phóng to"}
             >
               +
             </button>
@@ -995,7 +1001,7 @@ export const MapPage: React.FC = () => {
               onClick={handleZoomOut}
               id="map-zoom-out-btn"
               className="map-fab-btn map-zoom-btn"
-              title={language === "en" ? "Zoom Out" : "Thu nhỏ"}
+              title={language === "km" ? "បង្រួញ" : language === "en" ? "Zoom Out" : "Thu nhỏ"}
             >
               -
             </button>

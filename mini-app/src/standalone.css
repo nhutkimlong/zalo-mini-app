@@ -683,15 +683,27 @@ select:focus-visible {
 }
 
 .chat-layout-desktop {
-  height: calc(100% - 58px) !important;
-  display: grid !important;
-  grid-template-columns: minmax(240px, 310px) minmax(0, 1fr) !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .chat-sidebar {
-  display: flex !important;
-  background: rgba(7, 22, 38, 0.88) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .chat-layout-desktop {
+    display: grid !important;
+    grid-template-columns: minmax(240px, 310px) minmax(0, 1fr) !important;
+  }
+
+  .chat-sidebar {
+    display: flex !important;
+    background: rgba(7, 22, 38, 0.88) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
 }
 
 .chat-main-panel {
@@ -760,8 +772,8 @@ select:focus-visible {
   }
 
   .page-route-info > .info-tab-content {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex !important;
+    flex-direction: column !important;
     gap: 18px !important;
   }
 
@@ -866,7 +878,6 @@ select:focus-visible {
     font-size: 15px;
   }
 
-  .site-brand small,
   .site-lang-toggle,
   .site-ai-button {
     display: none;
@@ -3430,7 +3441,8 @@ select:focus-visible {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  WebkitOverflowScrolling: touch;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .chat-messages-container {
@@ -4609,11 +4621,6 @@ button:disabled {
   min-height: 0;
 }
 
-@media (min-width: 1180px) {
-  .page-route-info > .info-tab-content {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 @media (max-width: 1180px) {
   .home-layout-container,
@@ -4835,10 +4842,10 @@ button:disabled {
 }
 
 .page-route-map > .web-page-header {
-  min-height: 64px !important;
+  min-height: 54px !important;
   margin: 0 !important;
-  padding: 0 clamp(18px, 4vw, 56px) !important;
-  background: rgba(247, 248, 245, 0.92) !important;
+  padding: 16px clamp(16px, 3vw, 34px) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   color: var(--site-ink) !important;
   border-bottom: 1px solid rgba(16, 32, 51, 0.1) !important;
   box-shadow: 0 10px 28px rgba(18, 52, 90, 0.08) !important;
@@ -4848,15 +4855,15 @@ button:disabled {
 
 .page-route-map .web-page-title {
   color: var(--site-ink) !important;
-  font-size: 20px !important;
-  font-weight: 850 !important;
+  font-size: clamp(24px, 3vw, 38px) !important;
+  font-weight: 900 !important;
 }
 
 .page-route-map .web-back-button {
-  background: #fff !important;
+  background: rgba(255, 255, 255, 0.74) !important;
   color: var(--site-ink) !important;
   border: 1px solid rgba(16, 32, 51, 0.12) !important;
-  box-shadow: 0 8px 18px rgba(18, 52, 90, 0.12) !important;
+  box-shadow: 0 6px 18px rgba(18, 52, 90, 0.08) !important;
 }
 
 .page-route-map .map-control-bar {

@@ -260,13 +260,13 @@ export const HomePage: React.FC = () => {
                 id="home-profile-entry"
                 className={`glass-card home-profile-card fade-in-up stagger-2 ${homeUser ? "is-signed-in" : "is-signed-out"}`}
                 aria-label={homeUser
-                  ? language === "en" ? "Open your profile" : "Mở hồ sơ cá nhân"
-                  : language === "en" ? "Log in or sign up" : "Đăng nhập hoặc đăng ký"}
+                  ? language === "km" ? "បើកប្រវត្តិរូបផ្ទាល់ខ្លួន" : language === "en" ? "Open your profile" : "Mở hồ sơ cá nhân"
+                  : language === "km" ? "ចូលគណនី ឬ ចុះឈ្មោះ" : language === "en" ? "Log in or sign up" : "Đăng nhập hoặc đăng ký"}
               >
                 <div className="home-profile-card-top">
                   <div className="home-profile-icon">
                     {homeUser?.avatar_url ? (
-                      <img src={homeUser.avatar_url} alt="" className="home-profile-avatar-img" />
+                      <img src={homeUser.avatar_url} alt="User Avatar" className="home-profile-avatar-img" />
                     ) : (
                       <User size={18} aria-hidden="true" />
                     )}
@@ -274,28 +274,30 @@ export const HomePage: React.FC = () => {
                   <div className="home-profile-copy">
                     <h3 className="home-profile-title">
                       {homeUser
-                        ? language === "en" ? "Your visitor profile" : "Hồ sơ du khách"
-                        : language === "en" ? "Log in / Sign up" : "Đăng nhập / Đăng ký"}
+                        ? language === "km" ? "ប្រវត្តិរូបអ្នកទេសចរ" : language === "en" ? "Your visitor profile" : "Hồ sơ du khách"
+                        : language === "km" ? "ចូល / ចុះឈ្មោះ" : language === "en" ? "Log in / Sign up" : "Đăng nhập / Đăng ký"}
                     </h3>
                     <p className="home-profile-desc">
                       {homeUser
-                        ? (homeUser.name || homeUser.email || (language === "en" ? "Signed in" : "Đã đăng nhập"))
-                        : language === "en"
-                          ? "Create an account to save favorites, stamps and trip history."
-                          : "Tạo tài khoản để lưu yêu thích, dấu ấn và lịch sử hành trình."}
+                        ? (homeUser.name || homeUser.email || (language === "km" ? "បានចូលគណនី" : language === "en" ? "Signed in" : "Đã đăng nhập"))
+                        : language === "km"
+                          ? "បង្កើតគណនីដើម្បីរក្សាទុកការចូលចិត្ត ត្រានិងប្រវត្តិនៃការធ្វើដំណើរ។"
+                          : language === "en"
+                            ? "Create an account to save favorites, stamps and trip history."
+                            : "Tạo tài khoản để lưu yêu thích, dấu ấn và lịch sử hành trình."}
                     </p>
                   </div>
                 </div>
                 <div className="home-profile-action-row">
                   <span className="home-profile-status">
                     {homeUser
-                      ? language === "en" ? "Signed in" : "Đã đăng nhập"
-                      : language === "en" ? "Not signed in" : "Chưa đăng nhập"}
+                      ? language === "km" ? "បានចូលគណនី" : language === "en" ? "Signed in" : "Đã đăng nhập"
+                      : language === "km" ? "មិនទាន់ចូលគណនី" : language === "en" ? "Not signed in" : "Chưa đăng nhập"}
                   </span>
                   <span className="home-profile-action">
                     {homeUser
-                      ? language === "en" ? "View profile" : "Xem hồ sơ"
-                      : language === "en" ? "Start now" : "Bắt đầu ngay"}
+                      ? language === "km" ? "មើលប្រវត្តិរូប" : language === "en" ? "View profile" : "Xem hồ sơ"
+                      : language === "km" ? "ចាប់ផ្តើមឥឡូវនេះ" : language === "en" ? "Start now" : "Bắt đầu ngay"}
                     <ChevronRight size={15} aria-hidden="true" />
                   </span>
                 </div>

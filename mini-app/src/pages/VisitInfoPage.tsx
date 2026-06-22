@@ -537,47 +537,7 @@ export const VisitInfoPage: React.FC = () => {
             })
           )}
 
-          {/* App Info & Developer Compliance Section */}
-          <div className="glass-card info-dev-section">
-            <h4 className="info-dev-header">
-              {language === "km" ? "ព័ត៌មានអ្នកអភិវឌ្ឍន៍ & កម្មវិធី" : language === "en" ? "Developer & App Information (Mục 5.5)" : "Thông tin Nhà phát triển & Ứng dụng (Mục 5.5)"}
-            </h4>
-            <div className="info-dev-grid">
-              <div>
-                <strong>{language === "km" ? "បុគ្គលទទួលខុសត្រូវ:" : language === "en" ? "Responsible Individual:" : "Cá nhân chịu trách nhiệm:"}</strong>{" "}
-                Trương Kim Long
-              </div>
-              <div>
-                <strong>{language === "km" ? "អាសយដ្ឋានទំនាក់ទំនង:" : language === "en" ? "Contact Address:" : "Địa chỉ liên hệ:"}</strong>{" "}
-                Tây Ninh, Việt Nam
-              </div>
-              <div>
-                <strong>{language === "km" ? "អ៊ីមែលគាំទ្រ:" : language === "en" ? "Support Email:" : "Email hỗ trợ:"}</strong>{" "}
-                <a href="mailto:truongnklong@gmail.com" style={{ color: "var(--site-navy)", fontWeight: 600, textDecoration: "none" }}>
-                  truongnklong@gmail.com
-                </a>
-              </div>
-              <div>
-                <strong>{language === "km" ? "កំណែគេហទំព័រ:" : language === "en" ? "Website Version:" : "Phiên bản website:"}</strong> v1.0.0
-              </div>
-              <div>
-                <strong>{language === "km" ? "ការពិពណ៌នាសេវាកម្ម:" : language === "en" ? "Service Description:" : "Mô tả dịch vụ:"}</strong>{" "}
-                {language === "km"
-                  ? "ផ្តល់នូវផែនទីទីតាំងជាក់ស្តែង ការណែនាំជាសំឡេងស្វ័យប្រវត្ត ព័ត៌មានម៉ោងដំណើរការ/តម្លៃសំបុត្រ និងជំនួយការ AI នៅលើភ្នំ Ba Den។"
-                  : language === "en" 
-                    ? "Provides digital relocation map, automatic audio guides, cable car operating hours/ticket info, and AI assistant support at Ba Den Mountain." 
-                    : "Cung cấp bản đồ thực địa, thuyết minh di tích tự động (Audio Guide), tra cứu lịch vận hành/giá vé cáp treo và tư vấn qua Trợ lý ảo AI tại Núi Bà Đen."}
-              </div>
-              <div>
-                <strong>{language === "km" ? "បណ្តាញទទួលការគាំទ្រ & បណ្តឹងតវ៉ា:" : language === "en" ? "Support & Complaint Channels:" : "Tiếp nhận hỗ trợ & khiếu nại:"}</strong>{" "}
-                {language === "km"
-                  ? "ទាក់ទង truongnklong@gmail.com ឬផ្ញើមតិកែលម្អតាមរយៈមុខងារ Feedback នៅក្នុងកម្មវិធី។"
-                  : language === "en" 
-                    ? "Contact truongnklong@gmail.com or submit feedback via the app's Feedback feature." 
-                    : "Mọi ý kiến đóng góp, phản ánh khiếu nại gửi về email truongnklong@gmail.com hoặc gửi trực tiếp tại mục Phản Ánh trên ứng dụng."}
-              </div>
-            </div>
-          </div>
+
         </div>
       )}
     </Page>

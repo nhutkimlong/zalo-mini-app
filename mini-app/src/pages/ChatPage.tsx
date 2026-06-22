@@ -525,8 +525,8 @@ export const ChatPage: React.FC = () => {
               type="button"
               onClick={clearChatHistory}
               id="clear-chat-btn"
-              aria-label={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
-              title={language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
+              aria-label={language === "km" ? "លុបប្រវត្តិជជែក" : language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
+              title={language === "km" ? "លុបប្រវត្តិជជែក" : language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
               className="chat-input-clear-btn"
             >
               <Trash2 size={16} />
@@ -545,6 +545,11 @@ export const ChatPage: React.FC = () => {
                   handleSendMessage(inputValue);
                 }
               }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollToBottom(true);
+                }, 150);
+              }}
               autoComplete="off"
               enterKeyHint="send"
             />
@@ -554,7 +559,7 @@ export const ChatPage: React.FC = () => {
               onClick={() => handleSendMessage(inputValue)}
               className="send-btn-dark"
               disabled={!inputValue.trim()}
-              aria-label={language === "en" ? "Send message" : "Gửi tin nhắn"}
+              aria-label={language === "km" ? "ផ្ញើសារ" : language === "en" ? "Send message" : "Gửi tin nhắn"}
             >
               <Send size={17} />
             </button>
