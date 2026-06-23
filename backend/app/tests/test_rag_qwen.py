@@ -163,3 +163,59 @@ def test_rag_chat_multilingual(api_client: TestClient, db_client: Client):
     # Clean up Korean log
     db_client.table("chat_logs").delete().eq("question", ko_question).execute()
 
+
+def test_rag_chat_history_logical_continuity(db_client: Client):
+    """Verify chatbot retains memory of previous recommendations and uses active announcements on subsequent turns."""
+    import uuid
+    announcement_id = str(uuid.uuid4())
+    
+    # 1. Insert a temporary promotional announcement in the database
+    db_client.table("announcements").insert({
+        "id": announcement_id,
+        "title": "Ưu đãi Vía Bà 2026 Test",
+        "content": "Giảm giá đặc biệt combo Đỉnh + Chùa + Buffet ngày thường còn 650.000 VNĐ/người lớn và 450.000 VNĐ/trẻ em.",
+        "type": "general",
+        "status": "published"
+    }).execute()
+
+    q1 = None
+    q2 = None
+    try:
+        # Turn 1: Ask about buffet promotions
+        q1 = "Ngày mai thứ Ba có ưu đãi combo buffet nào không?"
+        res1 = rag_service.ask(
+            question=q1,
+            channel="zalo_bot",
+            language="vi"
+        )
+        
+        assert "650.000" in res1.answer or "450.000" in res1.answer
+        
+        # Turn 2: Ask for calculation of 2 adults and 1 child based on the advice
+        q2 = "Okkk chi phí cho 2 người lớn 1 trẻ em hết bao nhiêu như bạn vừa tính?"
+        history = [
+            {"role": "user", "content": q1},
+            {"role": "assistant", "content": res1.answer}
+        ]
+        
+        res2 = rag_service.ask(
+            question=q2,
+            channel="zalo_bot",
+            language="vi",
+            conversation_history=history
+        )
+        
+        # Total should be around 1.750.000 (excluding gate entry) or 1.775.000 (including gate entry)
+        # We verify that it uses the promotional rate (650k/450k) and does NOT use the weekend rate (800k/600k -> 2.200.000)
+        assert "1.775.000" in res2.answer or "1.750.000" in res2.answer or "1.300.000" in res2.answer
+        assert "2.200.000" not in res2.answer
+        assert "2.225.000" not in res2.answer
+
+    finally:
+        # Cleanup
+        db_client.table("announcements").delete().eq("id", announcement_id).execute()
+        questions_to_delete = [q for q in [q1, q2] if q is not None]
+        if questions_to_delete:
+            db_client.table("chat_logs").delete().in_("question", questions_to_delete).execute()
+
+

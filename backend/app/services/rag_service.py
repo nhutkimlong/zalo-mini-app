@@ -17,6 +17,9 @@ from app.models.chat import SourceCitation, ChatResponse
 CRAWBOT_NAME = "Hướng dẫn viên 4.0"
 LOG_NAME = "Huong dan vien 4.0"
 
+# Caching Configuration
+CACHE_TTL = 300.0  # 5 minutes TTL
+
 
 def remove_accents(input_str: str) -> str:
     """Remove Vietnamese diacritics/accents from a string."""
@@ -184,14 +187,24 @@ def _call_llm(
     output_cost_per_1m: float,
     temperature: float = 0.2,
     max_tokens: Optional[int] = None,
+    conversation_history: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[str, Dict[str, Any]]:
     """Call the configured LLM model."""
+    messages = [
+        {"role": "system", "content": system_prompt},
+    ]
+    if conversation_history:
+        for item in conversation_history:
+            role = item.get("role")
+            content = str(item.get("content", "")).strip()
+            if role in {"user", "assistant"} and content:
+                messages.append({"role": role, "content": content})
+                
+    messages.append({"role": "user", "content": user_question})
+
     kwargs = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_question},
-        ],
+        "messages": messages,
         "temperature": temperature,
     }
     if max_tokens is not None:
@@ -215,6 +228,16 @@ def _call_llm(
 class RAGService:
     _cached_settings = None
     _cached_at = 0.0
+
+    # In-memory caches for announcements, schedules, and weather
+    _cached_announcements = None
+    _cached_announcements_at = 0.0
+
+    _cached_schedules = None
+    _cached_schedules_at = 0.0
+
+    _cached_weather = None
+    _cached_weather_at = 0.0
 
     def __init__(self):
         self.supabase: Optional[Client] = None
@@ -596,8 +619,7 @@ class RAGService:
         language = resolved_lang
         language_name = resolved_lang_name
 
-        history_context = self._format_conversation_history(conversation_history)
-        question_with_context = question + history_context
+        # history_context and question_with_context are removed; history is passed natively in messages
 
         # Lấy thông tin cá nhân hóa của du khách để nhúng vào hệ thống chatbot
         personalization_str = ""
@@ -632,50 +654,81 @@ class RAGService:
 
         # Fetch active announcements to dynamically feed to chatbot context
         announcements_str = ""
-        # Only fetch announcements for the first question in the conversation (when conversation_history is empty)
-        if self.supabase and (not conversation_history or len(conversation_history) == 0):
-            try:
-                ann_res = self.supabase.table("announcements").select("*").eq("status", "published").execute()
-                if ann_res.data:
-                    parts = []
-                    for idx, ann in enumerate(ann_res.data, 1):
-                        title = ann.get("title", "")
-                        content = ann.get("content", "")
-                        ann_type = ann.get("type", "general")
-                        parts.append(f"[Thông báo & Cảnh báo số {idx} - Loại: {ann_type} - Tiêu đề: {title}]\nNội dung: {content}")
-                    announcements_str = "\n\n---\n\n".join(parts)
-            except Exception as ann_err:
-                print(f"[{LOG_NAME}] Failed to fetch announcements for context: {ann_err}")
+        import time
+        now = time.time()
+        
+        # Fetch announcements for all questions in the conversation to maintain up-to-date context
+        if self.supabase:
+            if RAGService._cached_announcements is not None and (now - RAGService._cached_announcements_at < CACHE_TTL):
+                announcements_str = RAGService._cached_announcements
+            else:
+                try:
+                    ann_res = self.supabase.table("announcements").select("*").eq("status", "published").execute()
+                    if ann_res.data:
+                        parts = []
+                        for idx, ann in enumerate(ann_res.data, 1):
+                            title = ann.get("title", "")
+                            content = ann.get("content", "")
+                            ann_type = ann.get("type", "general")
+                            parts.append(f"[Thông báo & Cảnh báo số {idx} - Loại: {ann_type} - Tiêu đề: {title}]\nNội dung: {content}")
+                        announcements_str = "\n\n---\n\n".join(parts)
+                    RAGService._cached_announcements = announcements_str
+                    RAGService._cached_announcements_at = now
+                except Exception as ann_err:
+                    print(f"[{LOG_NAME}] Failed to fetch announcements for context: {ann_err}")
+                    # If database fails, fallback to expired cache if available
+                    if RAGService._cached_announcements is not None:
+                        announcements_str = RAGService._cached_announcements
 
         # Fetch dynamic cable car schedules and weather from database
         schedules_json_str = ""
         weather_status = "sunny"
         weather_temp = "30"
+        
         if self.supabase:
-            try:
-                schedule_res = self.supabase.table("knowledge_articles").select("content").eq("id", "a1c3d359-fe2c-42da-9d19-d94dfcedb022").execute()
-                if schedule_res.data:
-                    import json
-                    raw_content = schedule_res.data[0].get("content", "")
-                    try:
-                        parsed = json.loads(raw_content)
-                        if "schedules" in parsed:
-                            schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
-                        else:
+            # 1. Schedules Cache
+            if RAGService._cached_schedules is not None and (now - RAGService._cached_schedules_at < CACHE_TTL):
+                schedules_json_str = RAGService._cached_schedules
+            else:
+                try:
+                    schedule_res = self.supabase.table("knowledge_articles").select("content").eq("id", "a1c3d359-fe2c-42da-9d19-d94dfcedb022").execute()
+                    if schedule_res.data:
+                        import json
+                        raw_content = schedule_res.data[0].get("content", "")
+                        try:
+                            parsed = json.loads(raw_content)
+                            if "schedules" in parsed:
+                                schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
+                            else:
+                                schedules_json_str = raw_content
+                        except Exception:
                             schedules_json_str = raw_content
-                    except Exception:
-                        schedules_json_str = raw_content
+                    RAGService._cached_schedules = schedules_json_str
+                    RAGService._cached_schedules_at = now
+                except Exception as e:
+                    print(f"[{LOG_NAME}] Failed to fetch schedules for general chat: {e}")
+                    if RAGService._cached_schedules is not None:
+                        schedules_json_str = RAGService._cached_schedules
 
-                # Fetch weather settings from database
-                weather_res = self.supabase.table("system_settings").select("key, value").in_("key", ["REALTIME_WEATHER_STATUS", "REALTIME_WEATHER_TEMP"]).execute()
-                if weather_res.data:
-                    for row in weather_res.data:
-                        if row["key"] == "REALTIME_WEATHER_STATUS":
-                            weather_status = row["value"]
-                        elif row["key"] == "REALTIME_WEATHER_TEMP":
-                            weather_temp = row["value"]
-            except Exception as e:
-                print(f"[{LOG_NAME}] Failed to fetch settings or weather for general chat: {e}")
+            # 2. Weather Cache
+            if RAGService._cached_weather is not None and (now - RAGService._cached_weather_at < CACHE_TTL):
+                weather_status, weather_temp = RAGService._cached_weather
+            else:
+                try:
+                    # Fetch weather settings from database
+                    weather_res = self.supabase.table("system_settings").select("key, value").in_("key", ["REALTIME_WEATHER_STATUS", "REALTIME_WEATHER_TEMP"]).execute()
+                    if weather_res.data:
+                        for row in weather_res.data:
+                            if row["key"] == "REALTIME_WEATHER_STATUS":
+                                weather_status = row["value"]
+                            elif row["key"] == "REALTIME_WEATHER_TEMP":
+                                weather_temp = row["value"]
+                    RAGService._cached_weather = (weather_status, weather_temp)
+                    RAGService._cached_weather_at = now
+                except Exception as e:
+                    print(f"[{LOG_NAME}] Failed to fetch weather for general chat: {e}")
+                    if RAGService._cached_weather is not None:
+                        weather_status, weather_temp = RAGService._cached_weather
 
         if not schedules_json_str:
             schedules_json_str = """[
@@ -799,7 +852,7 @@ class RAGService:
                     current_weekday = weekdays_en[now_vn.weekday()]
                     time_and_schedule_context = (
                         f"[REAL-TIME SYSTEM TIME & CABLE CAR OPERATING SCHEDULE]\n"
-                        f"- Current system time: {current_time_str} ({current_weekday}, {current_date_str})\n"
+                        f"- Current system date: {current_weekday}, {current_date_str}\n"
                         f"- Current weather: {weather_status_desc}, {weather_temp}°C{weather_rules}\n"
                         f"- Cable Car schedules loaded dynamically from database:\n"
                         f"{schedules_json_str}\n"
@@ -833,7 +886,7 @@ class RAGService:
                     current_weekday = weekdays_km[now_vn.weekday()]
                     time_and_schedule_context = (
                         f"[ព័ត៌មានពេលវេលាប្រព័ន្ធផ្ទាល់ & កាលវិភាគប្រតិបត្តិការឡានកាប]\n"
-                        f"- ម៉ោងប្រព័ន្ធបច្ចុប្បន្ន៖ {current_time_str} ({current_weekday}, ថ្ងៃទី {current_date_str})\n"
+                        f"- ថ្ងៃទីប្រព័ន្ធបច្ចុប្បន្ន៖ {current_weekday}, {current_date_str}\n"
                         f"- ស្ថានភាពអាកាសធាតុបច្ចុប្បន្ន៖ {weather_status_desc}, {weather_temp}°C{weather_rules}\n"
                         f"- កាលវិភាគឡានកាបមកពីមូលដ្ឋានទិន្នន័យ៖\n"
                         f"{schedules_json_str}\n"
@@ -866,7 +919,7 @@ class RAGService:
                     current_weekday = weekdays_vi[now_vn.weekday()]
                     time_and_schedule_context = (
                         f"[THÔNG TIN THỜI GIAN THỰC TẾ & LỊCH HOẠT ĐỘNG CÁP TREO]\n"
-                        f"- Thời gian hiện tại của hệ thống: {current_time_str} ({current_weekday}, ngày {current_date_str})\n"
+                        f"- Ngày hiện tại của hệ thống: {current_weekday}, ngày {current_date_str}\n"
                         f"- Thời tiết hiện tại: {weather_status_desc}, {weather_temp}°C{weather_rules}\n"
                         f"- Lịch hoạt động các tuyến cáp đọc từ cơ sở dữ liệu:\n"
                         f"{schedules_json_str}\n"
@@ -885,7 +938,7 @@ class RAGService:
                 for i, chunk in enumerate(chunks, 1):
                     title = chunk["metadata"].get("title", f"Tài liệu {i}")
                     context_parts.append(f"[Tài liệu {i} — {title}]\n{chunk['text']}")
-                context_str = history_context + "\n\n" + "\n\n---\n\n".join(context_parts) if history_context else "\n\n---\n\n".join(context_parts)
+                context_str = "\n\n---\n\n".join(context_parts)
 
                 if language in {"vi", "en", "km"}:
                     sys_prompt_base = SYSTEM_PROMPT_KM if language == "km" else SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT_VI
@@ -916,13 +969,17 @@ class RAGService:
 
                 try:
                     dyn_config = self._get_dynamic_settings()
+                    # Prepends dynamic hour/minute metadata to the user question so the system prompt remains static
+                    cached_user_question = f"[REAL-TIME SYSTEM TIME: {current_time_str}]\nCâu hỏi: {question}"
+
                     answer, usage_data = _call_llm(
                         client=self.llm_client,
                         system_prompt=prompt,
-                        user_question=question,
+                        user_question=cached_user_question,
                         model=dyn_config["model"],
                         input_cost_per_1m=dyn_config["input_cost"],
                         output_cost_per_1m=dyn_config["output_cost"],
+                        conversation_history=conversation_history,
                     )
                     # If LLM says "no info" → clear sources
                     no_info_markers = [
