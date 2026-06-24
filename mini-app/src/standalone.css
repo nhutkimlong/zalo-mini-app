@@ -1307,6 +1307,7 @@ select:focus-visible {
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -3677,13 +3678,13 @@ select:focus-visible {
   transition: max-height 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow-y: auto;
   z-index: 1001;
-  padding: 0 16px 8px 16px;
+  padding: 0 16px max(8px, env(safe-area-inset-bottom, 0px)) 16px;
   max-height: 52px;
   gap: 2px;
 }
 
 #map-bottom-sheet.is-expanded {
-  padding: 0 16px 16px 16px;
+  padding: 0 16px max(16px, env(safe-area-inset-bottom, 0px)) 16px;
   max-height: min(320px, 45vh);
   gap: 10px;
 }
@@ -3745,6 +3746,7 @@ select:focus-visible {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   line-height: 1.3;
 }
@@ -4108,7 +4110,7 @@ body {
 
 .web-page {
   width: min(100%, var(--container-wide));
-    padding: 18px 14px 26px;
+    padding: 18px 14px max(26px, env(safe-area-inset-bottom, 0px));
 }
 
 .page-route-profile,
@@ -4546,7 +4548,7 @@ button:disabled {
 }
 
 .floating-input-bar-dark {
-  padding-bottom: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
 }
 
 .map-responsive-wrapper {
