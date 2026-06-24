@@ -4903,7 +4903,7 @@ button:disabled {
 
 .page-route-map .map-fab-group {
   right: clamp(14px, 2vw, 24px) !important;
-  bottom: calc(22px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 .page-route-map .map-fab-group.is-sheet-open {
@@ -4911,7 +4911,7 @@ button:disabled {
 }
 
 .page-route-map .map-fab-group.is-sheet-closed {
-  bottom: calc(22px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 @media (min-width: 1024px) {
@@ -4930,7 +4930,7 @@ button:disabled {
   }
 
   .page-route-map .map-fab-group.is-sheet-closed {
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
