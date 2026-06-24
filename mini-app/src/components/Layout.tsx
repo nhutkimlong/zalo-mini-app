@@ -16,10 +16,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const pageContainerRef = useRef<HTMLElement>(null);
 
+  // Refs for the rewritten, jank-free viewport/keyboard handler.
   const lastHeightRef = useRef<number>(0);
-  const lastTopRef = useRef<number>(0);
-  const lastLeftRef = useRef<number>(0);
-  const lastKeyboardOpenRef = useRef<boolean>(false);
+  const rafRef = useRef<number | null>(null);
+  const kbStateRef = useRef<boolean>(false);
 
   const getPageTitle = () => {
     if (path === "/") return "";
@@ -35,98 +35,87 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return "";
   };
 
-  // Dynamic viewport height (handles iOS toolbar & keyboard)
+  // ---------------------------------------------------------------------------
+  // Viewport + mobile keyboard handler (rewritten to remove the scroll-jank loop)
+  //
+  // Why the old version juddered: it called window.scrollTo(0,0) inside the
+  // visualViewport "scroll"/"resize" listeners AND inside focusin (plus an extra
+  // rAF). Each forced scroll re-fired the scroll event, which forced another
+  // scroll -> a feedback loop that visibly shook the page whenever the keyboard
+  // opened. It also toggled `keyboard-open` from two competing sources.
+  //
+  // New approach:
+  //   * ONE source of truth for `keyboard-open`, derived from visualViewport,
+  //     throttled via requestAnimationFrame and guarded by hysteresis so it
+  //     never flickers.
+  //   * NEVER force window scrolling. The page is pinned via CSS instead.
+  //   * Only publish CSS vars when the value actually changed.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    const updateHeight = () => {
+    const KB_OPEN_THRESHOLD = 160; // px the viewport must shrink to count as "open"
+    const KB_CLOSE_THRESHOLD = 100; // must recover past this to count as "closed"
+
+    const applyKeyboardState = (open: boolean) => {
+      if (open === kbStateRef.current) return;
+      kbStateRef.current = open;
+      document.documentElement.classList.toggle("keyboard-open", open);
+      document.body.classList.toggle("keyboard-open", open);
+    };
+
+    const measure = () => {
+      rafRef.current = null;
       const vv = window.visualViewport;
-      const height = vv ? vv.height : window.innerHeight;
-      const offsetTop = vv ? vv.offsetTop : 0;
-      const offsetLeft = vv ? vv.offsetLeft : 0;
+      const height = Math.round(vv ? vv.height : window.innerHeight);
+      const offsetTop = Math.round(vv ? vv.offsetTop : 0);
+      const offsetLeft = Math.round(vv ? vv.offsetLeft : 0);
 
-      if (
-        height !== lastHeightRef.current ||
-        offsetTop !== lastTopRef.current ||
-        offsetLeft !== lastLeftRef.current
-      ) {
+      // Publish CSS vars only when the height actually moved (avoids churn).
+      if (height !== lastHeightRef.current) {
         lastHeightRef.current = height;
-        lastTopRef.current = offsetTop;
-        lastLeftRef.current = offsetLeft;
-
-        document.documentElement.style.setProperty("--app-height", `${height}px`);
-        document.documentElement.style.setProperty("--app-top", `${offsetTop}px`);
-        document.documentElement.style.setProperty("--app-left", `${offsetLeft}px`);
+        const root = document.documentElement.style;
+        root.setProperty("--app-height", `${height}px`);
+        root.setProperty("--app-top", `${offsetTop}px`);
+        root.setProperty("--app-left", `${offsetLeft}px`);
       }
 
-      // Detect keyboard open (visual viewport height shrinks significantly)
-      const isKeyboardOpen = vv ? vv.height < window.innerHeight - 140 : false;
-      if (isKeyboardOpen !== lastKeyboardOpenRef.current) {
-        lastKeyboardOpenRef.current = isKeyboardOpen;
-        if (isKeyboardOpen) {
-          document.documentElement.classList.add("keyboard-open");
-          document.body.classList.add("keyboard-open");
-        } else {
-          document.documentElement.classList.remove("keyboard-open");
-          document.body.classList.remove("keyboard-open");
-        }
+      // Keyboard state with hysteresis so it can't oscillate on the boundary.
+      const shrink = window.innerHeight - height;
+      if (!kbStateRef.current && shrink > KB_OPEN_THRESHOLD) {
+        applyKeyboardState(true);
+      } else if (kbStateRef.current && shrink < KB_CLOSE_THRESHOLD) {
+        applyKeyboardState(false);
       }
     };
 
-    const handleViewportChange = () => {
-      updateHeight();
-      if (window.scrollY !== 0 || window.scrollX !== 0) {
-        window.scrollTo(0, 0);
-      }
-    };
-
-    const handleWindowScroll = () => {
-      if (window.scrollY !== 0 || window.scrollX !== 0) {
-        window.scrollTo(0, 0);
-      }
+    const scheduleMeasure = () => {
+      if (rafRef.current != null) return; // already scheduled this frame
+      rafRef.current = requestAnimationFrame(measure);
     };
 
     const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
+      const target = e.target as HTMLElement | null;
       if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT")
+        !target ||
+        (target.tagName !== "INPUT" &&
+          target.tagName !== "TEXTAREA" &&
+          target.tagName !== "SELECT")
       ) {
-        document.documentElement.classList.add("keyboard-open");
-        document.body.classList.add("keyboard-open");
-
-        // Force an immediate layout update
-        window.scrollTo(0, 0);
-        updateHeight();
-
-        // Exclude the bottom chat input from scrollIntoView
-        if (target.id === "chat-input") {
-          return;
-        }
-
-        // Instantly snap scroll position on focus to avoid WebKit page panning
-        const container = target.closest(".app-scroll-container");
-        if (container) {
-          const containerRect = container.getBoundingClientRect();
-          const targetRect = target.getBoundingClientRect();
-          const relativeTop = targetRect.top - containerRect.top + container.scrollTop;
-          const targetScrollTop = relativeTop - 40; // Align input 40px from the top of scroll container
-
-          container.scrollTo({
-            top: Math.max(0, targetScrollTop),
-            behavior: "auto" // Instant alignment!
-          });
-        }
-        
-        // Final sanity-lock scroll check
-        requestAnimationFrame(() => {
-          window.scrollTo(0, 0);
-        });
+        return;
       }
+
+      // The bottom chat input is pinned above the keyboard by CSS; do nothing.
+      if (target.id === "chat-input") return;
+
+      // For in-page form fields, gently bring the field into view AFTER the
+      // keyboard animation settles. No window.scrollTo, no rAF loop.
+      window.setTimeout(() => {
+        if (document.activeElement === target) {
+          target.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+      }, 300);
     };
 
     const handleFocusOut = () => {
-      // Return window scroll back to 0 when input loses focus
       setTimeout(() => {
         const active = document.activeElement;
         if (
@@ -135,30 +124,30 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             active.tagName !== "TEXTAREA" &&
             active.tagName !== "SELECT")
         ) {
-          window.scrollTo(0, 0);
-          document.documentElement.classList.remove("keyboard-open");
-          document.body.classList.remove("keyboard-open");
-          updateHeight();
+          applyKeyboardState(false);
+          scheduleMeasure();
         }
-      }, 100);
+      }, 120);
     };
 
-    window.visualViewport?.addEventListener("resize", handleViewportChange);
-    window.visualViewport?.addEventListener("scroll", handleViewportChange);
-    window.addEventListener("resize", handleViewportChange);
-    window.addEventListener("scroll", handleWindowScroll);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", scheduleMeasure);
+    vv?.addEventListener("scroll", scheduleMeasure);
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("orientationchange", scheduleMeasure);
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("focusout", handleFocusOut);
-    updateHeight();
+
+    scheduleMeasure();
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", handleViewportChange);
-      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
-      window.removeEventListener("resize", handleViewportChange);
-      window.removeEventListener("scroll", handleWindowScroll);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      vv?.removeEventListener("resize", scheduleMeasure);
+      vv?.removeEventListener("scroll", scheduleMeasure);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("orientationchange", scheduleMeasure);
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("focusout", handleFocusOut);
-      // Clean up classes on unmount
       document.documentElement.classList.remove("keyboard-open");
       document.body.classList.remove("keyboard-open");
     };

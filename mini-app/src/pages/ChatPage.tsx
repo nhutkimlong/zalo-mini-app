@@ -116,6 +116,7 @@ export const ChatPage: React.FC = () => {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastScrollTimeRef = useRef(0);
 
@@ -532,17 +533,27 @@ export const ChatPage: React.FC = () => {
               <Trash2 size={16} />
             </button>
 
-            <input
-              type="text"
+            <textarea
+              ref={inputRef}
               id="chat-input"
+              rows={1}
               className="input-box-dark"
               placeholder={t("chat.placeholder")}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              aria-label={
+                language === "km" ? "វាយសារ" : language === "en" ? "Type your message" : "Nhập tin nhắn"
+              }
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                const el = e.target;
+                el.style.height = "auto";
+                el.style.height = Math.min(el.scrollHeight, 120) + "px";
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSendMessage(inputValue);
+                  if (inputRef.current) inputRef.current.style.height = "auto";
                 }
               }}
               onFocus={() => {
