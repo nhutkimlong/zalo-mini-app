@@ -209,11 +209,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </button>
         )}
 
-        <Link to="/" className={`site-brand ${path !== "/" && !menuOpen ? "desktop-only" : ""}`} aria-label="Trang chủ Núi Bà Đen">
-          <img src={logoImageUrl} alt="Núi Bà Đen" className="site-logo" />
+        <Link to="/" className={`site-brand ${path !== "/" && !menuOpen ? "desktop-only" : ""}`} aria-label={t("nav.home")}>
+          <img src={logoImageUrl} alt={t("header.brand_name")} className="site-logo" />
           <span>
-            <strong>Núi Bà Đen</strong>
-            <small>Travel Assistant</small>
+            <strong>{t("header.brand_name")}</strong>
+            <small>{t("header.subtitle")}</small>
           </span>
         </Link>
 

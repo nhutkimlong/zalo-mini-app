@@ -197,6 +197,7 @@ select:focus-visible {
   cursor: pointer;
   font-size: 11px;
   font-weight: 850;
+  transition: all var(--transition-fast, 150ms) ease-in-out;
 }
 
 .site-lang-toggle button.active,
@@ -483,13 +484,31 @@ select:focus-visible {
 }
 
 .banner-title {
-  max-width: 13ch;
+  max-width: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  text-wrap: wrap !important;
+}
+
+.banner-label {
+  display: block !important;
+  font-size: clamp(13px, 2.5vw, 18px) !important;
+  font-weight: 700 !important;
+  color: var(--accent-gold) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  margin-bottom: 2px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+}
+
+.banner-main-name {
+  display: block !important;
   color: #fff !important;
-  font-size: clamp(36px, 6vw, 74px) !important;
-  line-height: 0.98 !important;
+  font-size: clamp(34px, 6.5vw, 72px) !important;
+  line-height: 1.05 !important;
   font-weight: 900 !important;
-  text-shadow: 0 12px 40px rgba(0, 0, 0, 0.28) !important;
-  text-wrap: balance;
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
 }
 
 .banner-sub {
@@ -666,7 +685,7 @@ select:focus-visible {
   margin: 0;
   padding: 0 clamp(16px, 3vw, 26px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: #071626;
+  background: var(--primary-navy);
   color: #fff;
 }
 
@@ -678,8 +697,8 @@ select:focus-visible {
 
 .chat-page-dark {
   background:
-    radial-gradient(circle at 0 0, rgba(197, 155, 50, 0.13), transparent 24rem),
-    linear-gradient(135deg, #071626, #102033) !important;
+    radial-gradient(circle at 0 0, rgba(212, 175, 55, 0.13), transparent 24rem),
+    linear-gradient(135deg, var(--primary-navy), #06152a) !important;
 }
 
 .chat-layout-desktop {
@@ -4762,9 +4781,7 @@ button:disabled {
 }
 
 .banner-title {
-  max-width: 14ch !important;
-  font-size: clamp(34px, 4.6vw, 58px) !important;
-  line-height: 1.02 !important;
+  max-width: none !important;
   letter-spacing: 0 !important;
 }
 

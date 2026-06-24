@@ -167,11 +167,22 @@ export const HomePage: React.FC = () => {
             >
               <div className="banner-content">
                 <div className="banner-title">
-                  {language === "km"
-                    ? "តំបន់ទេសចរណ៍ជាតិភ្នំបាដេន"
-                    : language === "en"
-                      ? "BLACK LADY MOUNTAIN NATIONAL TOURIST AREA"
-                      : "KHU DU LỊCH QUỐC GIA NÚI BÀ ĐEN"}
+                  {language === "km" ? (
+                    <>
+                      <span className="banner-label">តំបន់ទេសចរណ៍ជាតិ</span>
+                      <span className="banner-main-name">ភ្នំបាដេន</span>
+                    </>
+                  ) : language === "en" ? (
+                    <>
+                      <span className="banner-label">NATIONAL TOURIST AREA</span>
+                      <span className="banner-main-name">BLACK LADY MOUNTAIN</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="banner-label">KHU DU LỊCH QUỐC GIA</span>
+                      <span className="banner-main-name">NÚI BÀ ĐEN</span>
+                    </>
+                  )}
                 </div>
                 <div className="banner-sub">
                   {language === "km"

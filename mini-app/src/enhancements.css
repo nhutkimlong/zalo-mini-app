@@ -177,10 +177,21 @@ select:focus-visible,
 .filter-btn,
 .feedback-gps-btn,
 .map-fab-btn,
-.map-itinerary-btn,
+.map-itinerary-btn {
+  min-height: var(--tap-min);
+}
+
 .site-lang-toggle button,
 .mobile-drawer-lang button {
   min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
 }
 
 @media (max-width: 1023px) {

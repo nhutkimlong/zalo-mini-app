@@ -329,7 +329,7 @@ export const FeedbackPage: React.FC = () => {
               className="feedback-input" 
               value={reportType}
               onChange={(e) => setReportType(e.target.value as ReportType)}
-              style={{ appearance: "auto" }}
+              style={{ appearance: "none", WebkitAppearance: "none" }}
             >
               <option value="ve_sinh">{getReportTypeName("ve_sinh")}</option>
               <option value="gia_ca">{getReportTypeName("gia_ca")}</option>

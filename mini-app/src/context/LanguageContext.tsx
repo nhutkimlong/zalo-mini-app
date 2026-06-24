@@ -80,7 +80,9 @@ const translations: Record<Language, Record<string, string>> = {
     "profile.auth.demo_btn": "Đăng Nhập Nhanh (Demo)",
     "profile.guest_name": "Khách du lịch",
     "profile.edit.save": "Lưu",
-    "profile.edit.cancel": "Hủy"
+    "profile.edit.cancel": "Hủy",
+    "header.brand_name": "Núi Bà Đen",
+    "header.subtitle": "Trợ lý Du lịch"
   },
   en: {
     "nav.home": "Home",
@@ -153,7 +155,9 @@ const translations: Record<Language, Record<string, string>> = {
     "profile.auth.demo_btn": "Log In as Guest / Demo",
     "profile.guest_name": "Guest Tourist",
     "profile.edit.save": "Save",
-    "profile.edit.cancel": "Cancel"
+    "profile.edit.cancel": "Cancel",
+    "header.brand_name": "Ba Den Mountain",
+    "header.subtitle": "Travel Assistant"
   },
   km: {
     "nav.home": "ទំព័រដើម",
@@ -226,7 +230,9 @@ const translations: Record<Language, Record<string, string>> = {
     "profile.auth.demo_btn": "ចូលរហ័ស (Demo)",
     "profile.guest_name": "ភ្ញៀវទេសចរ",
     "profile.edit.save": "រក្សាទុក",
-    "profile.edit.cancel": "បោះបង់"
+    "profile.edit.cancel": "បោះបង់",
+    "header.brand_name": "ភ្នំបាដេន",
+    "header.subtitle": "ជំនួយការទេសចរណ៍"
   }
 };
 
