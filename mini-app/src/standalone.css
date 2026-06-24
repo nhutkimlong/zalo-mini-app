@@ -62,12 +62,8 @@ select:focus-visible {
   background: #071626 !important;
 }
 
+/* Visual background overlay only — layout geometry is owned by index.css */
 .app-layout-wrapper {
-  display: flex !important;
-  flex-direction: column;
-  width: 100vw;
-  height: var(--app-height, 100dvh);
-  overflow: hidden;
   background:
     linear-gradient(120deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
     radial-gradient(circle at 100% 0, rgba(197, 155, 50, 0.12), transparent 26rem);

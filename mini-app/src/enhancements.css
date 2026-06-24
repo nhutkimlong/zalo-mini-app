@@ -17,15 +17,8 @@
   --tap-min: 44px; /* WCAG / Apple HIG minimum touch target */
 }
 
-/* Use the new svh/dvh units where available; JS --app-height stays as fallback */
-@supports (height: 100svh) {
-  html, body {
-    height: var(--app-height, 100svh);
-  }
-  .app-layout-wrapper {
-    height: var(--app-height, 100svh);
-  }
-}
+/* NOTE: html/body height and .app-layout-wrapper geometry are owned by
+   index.css (100dvh fallback + JS --app-height). Do NOT redefine them here. */
 
 /* --- 2. Chat input bar: keyboard-safe, no zoom, tactile ------------------- */
 
@@ -295,16 +288,8 @@ button:disabled {
 
 /* --- 7. Layout shell stability while keyboard is open -------------------- */
 
-/* Keyboard-open: shell is sized by --app-height (set by JS from vv.height).
-   index.css owns the authoritative position:fixed rules on .app-layout-wrapper;
-   here we only add the in-page scroll container constraints. */
-.keyboard-open {
-  overflow: hidden !important;
-  overscroll-behavior: none;
-}
-
-/* Only the in-page scroll container scrolls; it fills the space above the
-   keyboard. Heights driven by --app-height. */
+/* html.keyboard-open, body.keyboard-open overflow/height are owned by index.css.
+   Scroll-container constraints below are additive — not defined elsewhere. */
 .keyboard-open .main-content-area,
 .keyboard-open .app-scroll-container {
   height: 100% !important;
@@ -313,10 +298,7 @@ button:disabled {
   overscroll-behavior: contain;
 }
 
-/* Smooth height transition as keyboard animates in/out. */
-.app-layout-wrapper {
-  transition: height 180ms ease;
-}
+/* .app-layout-wrapper transition is defined in index.css (single source). */
 
 /* The chips row is hidden while typing; fade it rather than hard-cutting so the
    layout settles without a visible snap. */

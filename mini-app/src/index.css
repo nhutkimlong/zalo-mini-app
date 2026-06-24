@@ -112,14 +112,20 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── Web Layout Shell & Responsive Overrides ──────────────────────────────── */
+/* ─── Web Layout Shell ───────────────────────────────────────────────────────
+   SINGLE SOURCE OF TRUTH for the app shell geometry.
+   standalone.css and enhancements.css must NOT redefine these layout
+   properties; they may only add visual (background, shadow) overrides.   */
 .app-layout-wrapper {
   display: flex;
+  flex-direction: column;
   width: 100vw;
-  height: var(--app-height, 100dvh);
+  height: var(--app-height, 100dvh);  /* JS updates --app-height via vv.height */
   overflow: hidden;
   position: relative;
   background-color: var(--light-bg);
+  /* Smooth height animation as keyboard opens/closes */
+  transition: height 180ms ease;
 }
 
 .desktop-sidebar {
