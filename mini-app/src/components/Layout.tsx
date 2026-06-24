@@ -55,11 +55,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const KB_OPEN_THRESHOLD = 160; // px the viewport must shrink to count as "open"
     const KB_CLOSE_THRESHOLD = 100; // must recover past this to count as "closed"
 
+    const lockWindowScroll = () => {
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+
     const applyKeyboardState = (open: boolean) => {
       if (open === kbStateRef.current) return;
       kbStateRef.current = open;
       document.documentElement.classList.toggle("keyboard-open", open);
       document.body.classList.toggle("keyboard-open", open);
+      if (open) {
+        window.scrollTo(0, 0);
+      }
     };
 
     const measure = () => {
@@ -135,6 +144,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     vv?.addEventListener("scroll", scheduleMeasure);
     window.addEventListener("resize", scheduleMeasure);
     window.addEventListener("orientationchange", scheduleMeasure);
+    window.addEventListener("scroll", lockWindowScroll);
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("focusout", handleFocusOut);
 
@@ -146,6 +156,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       vv?.removeEventListener("scroll", scheduleMeasure);
       window.removeEventListener("resize", scheduleMeasure);
       window.removeEventListener("orientationchange", scheduleMeasure);
+      window.removeEventListener("scroll", lockWindowScroll);
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("focusout", handleFocusOut);
       document.documentElement.classList.remove("keyboard-open");
