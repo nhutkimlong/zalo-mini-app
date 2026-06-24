@@ -3677,13 +3677,13 @@ select:focus-visible {
   transition: max-height 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow-y: auto;
   z-index: 1001;
-  padding: 0 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px;
+  padding: 0 16px 8px 16px;
   max-height: 52px;
   gap: 2px;
 }
 
 #map-bottom-sheet.is-expanded {
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+  padding: 0 16px 16px 16px;
   max-height: min(320px, 45vh);
   gap: 10px;
 }
@@ -4108,7 +4108,7 @@ body {
 
 .web-page {
   width: min(100%, var(--container-wide));
-    padding: 18px 14px calc(26px + env(safe-area-inset-bottom, 0px));
+    padding: 18px 14px 26px;
 }
 
 .page-route-profile,
@@ -4546,7 +4546,7 @@ button:disabled {
 }
 
 .floating-input-bar-dark {
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 12px;
 }
 
 .map-responsive-wrapper {
@@ -4752,16 +4752,16 @@ button:disabled {
 }
 
 .page-route-map .map-fab-group {
-  bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  bottom: 62px;
     right: 12px;
 }
 
 .page-route-map .map-fab-group.is-sheet-open {
-  bottom: calc(min(320px, 45vh) + 10px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(min(320px, 45vh) + 10px);
 }
 
 .page-route-map .map-fab-group.is-sheet-closed {
-    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    bottom: 62px;
 }
 
 @media (min-width: 1024px) {
@@ -4770,7 +4770,7 @@ button:disabled {
   .page-route-map .map-fab-group.is-sheet-closed {
     flex-direction: row;
     right: clamp(18px, 2vw, 28px);
-    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    bottom: 58px;
   }
 }
 
@@ -4781,7 +4781,7 @@ button:disabled {
   }
 
   .page-route-map .map-fab-group.is-sheet-closed {
-  bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  bottom: 62px;
   }
 }
 

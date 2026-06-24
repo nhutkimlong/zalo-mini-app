@@ -65,6 +65,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+a, button, [role="button"] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 h1, h2, h3, h4, h5, h6,
 .sidebar-title,
 .panel-title {
@@ -72,8 +78,6 @@ h1, h2, h3, h4, h5, h6,
 }
 
 html, body {
-  position: fixed;
-  width: 100%;
   height: var(--app-height, 100dvh);
   margin: 0;
   padding: 0;
@@ -109,7 +113,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background-color: var(--light-bg);
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 24px;
   position: relative;
   overflow-x: hidden;
 }
@@ -558,7 +562,7 @@ body.dark-body-bg .page-container {
 /* ─── Floating AI Button ────────────────────────────────────────────────────── */
 .floating-ai-btn {
   position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: 16px;
   right: 20px;
   width: 52px;
   height: 52px;

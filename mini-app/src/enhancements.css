@@ -12,7 +12,7 @@
 
 /* --- 1. Dynamic viewport + safe areas (single source of truth) ----------- */
 :root {
-  --kbd-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  --kbd-safe-bottom: 16px;
   --chat-input-h: 64px;
   --tap-min: 44px; /* WCAG / Apple HIG minimum touch target */
 }
