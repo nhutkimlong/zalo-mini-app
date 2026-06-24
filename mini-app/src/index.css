@@ -68,7 +68,7 @@
 h1, h2, h3, h4, h5, h6,
 .sidebar-title,
 .panel-title {
-  font-family: 'Be Vietnam Pro', -apple-system, sans-serif !important;
+  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
 }
 
 html, body {
@@ -125,7 +125,7 @@ body {
   position: relative;
   background-color: var(--light-bg);
   /* Smooth height animation as keyboard opens/closes */
-  transition: height 180ms ease;
+  transition: height 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .desktop-sidebar {
@@ -150,9 +150,9 @@ body {
 
 @media (min-width: 768px) {
   .page-container {
-    max-width: none !important;
-    margin: 0 !important;
-    padding-bottom: 16px !important;
+    max-width: none;
+    margin: 0;
+    padding-bottom: 16px;
   }
 }
 
@@ -306,15 +306,15 @@ body {
   }
 
   .page-container {
-    max-width: none !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    padding-bottom: 0 !important;
+    max-width: none;
+    margin: 0;
+    box-shadow: none;
+    padding-bottom: 0;
     height: 100%;
   }
 
   main {
-    min-height: 100% !important;
+    min-height: 100%;
     height: 100%;
   }
 }
@@ -322,10 +322,10 @@ body {
 /* ─── Dark Body Background ──────────────────────────────────────────────────── */
 html.dark-body-bg,
 body.dark-body-bg {
-  background-color: #06152a !important;
+  background-color: #06152a;
 }
 body.dark-body-bg .page-container {
-  background-color: #06152a !important;
+  background-color: #06152a;
 }
 
 /* ─── Cards & Surfaces ──────────────────────────────────────────────────────── */
@@ -426,9 +426,16 @@ body.dark-body-bg .page-container {
 }
 
 .ticker-text {
-  animation: none;
-  white-space: normal;
-  transform: none;
+  animation: ticker-slide 15s linear infinite;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transform: translate3d(100%, 0, 0);
+}
+
+.ticker-container:hover .ticker-text {
+  animation-play-state: paused;
 }
 
 @keyframes ticker-slide {
@@ -469,15 +476,15 @@ body.dark-body-bg .page-container {
 }
 
 .menu-card:active {
-  background: linear-gradient(135deg, var(--primary-navy), var(--secondary-blue)) !important;
-  border-color: var(--accent-gold) !important;
-  color: var(--cream-white) !important;
-  transform: scale(0.96) !important;
+  background: linear-gradient(135deg, var(--primary-navy), var(--secondary-blue));
+  border-color: var(--accent-gold);
+  color: var(--cream-white);
+  transform: scale(0.96);
 }
 
 .menu-card:active .menu-icon-container {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  color: var(--accent-gold) !important;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: var(--accent-gold);
 }
 
 .menu-icon-container {
@@ -569,8 +576,8 @@ body.dark-body-bg .page-container {
 
 /* ─── Chat Page (Dark Mode) ─────────────────────────────────────────────────── */
 .chat-page-dark {
-  background: radial-gradient(circle at 50% 0%, var(--secondary-blue) 0%, var(--primary-navy) 100%) !important;
-  color: #f4f7f6 !important;
+  background: radial-gradient(circle at 50% 0%, var(--secondary-blue) 0%, var(--primary-navy) 100%);
+  color: #f4f7f6;
   z-index: 97;
 }
 
@@ -597,16 +604,6 @@ body.dark-body-bg .page-container {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-  }
-}
-
-@media (max-width: 639px) {
-  .chat-sidebar {
-    display: none;
-  }
-
-  .chat-main-panel {
-    display: contents;
   }
 }
 
@@ -737,13 +734,13 @@ body.dark-body-bg .page-container {
 }
 
 .floating-input-bar-dark {
-  background: rgba(11, 37, 69, 0.97) !important;
+  background: rgba(11, 37, 69, 0.97);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  height: 68px !important;
-  padding: 0 14px !important;
-  box-sizing: border-box !important;
+  height: 68px;
+  padding: 0 14px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -862,7 +859,7 @@ body.dark-body-bg .page-container {
   background-color: var(--cream-white);
   color: var(--primary-navy);
   box-shadow: 0 4px 10px rgba(11, 37, 69, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 /* ─── Audio Player ──────────────────────────────────────────────────────────── */
@@ -1041,16 +1038,6 @@ body.dark-body-bg .page-container {
   }
 }
 
-@media (max-width: 767px) {
-  .map-tablet-layout {
-    display: contents;
-  }
-
-  .map-sidebar-panel {
-    display: none;
-  }
-}
-
 /* ─── Skeleton Loading ──────────────────────────────────────────────────────── */
 .skeleton {
   background: linear-gradient(90deg, #e8eef4 25%, #f0f4f8 50%, #e8eef4 75%);
@@ -1163,17 +1150,17 @@ a:active,
   .welcome-guide-card,
   .floating-ai-btn,
   .ticker-text {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 
   button, a, .nav-item, .menu-card, .glass-card, [role="button"] {
-    transition: none !important;
+    transition: none;
   }
 
   .skeleton {
-    animation: none !important;
+    animation: none;
     background: #e8eef4;
   }
 }
@@ -1240,7 +1227,7 @@ a:active,
   }
 
   .menu-grid {
-    padding: 0 !important;
+    padding: 0;
     gap: 12px;
   }
 }
@@ -1251,26 +1238,42 @@ a:active,
    anchors everything; body just needs overflow:hidden. */
 html.keyboard-open,
 body.keyboard-open {
-  overflow: hidden !important;
-  overscroll-behavior: none !important;
-  height: var(--app-height, 100dvh) !important;
+  overflow: hidden;
+  overscroll-behavior: none;
+  height: var(--app-height, 100dvh);
 }
 
 .keyboard-open .app-layout-wrapper {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: var(--app-height) !important;
-  overflow: hidden !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--app-height);
+  overflow: hidden;
 }
 
 .keyboard-open .chat-page-dark {
-  height: 100% !important;
-  overflow: hidden !important;
+  height: 100%;
+  overflow: hidden;
 }
 
 .keyboard-open .app-scroll-container {
-  padding-bottom: 0 !important;
-  overscroll-behavior-y: contain !important;
+  padding-bottom: 0;
+  overscroll-behavior-y: contain;
 }
+
+.chat-sidebar {
+    display: none;
+  }
+
+.chat-main-panel {
+    display: contents;
+  }
+
+.map-tablet-layout {
+    display: contents;
+  }
+
+.map-sidebar-panel {
+    display: none;
+  }

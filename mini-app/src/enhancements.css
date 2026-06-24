@@ -12,7 +12,7 @@
 
 /* --- 1. Dynamic viewport + safe areas (single source of truth) ----------- */
 :root {
-  --kbd-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --kbd-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   --chat-input-h: 64px;
   --tap-min: 44px; /* WCAG / Apple HIG minimum touch target */
 }
@@ -24,17 +24,18 @@
 
 /* Keep the chat shell pinned so the input bar sits above the keyboard. */
 .chat-page-dark {
-  height: 100% !important;
-  min-height: 0 !important;
+  height: 100%;
+  min-height: 0;
 }
 
 /* Input bar: comfortable height, true safe-area padding, never collapses. */
 .floating-input-bar-dark {
-  min-height: 64px !important;
-  height: auto !important;
-  padding: 10px 12px calc(10px + var(--kbd-safe-bottom)) 12px !important;
-  gap: 8px !important;
-  align-items: flex-end !important;
+  min-height: 64px;
+  height: auto;
+  padding: 10px 12px calc(10px + var(--kbd-safe-bottom)) 12px;
+  align-items: flex-end;
+    padding-inline: 8px;
+    gap: 6px;
 }
 
 /* 16px min prevents iOS Safari auto-zoom when an input gains focus. */
@@ -45,43 +46,44 @@ select.feedback-input,
 .profile-edit-input,
 .profile-pw-input,
 .ann-search-input {
-  font-size: 16px !important;
-  line-height: 1.4 !important;
+  font-size: 16px;
+  line-height: 1.4;
 }
 
 .input-box-dark {
-  min-height: 44px !important;
-  padding: 11px 18px !important;
-  resize: none !important;
+  min-height: 44px;
+  padding: 11px 18px;
+  resize: none;
+    padding-inline: 14px;
 }
 
 .input-box-dark::placeholder {
-  white-space: nowrap !important;
-  text-overflow: ellipsis !important;
-  overflow: hidden !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 /* The chat field is now a <textarea> that auto-grows up to ~120px. */
 textarea.input-box-dark {
-  max-height: 120px !important;
-  overflow-y: auto !important;
-  font-family: inherit !important;
-  display: block !important;
-  align-self: stretch !important;
+  max-height: 120px;
+  overflow-y: auto;
+  font-family: inherit;
+  display: block;
+  align-self: stretch;
 }
 
 /* Bigger, clearly tappable send + clear buttons. */
 .send-btn-dark,
 .chat-input-clear-btn {
-  width: 46px !important;
-  height: 46px !important;
-  min-width: 46px !important;
-  flex-shrink: 0 !important;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  flex-shrink: 0;
 }
 
 .send-btn-dark {
-  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 140ms ease, box-shadow 140ms ease !important;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .send-btn-dark:not(:disabled):hover {
   transform: translateY(-1px) scale(1.04);
@@ -108,20 +110,20 @@ textarea.input-box-dark {
 /* --- 3. Modern visual polish --------------------------------------------- */
 
 .message-user-premium {
-  box-shadow: 0 6px 18px rgba(215, 178, 86, 0.22) !important;
+  box-shadow: 0 6px 18px rgba(215, 178, 86, 0.22);
 }
 .message-assistant-premium {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .chips-slider-item {
-  min-height: var(--tap-min) !important;
-  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease !important;
+  min-height: var(--tap-min);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 @media (hover: hover) {
   .chips-slider-item:hover {
-    background: rgba(215, 178, 86, 0.16) !important;
-    border-color: var(--accent-gold) !important;
+    background: rgba(215, 178, 86, 0.16);
+    border-color: var(--accent-gold);
     transform: translateY(-1px);
   }
 }
@@ -158,8 +160,8 @@ textarea:focus-visible,
 select:focus-visible,
 [role="button"]:focus-visible,
 [tabindex]:focus-visible {
-  outline: 3px solid var(--accent-gold, #c59b32) !important;
-  outline-offset: 2px !important;
+  outline: 3px solid var(--accent-gold, #c59b32);
+  outline-offset: 2px;
   border-radius: 6px;
 }
 
@@ -167,7 +169,7 @@ select:focus-visible,
 .chat-page-dark a:focus-visible,
 .chat-page-dark button:focus-visible,
 .chat-page-dark input:focus-visible {
-  outline-color: #ffd76a !important;
+  outline-color: #ffd76a;
 }
 
 /* Guarantee minimum touch targets on small controls. */
@@ -186,17 +188,11 @@ select:focus-visible,
   min-width: var(--tap-min);
   width: var(--tap-min);
   height: var(--tap-min);
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 50% !important;
-  padding: 0 !important;
-}
-
-@media (max-width: 1023px) {
-  .mobile-drawer-link {
-    min-height: var(--tap-min);
-  }
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
 }
 
 button:disabled {
@@ -210,8 +206,8 @@ button:disabled {
   .place-card-desc,
   .ann-card-content,
   .chat-message-time {
-    opacity: 1 !important;
-    color: var(--ink-body, #1e3145) !important;
+    opacity: 1;
+    color: var(--ink-body, #1e3145);
   }
 }
 
@@ -233,24 +229,16 @@ button:disabled {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.001ms;
+    scroll-behavior: auto;
   }
 }
 
 /* --- 6. Responsive refinements ------------------------------------------- */
 
 /* Tablet (768-1023): balanced 4-up menu, roomier banner. */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .menu-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
-  .home-banner {
-    min-height: clamp(380px, 44dvh, 520px) !important;
-  }
-}
 
 /* Large desktop: cap long-form line length for readability. */
 @media (min-width: 1280px) {
@@ -262,27 +250,20 @@ button:disabled {
 }
 
 /* Very small phones (<360px): tighten paddings so nothing clips. */
-@media (max-width: 360px) {
+@media (min-width: 361px) {
   .floating-input-bar-dark {
-    padding-inline: 8px !important;
-    gap: 6px !important;
-  }
-  .input-box-dark {
-    padding-inline: 14px !important;
-  }
-  .web-page {
-    padding-inline: 12px !important;
+  gap: 8px;
   }
 }
 
 /* Landscape phones: keep the chat input reachable, shrink banner. */
 @media (max-height: 480px) and (orientation: landscape) {
   .home-banner {
-    min-height: 260px !important;
+    min-height: 260px;
   }
   .welcome-guide-card {
-    margin: 8px 16px !important;
-    padding: 12px !important;
+    margin: 8px 16px;
+    padding: 12px;
   }
 }
 
@@ -292,8 +273,8 @@ button:disabled {
    Scroll-container constraints below are additive — not defined elsewhere. */
 .keyboard-open .main-content-area,
 .keyboard-open .app-scroll-container {
-  height: 100% !important;
-  min-height: 0 !important;
+  height: 100%;
+  min-height: 0;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
@@ -303,7 +284,7 @@ button:disabled {
 /* The chips row is hidden while typing; fade it rather than hard-cutting so the
    layout settles without a visible snap. */
 .chips-slider-wrapper {
-  transition: opacity 160ms ease;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .keyboard-open .chips-slider-wrapper {
   opacity: 0;
@@ -321,39 +302,39 @@ button:disabled {
 .profile-edit-input,
 .profile-pw-input,
 .ann-search-input {
-  min-height: 46px !important;
-  border-radius: 14px !important;
+  min-height: 46px;
+  border-radius: 14px;
 }
 
 textarea.feedback-input {
-  min-height: 110px !important;
-  resize: vertical !important;
-  line-height: 1.55 !important;
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.55;
 }
 
 /* Native select: clear caret affordance + room on the right. */
 select.feedback-input {
-  padding-right: 40px !important;
+  padding-right: 40px;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--ink-soft, #637286) 50%),
-    linear-gradient(135deg, var(--ink-soft, #637286) 50%, transparent 50%) !important;
+    linear-gradient(135deg, var(--ink-soft, #637286) 50%, transparent 50%);
   background-position:
     calc(100% - 20px) calc(50% - 2px),
-    calc(100% - 14px) calc(50% - 2px) !important;
-  background-size: 6px 6px, 6px 6px !important;
-  background-repeat: no-repeat !important;
+    calc(100% - 14px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
 }
 
 /* Labels: stronger hierarchy, mark required fields. */
 .feedback-form-label,
 .profile-auth-label {
-  font-weight: 800 !important;
-  color: var(--ink-strong, #102033) !important;
+  font-weight: 800;
+  color: var(--ink-strong, #102033);
 }
 
 /* Photo-upload + GPS rows align nicely on wider screens. */
 .feedback-photo-btn {
-  min-height: 46px !important;
+  min-height: 46px;
 }
 .feedback-photo-status {
   overflow-wrap: anywhere;
@@ -361,15 +342,15 @@ select.feedback-input {
 
 /* Submit button: full-width feel, clear loading/disabled state. */
 .submit-btn {
-  min-height: 52px !important;
-  font-size: 15px !important;
-  font-weight: 800 !important;
+  min-height: 52px;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 /* --- 9. Data tables (Visit Info ticket prices) ------------------------- */
 /* Wrap wide tables in a horizontal scroll context so they never overflow. */
 .info-tab-content .glass-card {
-  overflow-x: auto !important;
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 .info-ticket-table {
@@ -390,8 +371,8 @@ select.feedback-input {
 /* Larger, easier-to-hit FABs on touch devices. */
 @media (hover: none) {
   .map-fab-btn {
-    width: 48px !important;
-    height: 48px !important;
+    width: 48px;
+    height: 48px;
   }
 }
 
@@ -403,13 +384,13 @@ select.feedback-input {
 /* Action buttons in the sheet meet the 44px target. */
 .map-btn-info,
 .map-btn-audio {
-  min-height: 44px !important;
+  min-height: 44px;
 }
 
 /* On desktop, give the map sheet a calmer max width + centered placement. */
 @media (min-width: 1024px) {
   #map-bottom-sheet {
-    max-width: 460px !important;
+    max-width: 460px;
   }
 }
 
@@ -417,22 +398,22 @@ select.feedback-input {
 
 /* Menu cards: crisper press feedback, never let labels clip. */
 .menu-card {
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .menu-card:active {
-  transform: scale(0.96) !important;
+  transform: scale(0.96);
 }
 
 /* Hotline tiles: comfortable target + readable numbers. */
 .home-hotline-item {
-  min-height: 56px !important;
+  min-height: 56px;
 }
 
 /* AI CTA: subtle hover lift on desktop. */
 @media (hover: hover) {
   .ai-cta-card:hover {
     transform: translateY(-2px);
-    transition: transform 180ms ease;
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -444,7 +425,7 @@ select.feedback-input {
   .ann-card:hover,
   .guide-card-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 18px 44px rgba(18, 52, 90, 0.14) !important;
+    box-shadow: 0 18px 44px rgba(18, 52, 90, 0.14);
   }
 }
 
@@ -479,17 +460,6 @@ p, .detail-body-text, .ann-card-content, .info-schedule-list {
 }
 
 /* --- 15. Tablet layout balance --------------------------------------- */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .places-list-container,
-  .ann-list-container,
-  .guide-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-  .profile-page-container,
-  .profile-logged-out-wrapper {
-    grid-template-columns: 1fr !important;
-  }
-}
 
 /* --- 16. Print-friendly (optional, harmless) ------------------------- */
 @media print {
@@ -498,6 +468,27 @@ p, .detail-body-text, .ann-card-content, .info-schedule-list {
   .floating-input-bar-dark,
   .chips-slider-wrapper,
   .map-fab-group {
-    display: none !important;
+    display: none;
   }
 }
+.mobile-drawer-link {
+    min-height: var(--tap-min);
+  }
+.menu-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+.home-banner {
+    min-height: clamp(380px, 44dvh, 520px);
+  }
+.web-page {
+    padding-inline: 12px;
+  }
+.places-list-container,
+  .ann-list-container,
+  .guide-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+.profile-page-container,
+  .profile-logged-out-wrapper {
+    grid-template-columns: 1fr;
+  }
