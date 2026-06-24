@@ -62,6 +62,12 @@ select.feedback-input,
   resize: none !important;
 }
 
+.input-box-dark::placeholder {
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+}
+
 /* The chat field is now a <textarea> that auto-grows up to ~120px. */
 textarea.input-box-dark {
   max-height: 120px !important;
