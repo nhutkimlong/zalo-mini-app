@@ -6,6 +6,8 @@ import api, { ChatResponse, supabase, UserProfile } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import logoImageUrl from "../assets/logo.png";
 import { useDragScroll } from "../hooks/useDragScroll";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 interface Message {
   id: string;
@@ -53,11 +55,11 @@ const TypewriterText: React.FC<{ text: string; onType?: () => void; onComplete: 
   }, [visibleCount, tokens]);
 
   return (
-    <span className="chat-pre-wrap">
+    <span className={cx(styles, "chat-pre-wrap")}>
       {tokens.slice(0, visibleCount).map((token, index) => (
         <span
           key={index}
-          className={token.match(/^\s+$/) ? "chat-token-span-space" : "chat-token-span"}
+          className={cx(styles, token.match(/^\s+$/) ? "chat-token-span-space" : "chat-token-span")}
         >
           {token}
         </span>
@@ -321,14 +323,14 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <Page className="chat-page-dark">
+    <Page className={cx(styles, "chat-page-dark")}>
       {/* Header */}
       <Header
         showBackIcon={true}
         title={
-          <div className="chat-header-title-container">
-            <Bot size={20} className="gold-text-icon" />
-            <span className="chat-header-title">
+          <div className={cx(styles, "chat-header-title-container")}>
+            <Bot size={20} className={cx(styles, "gold-text-icon")} />
+            <span className={cx(styles, "chat-header-title")}>
               {language === "vi" ? "Trợ lý AI" : language === "en" ? "AI Assistant" : "ជំនួយការ AI"}
             </span>
           </div> as any
@@ -336,36 +338,36 @@ export const ChatPage: React.FC = () => {
       />
 
       {/* Responsive wrapper: desktop shows sidebar */}
-      <div className="chat-layout-desktop">
+      <div className={cx(styles, "chat-layout-desktop")}>
         {/* Sidebar (desktop only) */}
-        <div className="chat-sidebar">
+        <div className={cx(styles, "chat-sidebar")}>
           {/* Profile */}
-          <div className="chat-sidebar-profile">
+          <div className={cx(styles, "chat-sidebar-profile")}>
             <img
               src={logoImageUrl}
               alt="Logo"
-              className="chat-sidebar-logo"
+              className={cx(styles, "chat-sidebar-logo")}
             />
             <div>
-              <div className="chat-sidebar-title">
+              <div className={cx(styles, "chat-sidebar-title")}>
                 {language === "vi" ? "Trợ Lý Du Lịch AI" : language === "en" ? "AI Travel Assistant" : "ជំនួយការ AI"}
               </div>
-              <div className="chat-sidebar-subtitle">
+              <div className={cx(styles, "chat-sidebar-subtitle")}>
                 Núi Bà Đen · Tây Ninh
               </div>
             </div>
           </div>
 
           {/* Suggested Questions */}
-          <div className="chat-sidebar-questions-section">
-            <div className="chat-sidebar-section-heading">
+          <div className={cx(styles, "chat-sidebar-questions-section")}>
+            <div className={cx(styles, "chat-sidebar-section-heading")}>
               {language === "en" ? "QUICK QUESTIONS" : language === "km" ? "សំណួររហ័ស" : "CÂU HỎI NHANH"}
             </div>
             {SUGGESTED_QUESTIONS.map((q, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(q)}
-                className="chat-sidebar-question-btn"
+                className={cx(styles, "chat-sidebar-question-btn")}
               >
                 {q}
               </button>
@@ -373,10 +375,10 @@ export const ChatPage: React.FC = () => {
           </div>
 
           {/* Clear history */}
-          <div className="chat-sidebar-footer">
+          <div className={cx(styles, "chat-sidebar-footer")}>
             <button
               onClick={clearChatHistory}
-              className="chat-sidebar-clear-btn"
+              className={cx(styles, "chat-sidebar-clear-btn")}
             >
               <Trash2 size={14} />
               {language === "en" ? "Clear chat history" : language === "km" ? "លុបប្រវត្តិ" : "Xóa lịch sử"}
@@ -385,14 +387,14 @@ export const ChatPage: React.FC = () => {
         </div>
 
         {/* Main chat panel */}
-        <div className="chat-main-panel">
+        <div className={cx(styles, "chat-main-panel")}>
           {/* Messages scroll area — fills all space between header and input */}
           <div
             ref={chatContainerRef}
             onScroll={handleScroll}
-            className="chat-messages-scroll"
+            className={cx(styles, "chat-messages-scroll")}
           >
-            <div className="chat-messages-container">
+            <div className={cx(styles, "chat-messages-container")}>
               {messages.map((msg) => {
                 const isUser = msg.sender === "user";
 
@@ -400,20 +402,20 @@ export const ChatPage: React.FC = () => {
                 if (msg.id === "welcome") {
                   if (hasUserMessage) return null;
                   return (
-                    <div key={msg.id} className="welcome-guide-card">
-                      <div className="welcome-logo-wrapper">
+                    <div key={msg.id} className={cx(styles, "welcome-guide-card")}>
+                      <div className={cx(styles, "welcome-logo-wrapper")}>
                         <img
                           src={logoImageUrl}
                           alt="Logo"
                           width={64}
                           height={64}
-                          className="welcome-logo"
+                          className={cx(styles, "welcome-logo")}
                         />
                       </div>
-                      <h2 className="welcome-title">
+                      <h2 className={cx(styles, "welcome-title")}>
                         {language === "vi" ? "TRỢ LÝ DU LỊCH AI" : language === "en" ? "AI TRAVEL ASSISTANT" : "ជំនួយការទេសចរណ៍ AI"}
                       </h2>
-                      <div className="welcome-desc">
+                      <div className={cx(styles, "welcome-desc")}>
                         {msg.text}
                       </div>
                     </div>
@@ -423,23 +425,23 @@ export const ChatPage: React.FC = () => {
                 return (
                   <div
                     key={msg.id}
-                    className={`chat-message-row ${isUser ? "chat-message-row-user" : "chat-message-row-assistant"}`}
+                    className={cx(styles, `chat-message-row ${isUser ? "chat-message-row-user" : "chat-message-row-assistant"}`)}
                   >
                     {!isUser && (
-                      <div className="chat-avatar-assistant">
-                        <Bot size={16} className="gold-text-icon" />
+                      <div className={cx(styles, "chat-avatar-assistant")}>
+                        <Bot size={16} className={cx(styles, "gold-text-icon")} />
                       </div>
                     )}
 
-                    <div className={`chat-bubble-container ${isUser ? "chat-bubble-container-user" : "chat-bubble-container-assistant"}`}>
-                      <div className={isUser ? "message-user-premium" : "message-assistant-premium"}>
+                    <div className={cx(styles, `chat-bubble-container ${isUser ? "chat-bubble-container-user" : "chat-bubble-container-assistant"}`)}>
+                      <div className={cx(styles, isUser ? "message-user-premium" : "message-assistant-premium")}>
                         <div>
                           {msg.isLoading ? (
-                            <div className="chat-loading-dots">
+                            <div className={cx(styles, "chat-loading-dots")}>
                               <span /><span /><span />
                             </div>
                           ) : (
-                            <div className="chat-message-content">
+                            <div className={cx(styles, "chat-message-content")}>
                               {msg.animate ? (
                                 <TypewriterText
                                   text={msg.text}
@@ -460,14 +462,14 @@ export const ChatPage: React.FC = () => {
 
                         {/* Feedback link under assistant messages */}
                         {!msg.isLoading && msg.sender === "assistant" && msg.id !== "welcome" && (
-                          <div className="chat-message-footer">
-                            <span className="chat-message-time">
+                          <div className={cx(styles, "chat-message-footer")}>
+                            <span className={cx(styles, "chat-message-time")}>
                               <Clock size={10} />
                               {formatTime(msg.timestamp)}
                             </span>
                             <Link
                               to="/feedback"
-                              className="chat-report-link"
+                              className={cx(styles, "chat-report-link")}
                             >
                               <AlertCircle size={11} strokeWidth={2.5} />
                               <span>{language === "en" ? "Report" : language === "km" ? "រាយការណ៍" : "Phản ánh"}</span>
@@ -478,8 +480,8 @@ export const ChatPage: React.FC = () => {
                     </div>
 
                     {isUser && (
-                      <div className="flex-shrink-0">
-                        <div className="chat-avatar-user">
+                      <div className={cx(styles, "flex-shrink-0")}>
+                        <div className={cx(styles, "chat-avatar-user")}>
                           <UserCircle size={20} />
                         </div>
                       </div>
@@ -496,7 +498,7 @@ export const ChatPage: React.FC = () => {
             <button
               onClick={() => scrollToBottom(true)}
               id="scroll-to-bottom-btn"
-              className="chat-scroll-btn"
+              className={cx(styles, "chat-scroll-btn")}
               aria-label="Scroll to bottom"
             >
               <ChevronDown size={18} />
@@ -505,12 +507,12 @@ export const ChatPage: React.FC = () => {
 
           {/* Suggested Quick Chips (mobile only, shown before first message) */}
           {!hasUserMessage && (
-            <div className="chips-slider-wrapper">
-              <div className="chips-slider-container" ref={chipsRef}>
+            <div className={cx(styles, "chips-slider-wrapper")}>
+              <div className={cx(styles, "chips-slider-container")} ref={chipsRef}>
                 {SUGGESTED_QUESTIONS.map((q, idx) => (
                   <button
                     key={idx}
-                    className="chips-slider-item"
+                    className={cx(styles, "chips-slider-item")}
                     onClick={() => handleSendMessage(q)}
                   >
                     {q}
@@ -521,14 +523,14 @@ export const ChatPage: React.FC = () => {
           )}
 
           {/* Input Bar */}
-          <div className="floating-input-bar-dark">
+          <div className={cx(styles, "floating-input-bar-dark")}>
             <button
               type="button"
               onClick={clearChatHistory}
               id="clear-chat-btn"
               aria-label={language === "km" ? "លុបប្រវត្តិជជែក" : language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
               title={language === "km" ? "លុបប្រវត្តិជជែក" : language === "en" ? "Clear chat history" : "Xóa lịch sử chat"}
-              className="chat-input-clear-btn"
+              className={cx(styles, "chat-input-clear-btn")}
             >
               <Trash2 size={16} />
             </button>
@@ -537,7 +539,7 @@ export const ChatPage: React.FC = () => {
               ref={inputRef}
               id="chat-input"
               rows={1}
-              className="input-box-dark"
+              className={cx(styles, "input-box-dark")}
               placeholder={t("chat.placeholder")}
               value={inputValue}
               aria-label={
@@ -568,7 +570,7 @@ export const ChatPage: React.FC = () => {
             <button
               id="send-message-btn"
               onClick={() => handleSendMessage(inputValue)}
-              className="send-btn-dark"
+              className={cx(styles, "send-btn-dark")}
               disabled={!inputValue.trim()}
               aria-label={language === "km" ? "ផ្ញើសារ" : language === "en" ? "Send message" : "Gửi tin nhắn"}
             >

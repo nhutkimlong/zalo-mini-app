@@ -4,6 +4,8 @@ import { Header, Page } from "../components/WebPrimitives";
 import { Play, Pause, RotateCcw, Volume2, Bot, Tag, Heart, MapPin, Check, AlertCircle, Sparkles } from "lucide-react";
 import api, { TouristPlace, getAudioGuideUrl, hasAudioGuide, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 export const PlaceDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -373,8 +375,8 @@ export const PlaceDetailPage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.places")} showBackIcon={true} />
-        <div className="detail-loader-container">
-          <div className="common-loading">{t("common.loading")}</div>
+        <div className={cx(styles, "detail-loader-container")}>
+          <div className={cx(styles, "common-loading")}>{t("common.loading")}</div>
         </div>
       </Page>
     );
@@ -384,9 +386,9 @@ export const PlaceDetailPage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.places")} showBackIcon={true} />
-        <div className="detail-empty-container">
+        <div className={cx(styles, "detail-empty-container")}>
           <h3>{t("common.no_data")}</h3>
-          <Link to="/places" className="detail-empty-back-link">
+          <Link to="/places" className={cx(styles, "detail-empty-back-link")}>
             {language === "en" ? "Back to list" : "Quay lại danh sách"}
           </Link>
         </div>
@@ -428,27 +430,27 @@ export const PlaceDetailPage: React.FC = () => {
       />
 
       {/* Hero Image */}
-      <div className="detail-hero-wrapper">
+      <div className={cx(styles, "detail-hero-wrapper")}>
         <img 
           src={place.image_url} 
           alt={localizedName} 
           width={375}
           height={220}
           loading="eager"
-          className="detail-hero-img"
+          className={cx(styles, "detail-hero-img")}
         />
 
         {/* Floating Heart Favorite Button */}
         <button
           onClick={handleToggleFavorite}
           disabled={favLoading}
-          className={`detail-fav-btn ${isFavorited ? "is-favorited" : ""}`}
+          className={cx(styles, `detail-fav-btn ${isFavorited ? "is-favorited" : ""}`)}
           aria-label="Thả tim lưu địa danh"
         >
           <Heart size={20} fill={isFavorited ? "var(--alert-red)" : "transparent"} />
         </button>
 
-        <div className="detail-category-badge">
+        <div className={cx(styles, "detail-category-badge")}>
           <Tag size={12} aria-hidden="true" />
           <span>{getCategoryName(place.category)}</span>
         </div>
@@ -456,24 +458,24 @@ export const PlaceDetailPage: React.FC = () => {
 
       {/* GPS Check-in Area for Stamp Rally */}
       {isLoggedIn && (
-      <div className="detail-gps-container">
-        <div className="glass-card detail-card-content">
-          <div className="detail-gps-header">
-            <div className="detail-gps-title-wrapper">
-              <MapPin size={18} className="gold-text-icon" />
+      <div className={cx(styles, "detail-gps-container")}>
+        <div className={cx(styles, "glass-card detail-card-content")}>
+          <div className={cx(styles, "detail-gps-header")}>
+            <div className={cx(styles, "detail-gps-title-wrapper")}>
+              <MapPin size={18} className={cx(styles, "gold-text-icon")} />
               <span>{language === "en" ? "GPS Heritage Check-in" : language === "km" ? "Check-in បេតិកភណ្ឌ GPS" : "Check-in GPS Di Sản"}</span>
             </div>
             
             {distance !== null && (
-              <span className="detail-gps-distance-text">
+              <span className={cx(styles, "detail-gps-distance-text")}>
                 {language === "km" ? "ចម្ងាយពីអ្នក: " : language === "en" ? "Away: " : "Cách bạn: "}{distance < 1000 ? `${distance.toFixed(0)}m` : `${(distance / 1000).toFixed(1)}km`}
               </span>
             )}
           </div>
 
           {alreadyStamped && checkinStatus !== "success" ? (
-            <div className="detail-gps-success-box">
-              <Check size={18} className="stroke-width-3" />
+            <div className={cx(styles, "detail-gps-success-box")}>
+              <Check size={18} className={cx(styles, "stroke-width-3")} />
               <span>{t("place.checkin.already")}</span>
             </div>
           ) : (
@@ -482,15 +484,15 @@ export const PlaceDetailPage: React.FC = () => {
                 <button
                   onClick={handleCheckin}
                   disabled={checkinStatus === "checking"}
-                  className="submit-btn detail-checkin-btn-content"
+                  className={cx(styles, "submit-btn detail-checkin-btn-content")}
                 >
                   <MapPin size={16} />
                   <span>{checkinStatus === "checking" ? "..." : t("place.checkin.btn")}</span>
                 </button>
               ) : (
-                <div className="detail-gps-status-box">
-                  <div className="detail-gps-status-left">
-                    <AlertCircle size={16} className="alert-orange-icon" />
+                <div className={cx(styles, "detail-gps-status-box")}>
+                  <div className={cx(styles, "detail-gps-status-left")}>
+                    <AlertCircle size={16} className={cx(styles, "alert-orange-icon")} />
                     <span>
                       {gpsLoading ? (
                         language === "en"
@@ -511,7 +513,7 @@ export const PlaceDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => requestUserLocation(true)}
-                      className="detail-gps-refresh-btn"
+                      className={cx(styles, "detail-gps-refresh-btn")}
                     >
                       {language === "en" ? "Refresh" : language === "km" ? "ធ្វើបច្ចុប្បន្នភាព" : "Cập nhật"}
                     </button>
@@ -523,14 +525,14 @@ export const PlaceDetailPage: React.FC = () => {
 
           {/* Success Check-in Pop-up Notification */}
           {checkinStatus === "success" && (
-            <div className="detail-gps-success-box fade-in-up">
-              <div className="detail-checkin-success-header">
-                <Sparkles size={16} className="gold-text-icon" />
+            <div className={cx(styles, "detail-gps-success-box fade-in-up")}>
+              <div className={cx(styles, "detail-checkin-success-header")}>
+                <Sparkles size={16} className={cx(styles, "gold-text-icon")} />
                 <span>{t("place.checkin.success")}</span>
               </div>
               {rewardGranted && (
-                <div className="detail-gps-success-reward">
-                  <Sparkles size={14} className="gold-text-icon" />
+                <div className={cx(styles, "detail-gps-success-reward")}>
+                  <Sparkles size={14} className={cx(styles, "gold-text-icon")} />
                   <span>
                     {language === "en" 
                       ? "You have collected all heritage stamps! Memory unlocked!"
@@ -551,22 +553,22 @@ export const PlaceDetailPage: React.FC = () => {
         const audioUrl = getAudioGuideUrl(place, language);
         if (!audioUrl) return null;
         return (
-          <div className="audio-player-card">
-            <div className="detail-audio-header">
-              <Volume2 size={20} className="gold-text-icon" aria-hidden="true" />
+          <div className={cx(styles, "audio-player-card")}>
+            <div className={cx(styles, "detail-audio-header")}>
+              <Volume2 size={20} className={cx(styles, "gold-text-icon")} aria-hidden="true" />
               <div>
-                <h3 className="detail-audio-title">
+                <h3 className={cx(styles, "detail-audio-title")}>
                   {language === "en" ? "Automated Audio Guide" : language === "km" ? "មគ្គុទ្ទេសក៍សំឡេងស្វ័យប្រវត្ត" : "Thuyết minh số tự động (Audio Guide)"}
                 </h3>
-                <p className="detail-audio-subtitle">
+                <p className={cx(styles, "detail-audio-subtitle")}>
                   {language === "en" ? "Listen to the historical narration of this attraction" : language === "km" ? "ស្តាប់ការនិទានប្រវត្តិនៃទីកន្លែងទាក់ទាញនេះ" : "Nghe diễn giải câu chuyện lịch sử di tích"}
                 </p>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="detail-audio-progress-bar">
-              <span className="detail-audio-time-label">{currentTime}</span>
+            <div className={cx(styles, "detail-audio-progress-bar")}>
+              <span className={cx(styles, "detail-audio-time-label")}>{currentTime}</span>
               <input
                 type="range"
                 min={0}
@@ -574,18 +576,18 @@ export const PlaceDetailPage: React.FC = () => {
                 step={0.1}
                 value={progress}
                 onChange={handleSeek}
-                className="audio-slider-input"
+                className={cx(styles, "audio-slider-input")}
                 style={{
                   background: `linear-gradient(to right, var(--site-gold) 0%, var(--site-gold) ${progress}%, rgba(255, 255, 255, 0.2) ${progress}%, rgba(255, 255, 255, 0.2) 100%)`
                 }}
               />
-              <span className="detail-audio-time-label">{duration}</span>
+              <span className={cx(styles, "detail-audio-time-label")}>{duration}</span>
             </div>
 
             {/* Controls */}
-            <div className="audio-controls">
+            <div className={cx(styles, "audio-controls")}>
               <button
-                className="audio-btn detail-audio-reset-btn"
+                className={cx(styles, "audio-btn detail-audio-reset-btn")}
                 onClick={handleReset}
                 aria-label={language === "km" ? "សារឡើងវិញសំឡេងណែនាំ" : language === "en" ? "Restart audio narration" : "Nghe lại từ đầu"}
               >
@@ -593,17 +595,17 @@ export const PlaceDetailPage: React.FC = () => {
               </button>
 
               <button
-                className="audio-btn audio-play-pause"
+                className={cx(styles, "audio-btn audio-play-pause")}
                 onClick={handlePlayPause}
                 aria-label={isPlaying ? (language === "km" ? "ផ្អាក" : language === "en" ? "Pause" : "Tạm dừng") : (language === "km" ? "ចាក់សំឡេង" : language === "en" ? "Play" : "Phát")}
               >
                 {isPlaying
-                  ? <Pause size={22} className="fill-navy" aria-hidden="true" />
-                  : <Play size={22} className="fill-navy margin-left-2" aria-hidden="true" />}
+                  ? <Pause size={22} className={cx(styles, "fill-navy")} aria-hidden="true" />
+                  : <Play size={22} className={cx(styles, "fill-navy margin-left-2")} aria-hidden="true" />}
               </button>
 
               <button
-                className="audio-btn detail-audio-play-text-btn"
+                className={cx(styles, "audio-btn detail-audio-play-text-btn")}
                 onClick={handlePlayPause}
                 aria-label={isPlaying ? (language === "km" ? "បញ្ឈប់" : language === "en" ? "Stop" : "Dừng") : (language === "km" ? "ចាក់សំឡេងណែនាំ" : language === "en" ? "Play Narration" : "Nghe thuyết minh")}
               >
@@ -615,19 +617,19 @@ export const PlaceDetailPage: React.FC = () => {
       })()}
 
       {/* Description Text details */}
-      <div className="detail-section-wrapper">
-        <div className="glass-card detail-card-content">
-          <h2 className="detail-section-title">
+      <div className={cx(styles, "detail-section-wrapper")}>
+        <div className={cx(styles, "glass-card detail-card-content")}>
+          <h2 className={cx(styles, "detail-section-title")}>
             {language === "en" ? "History & Narration" : language === "km" ? "ប្រវត្តិ និងការអធិប្បាយ" : "Lịch sử & Diễn giải di tích"}
           </h2>
-          <p className="detail-body-text">
+          <p className={cx(styles, "detail-body-text")}>
             {localizedDescription}
           </p>
 
           {/* Deep link button to chat */}
           <button 
             onClick={handleAskAI}
-            className="detail-ai-ask-btn"
+            className={cx(styles, "detail-ai-ask-btn")}
           >
             <Bot size={16} />
             <span>

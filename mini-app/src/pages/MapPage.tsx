@@ -4,6 +4,8 @@ import { Header, Page } from "../components/WebPrimitives";
 import { MapPin, Compass, Navigation, Info, Volume2 } from "lucide-react";
 import api, { MapPlace, hasAudioGuide, Itinerary } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 // Coordinate database markers interface
 interface MapMarker {
@@ -821,7 +823,7 @@ export const MapPage: React.FC = () => {
   };
 
   return (
-    <Page className="map-page-premium">
+    <Page className={cx(styles, "map-page-premium")}>
       <style dangerouslySetInnerHTML={{
         __html: `
         .leaflet-container {
@@ -920,7 +922,7 @@ export const MapPage: React.FC = () => {
       {/* Premium Header */}
       <Header
         title={
-          <span className="map-header-title">
+          <span className={cx(styles, "map-header-title")}>
             {language === "km" ? "ផែនទីឌីជីថលពិតប្រាកដ" : language === "en" ? "Real Geolocation Map" : "Bản Đồ Số Thực Địa"}
           </span> as any
         }
@@ -928,9 +930,9 @@ export const MapPage: React.FC = () => {
       />
 
       {/* Control bar */}
-      <div className="map-control-bar">
+      <div className={cx(styles, "map-control-bar")}>
         {/* AI route scrollable list */}
-        <div className="map-itinerary-list">
+        <div className={cx(styles, "map-itinerary-list")}>
           {itineraries.map((itinerary) => (
             <button
               key={itinerary.id}
@@ -939,10 +941,10 @@ export const MapPage: React.FC = () => {
                 setSelectedPlace(null);
                 setSelectedMarker(null);
               }}
-              className={`map-itinerary-btn ${activeRouteId === itinerary.id ? "is-active" : ""}`}
+              className={cx(styles, `map-itinerary-btn ${activeRouteId === itinerary.id ? "is-active" : ""}`)}
               style={{ "--route-color": itinerary.color } as React.CSSProperties}
             >
-              <Compass size={12} className="map-itinerary-btn-icon" />
+              <Compass size={12} className={cx(styles, "map-itinerary-btn-icon")} />
               {language === "km" ? (itinerary.name_km || itinerary.name) : language === "en" ? (itinerary.name_en || itinerary.name) : itinerary.name} ({language === "km" ? (itinerary.duration_km || itinerary.duration) : language === "en" ? (itinerary.duration_en || itinerary.duration) : itinerary.duration})
             </button>
           ))}
@@ -950,39 +952,39 @@ export const MapPage: React.FC = () => {
       </div>
 
       {/* Map Layout Wrapper for Responsive Desktop */}
-      <div className="map-responsive-wrapper">
+      <div className={cx(styles, "map-responsive-wrapper")}>
         {/* Main Map Content DOM */}
-        <div className="map-leaflet-wrapper">
+        <div className={cx(styles, "map-leaflet-wrapper")}>
           {!leafletLoaded && (
-            <div className="map-loader-container">
-              <Compass size={40} className="map-loader-icon" />
-              <p className="map-loader-text">
+            <div className={cx(styles, "map-loader-container")}>
+              <Compass size={40} className={cx(styles, "map-loader-icon")} />
+              <p className={cx(styles, "map-loader-text")}>
                 {language === "km" ? "កំពុងទាញយកផែនទីឌីជីថល..." : language === "en" ? "Loading Leaflet Map Tiles..." : "Đang tải bản đồ số..."}
               </p>
             </div>
           )}
 
-          <div ref={mapDivRef} className="map-div-container" />
+          <div ref={mapDivRef} className={cx(styles, "map-div-container")} />
 
           {/* FAB Controls (GPS + Zoom) */}
           <div
-            className={`map-fab-group ${(selectedPlace || activeRoute) ? "is-sheet-open" : "is-sheet-closed"}`}
+            className={cx(styles, `map-fab-group ${(selectedPlace || activeRoute) ? "is-sheet-open" : "is-sheet-closed"}`)}
           >
             {/* GPS Locate Button */}
             <button
               onClick={() => handleActivateGPS(false)}
               disabled={gpsLoading}
               id="map-gps-btn"
-              className={`map-fab-btn ${gpsLocation ? "is-active" : ""}`}
+              className={cx(styles, `map-fab-btn ${gpsLocation ? "is-active" : ""}`)}
               title={language === "km" ? "កំណត់ទីតាំង GPS" : language === "en" ? "GPS Locate" : "Định Vị GPS"}
             >
               {gpsLoading ? (
-                <Compass size={18} className="map-gps-icon-loading" />
+                <Compass size={18} className={cx(styles, "map-gps-icon-loading")} />
               ) : (
-                <Navigation size={18} className="map-gps-icon" style={{ color: gpsLocation ? "var(--accent-gold)" : "#ffffff" }} />
+                <Navigation size={18} className={cx(styles, "map-gps-icon")} style={{ color: gpsLocation ? "var(--accent-gold)" : "#ffffff" }} />
               )}
               {gpsLocation && (
-                <span className="map-gps-status-dot" />
+                <span className={cx(styles, "map-gps-status-dot")} />
               )}
             </button>
 
@@ -990,7 +992,7 @@ export const MapPage: React.FC = () => {
             <button
               onClick={handleZoomIn}
               id="map-zoom-in-btn"
-              className="map-fab-btn map-zoom-btn"
+              className={cx(styles, "map-fab-btn map-zoom-btn")}
               title={language === "km" ? "ពង្រីក" : language === "en" ? "Zoom In" : "Phóng to"}
             >
               +
@@ -1000,7 +1002,7 @@ export const MapPage: React.FC = () => {
             <button
               onClick={handleZoomOut}
               id="map-zoom-out-btn"
-              className="map-fab-btn map-zoom-btn"
+              className={cx(styles, "map-fab-btn map-zoom-btn")}
               title={language === "km" ? "បង្រួញ" : language === "en" ? "Zoom Out" : "Thu nhỏ"}
             >
               -
@@ -1010,7 +1012,7 @@ export const MapPage: React.FC = () => {
             <button
               onClick={handleResetZoom}
               id="map-reset-btn"
-              className="map-fab-btn is-active"
+              className={cx(styles, "map-fab-btn is-active")}
               title={language === "km" ? "ទម្រង់ដើម" : language === "en" ? "Center Map" : "Trung Tâm"}
             >
               <Compass size={16} />
@@ -1021,14 +1023,14 @@ export const MapPage: React.FC = () => {
         {/* Bottom Sheet Panel (Mobile) / Sidebar Panel (Desktop) */}
         <div
           id="map-bottom-sheet"
-          className={selectedPlace || activeRoute ? "is-expanded" : ""}
+          className={cx(styles, selectedPlace || activeRoute ? "is-expanded" : "")}
         >
           {/* Drag handle */}
-          <div className="map-sheet-handle" />
+          <div className={cx(styles, "map-sheet-handle")} />
 
           {selectedPlace && selectedMarker ? (
             <div>
-              <div className="map-place-flex">
+              <div className={cx(styles, "map-place-flex")}>
                 <img
                   src={selectedPlace.image_url}
                   alt={selectedPlace.name}
@@ -1036,27 +1038,27 @@ export const MapPage: React.FC = () => {
                   height={64}
                   loading="lazy"
                   decoding="async"
-                  className="map-place-img"
+                  className={cx(styles, "map-place-img")}
                 />
 
-                <div className="map-place-body">
-                  <h3 className="map-place-title">
+                <div className={cx(styles, "map-place-body")}>
+                  <h3 className={cx(styles, "map-place-title")}>
                     {language === "km" && selectedPlace.name_km ? selectedPlace.name_km : language === "en" && selectedPlace.name_en ? selectedPlace.name_en : selectedPlace.name}
                   </h3>
-                  <p className="map-place-meta">
-                    <MapPin size={10} className="map-place-pin" />
+                  <p className={cx(styles, "map-place-meta")}>
+                    <MapPin size={10} className={cx(styles, "map-place-pin")} />
                     GPS: {selectedMarker.lat.toFixed(6)}, {selectedMarker.lng.toFixed(6)}
                   </p>
-                  <p className="map-place-desc">
+                  <p className={cx(styles, "map-place-desc")}>
                     {language === "km" && selectedPlace.short_description_km ? selectedPlace.short_description_km : language === "en" && selectedPlace.short_description_en ? selectedPlace.short_description_en : selectedPlace.short_description}
                   </p>
                 </div>
               </div>
 
-              <div className="map-place-buttons">
+              <div className={cx(styles, "map-place-buttons")}>
                 <button
                   onClick={() => navigate(`/places/${selectedPlace.slug}`)}
-                  className="map-btn-info"
+                  className={cx(styles, "map-btn-info")}
                 >
                   <Info size={14} />
                   <span>{language === "km" ? "មើលព័ត៌មានលម្អិត" : language === "en" ? "View Details" : "Lịch Sử Di Tích"}</span>
@@ -1065,7 +1067,7 @@ export const MapPage: React.FC = () => {
                 {hasAudioGuide(selectedPlace, language) && (
                   <button
                     onClick={() => navigate(`/places/${selectedPlace.slug}`)}
-                    className="map-btn-audio"
+                    className={cx(styles, "map-btn-audio")}
                   >
                     <Volume2 size={14} />
                     <span>{language === "km" ? "ស្តាប់ការអធិប្បាយ" : language === "en" ? "Audio Guide" : "Phát Thuyết Minh"}</span>
@@ -1075,22 +1077,22 @@ export const MapPage: React.FC = () => {
             </div>
           ) : activeRoute ? (
             <div>
-              <div className="map-route-header">
-                <h3 className="map-route-title" style={{ color: activeRoute.color }}>
+              <div className={cx(styles, "map-route-header")}>
+                <h3 className={cx(styles, "map-route-title")} style={{ color: activeRoute.color }}>
                   {language === "km" ? (activeRoute.name_km || activeRoute.name) : language === "en" ? (activeRoute.name_en || activeRoute.name) : activeRoute.name}
                 </h3>
-                <p className="map-route-subtitle">
+                <p className={cx(styles, "map-route-subtitle")}>
                   {language === "km" ? "ជំហានធ្វើដំណើរដែលណែនាំដោយ AI:" : language === "en" ? "AI recommended travel steps:" : "Lộ trình đề xuất di chuyển chi tiết:"}
                 </p>
               </div>
 
-              <div className="map-route-steps">
+              <div className={cx(styles, "map-route-steps")}>
                 {activeRoute.steps.map((step, idx) => (
-                  <div key={idx} className="map-route-step-item">
-                    <span className="map-route-step-number" style={{ "--route-color": activeRoute.color } as React.CSSProperties}>
+                  <div key={idx} className={cx(styles, "map-route-step-item")}>
+                    <span className={cx(styles, "map-route-step-number")} style={{ "--route-color": activeRoute.color } as React.CSSProperties}>
                       {idx + 1}
                     </span>
-                    <p className="map-route-step-text">
+                    <p className={cx(styles, "map-route-step-text")}>
                       {language === "km" && step.km ? step.km : language === "en" ? step.en : step.vi}
                     </p>
                   </div>
@@ -1098,8 +1100,8 @@ export const MapPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="map-sheet-placeholder">
-              <Compass size={13} className="map-sheet-placeholder-icon" />
+            <div className={cx(styles, "map-sheet-placeholder")}>
+              <Compass size={13} className={cx(styles, "map-sheet-placeholder-icon")} />
               <span>
                 {language === "km"
                   ? "សូមប៉ះទីកន្លែង ឬជ្រើសរើសផ្លូវ AI ដើម្បីមើលព័ត៌មានលម្អិត។"

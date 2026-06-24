@@ -4,6 +4,8 @@ import { User, LogOut, Award, Heart, Check, Lock, Edit2, Save, X, Phone, Mail, C
 import { Header, Page } from "../components/WebPrimitives";
 import api, { TouristPlace, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 export const ProfilePage: React.FC = () => {
   const { language, t } = useLanguage();
@@ -252,8 +254,8 @@ export const ProfilePage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.profile")} showBackIcon={false} />
-        <div className="profile-loading-box">
-          <div className="common-loading">{t("common.loading")}</div>
+        <div className={cx(styles, "profile-loading-box")}>
+          <div className={cx(styles, "common-loading")}>{t("common.loading")}</div>
         </div>
       </Page>
     );
@@ -264,20 +266,20 @@ export const ProfilePage: React.FC = () => {
     return (
       <Page>
         <Header title={t("nav.profile")} showBackIcon={false} />
-        <div className="profile-logged-out-wrapper">
+        <div className={cx(styles, "profile-logged-out-wrapper")}>
           
-          <div className="glass-card fade-in-up stagger-1 profile-intro-card">
-            <div className="profile-intro-header">
-              <div className="profile-intro-icon-circle">
+          <div className={cx(styles, "glass-card fade-in-up stagger-1 profile-intro-card")}>
+            <div className={cx(styles, "profile-intro-header")}>
+              <div className={cx(styles, "profile-intro-icon-circle")}>
                 <User size={20} />
               </div>
               <div>
-                <h2 className="profile-intro-title">{t("profile.title")}</h2>
-                <p className="profile-intro-subtitle">{t("profile.logged_out")}</p>
+                <h2 className={cx(styles, "profile-intro-title")}>{t("profile.title")}</h2>
+                <p className={cx(styles, "profile-intro-subtitle")}>{t("profile.logged_out")}</p>
               </div>
             </div>
             
-            <p className="profile-intro-desc">
+            <p className={cx(styles, "profile-intro-desc")}>
               {language === "km" 
                 ? "សូមចូលគណនីរបស់អ្នកដើម្បីចូលរួមដំណើរការប្រមូលត្រាសញ្ញាបេតិកភណ្ឌ (Stamp Rally) និងចូលចិត្តទីកន្លែងដែលអ្នកស្រឡាញ់ដើម្បីរក្សាទុកការចងចាំដ៏ល្អរបស់អ្នក!"
                 : language === "en"
@@ -287,47 +289,47 @@ export const ProfilePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="glass-card fade-in-up stagger-2 profile-auth-card">
-            <div className="profile-auth-tabs">
+          <div className={cx(styles, "glass-card fade-in-up stagger-2 profile-auth-card")}>
+            <div className={cx(styles, "profile-auth-tabs")}>
               <button 
                 type="button"
                 onClick={() => switchAuthMode("login")}
-                className={`profile-auth-tab-btn ${authMode === "login" ? "is-active" : ""}`}
+                className={cx(styles, `profile-auth-tab-btn ${authMode === "login" ? "is-active" : ""}`)}
               >
                 {language === "km" ? "ចូលគណនី" : language === "en" ? "LOG IN" : "ĐĂNG NHẬP"}
               </button>
               <button 
                 type="button"
                 onClick={() => switchAuthMode("signup")}
-                className={`profile-auth-tab-btn ${authMode === "signup" ? "is-active" : ""}`}
+                className={cx(styles, `profile-auth-tab-btn ${authMode === "signup" ? "is-active" : ""}`)}
               >
                 {language === "km" ? "ចុះឈ្មោះភ្ញៀវ" : language === "en" ? "SIGN UP" : "ĐĂNG KÝ KHÁCH"}
               </button>
             </div>
 
             {authError && (
-              <div className="profile-auth-form-error" role="alert" aria-live="polite">
+              <div className={cx(styles, "profile-auth-form-error")} role="alert" aria-live="polite">
                 {authError}
               </div>
             )}
 
             {authMessage && (
-              <div className="profile-auth-form-message" role="status" aria-live="polite">
+              <div className={cx(styles, "profile-auth-form-message")} role="status" aria-live="polite">
                 {authMessage}
               </div>
             )}
 
-            <form onSubmit={handleAuth} className="profile-auth-form" noValidate>
+            <form onSubmit={handleAuth} className={cx(styles, "profile-auth-form")} noValidate>
               {authMode === "signup" && (
                 <div>
-                  <label className="profile-auth-label">
+                  <label className={cx(styles, "profile-auth-label")}>
                     {language === "km" ? "ឈ្មោះពេញ" : language === "en" ? "FULL NAME" : "HỌ VÀ TÊN"}
                   </label>
                   <input 
                     id="profile-auth-name"
                     type="text" 
                     name="name"
-                    className="feedback-input" 
+                    className={cx(styles, "feedback-input")} 
                     value={name} 
                     onChange={e => setName(e.target.value)} 
                     autoComplete="name"
@@ -336,19 +338,19 @@ export const ProfilePage: React.FC = () => {
                     required 
                     enterKeyHint="next"
                   />
-                  {authFieldErrors.name && <div className="profile-auth-field-error">{authFieldErrors.name}</div>}
+                  {authFieldErrors.name && <div className={cx(styles, "profile-auth-field-error")}>{authFieldErrors.name}</div>}
                 </div>
               )}
               
               <div>
-                <label className="profile-auth-label">
+                <label className={cx(styles, "profile-auth-label")}>
                   {language === "km" ? "អ៊ីមែល" : "EMAIL"}
                 </label>
                 <input 
                   id="profile-auth-email"
                   type="email" 
                   name="email"
-                  className="feedback-input" 
+                  className={cx(styles, "feedback-input")} 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   autoComplete="email"
@@ -359,18 +361,18 @@ export const ProfilePage: React.FC = () => {
                   required 
                   enterKeyHint="next"
                 />
-                {authFieldErrors.email && <div className="profile-auth-field-error">{authFieldErrors.email}</div>}
+                {authFieldErrors.email && <div className={cx(styles, "profile-auth-field-error")}>{authFieldErrors.email}</div>}
               </div>
 
               <div>
-                <label className="profile-auth-label">
+                <label className={cx(styles, "profile-auth-label")}>
                   {language === "km" ? "លេខសម្ងាត់" : language === "en" ? "PASSWORD" : "MẬT KHẨU"}
                 </label>
                 <input 
                   id="profile-auth-password"
                   type="password" 
                   name={authMode === "login" ? "current-password" : "new-password"}
-                  className="feedback-input" 
+                  className={cx(styles, "feedback-input")} 
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
                   autoComplete={authMode === "login" ? "current-password" : "new-password"}
@@ -379,10 +381,10 @@ export const ProfilePage: React.FC = () => {
                   required 
                   enterKeyHint="done"
                 />
-                {authFieldErrors.password && <div className="profile-auth-field-error">{authFieldErrors.password}</div>}
+                {authFieldErrors.password && <div className={cx(styles, "profile-auth-field-error")}>{authFieldErrors.password}</div>}
               </div>
 
-              <button className="submit-btn profile-auth-submit-btn" type="submit" disabled={authLoading}>
+              <button className={cx(styles, "submit-btn profile-auth-submit-btn")} type="submit" disabled={authLoading}>
                 {authSubmitLabel}
               </button>
             </form>
@@ -437,7 +439,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <Page>
       <Header title={t("nav.profile")} showBackIcon={false} />
-      <div className="profile-page-container">
+      <div className={cx(styles, "profile-page-container")}>
         
         {/* Hidden Avatar input */}
         <input 
@@ -445,12 +447,12 @@ export const ProfilePage: React.FC = () => {
           ref={avatarInputRef} 
           onChange={handleAvatarChange} 
           accept="image/*" 
-          className="hidden-input" 
+          className={cx(styles, "hidden-input")} 
         />
 
         {profileNotice && (
           <div
-            className={`profile-notice profile-notice-${profileNotice.type}`}
+            className={cx(styles, `profile-notice profile-notice-${profileNotice.type}`)}
             role={profileNotice.type === "error" ? "alert" : "status"}
             aria-live="polite"
           >
@@ -459,61 +461,61 @@ export const ProfilePage: React.FC = () => {
         )}
 
         {/* User Card */}
-        <div className="glass-card fade-in-up stagger-1 profile-user-card">
-          <div className="profile-user-card-top">
-            <div className="profile-user-card-info-row">
+        <div className={cx(styles, "glass-card fade-in-up stagger-1 profile-user-card")}>
+          <div className={cx(styles, "profile-user-card-top")}>
+            <div className={cx(styles, "profile-user-card-info-row")}>
               
               {/* Interactive Avatar Container */}
               <button 
                 type="button"
                 onClick={() => !avatarLoading && avatarInputRef.current?.click()}
-                className={`profile-avatar-wrapper ${avatarLoading ? "is-loading" : ""}`}
+                className={cx(styles, `profile-avatar-wrapper ${avatarLoading ? "is-loading" : ""}`)}
                 disabled={avatarLoading}
                 aria-label={language === "en" ? "Change avatar" : "Đổi ảnh đại diện"}
                 title={language === "en" ? "Change Avatar" : "Đổi ảnh đại diện"}
               >
-                <div className="profile-avatar-circle">
+                <div className={cx(styles, "profile-avatar-circle")}>
                   {avatarLoading ? (
-                    <div className="profile-avatar-loading-text">...</div>
+                    <div className={cx(styles, "profile-avatar-loading-text")}>...</div>
                   ) : profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="profile-avatar-img" />
+                    <img src={profile.avatar_url} alt="Avatar" className={cx(styles, "profile-avatar-img")} />
                   ) : (
                     profile.name ? profile.name.charAt(0).toUpperCase() : "U"
                   )}
                 </div>
                 {!avatarLoading && (
-                  <div className="profile-avatar-camera-badge">
-                    <Camera size={10} className="stroke-width-3" />
+                  <div className={cx(styles, "profile-avatar-camera-badge")}>
+                    <Camera size={10} className={cx(styles, "stroke-width-3")} />
                   </div>
                 )}
               </button>
               
               {!isEditing ? (
-                <div className="profile-details-wrapper">
-                  <h3 className="profile-details-name">
+                <div className={cx(styles, "profile-details-wrapper")}>
+                  <h3 className={cx(styles, "profile-details-name")}>
                     {profile.name || (language === "en" ? "Guest Tourist" : language === "km" ? "ភ្ញៀវទេសចរ" : "Khách du lịch")}
                   </h3>
-                  <div className="profile-details-contacts">
+                  <div className={cx(styles, "profile-details-contacts")}>
                     {profile.phone && (
-                      <span className="profile-details-contact-item">
+                      <span className={cx(styles, "profile-details-contact-item")}>
                         <Phone size={12} /> {profile.phone}
                       </span>
                     )}
                     {profile.email && (
-                      <span className="profile-details-contact-item">
+                      <span className={cx(styles, "profile-details-contact-item")}>
                         <Mail size={12} /> {profile.email}
                       </span>
                     )}
                   </div>
-                  <span className="profile-details-badge">
+                  <span className={cx(styles, "profile-details-badge")}>
                     {profile.link_type || "Email / Supabase"}
                   </span>
                 </div>
               ) : (
-                <form onSubmit={handleUpdateProfile} className="profile-edit-form">
+                <form onSubmit={handleUpdateProfile} className={cx(styles, "profile-edit-form")}>
                   <input 
                     type="text" 
-                    className="feedback-input profile-edit-input" 
+                    className={cx(styles, "feedback-input profile-edit-input")} 
                     value={editName} 
                     onChange={e => setEditName(e.target.value)} 
                     placeholder={language === "en" ? "Full name" : language === "km" ? "ឈ្មោះពេញ" : "Họ và tên"}
@@ -522,7 +524,7 @@ export const ProfilePage: React.FC = () => {
                   />
                   <input 
                     type="text" 
-                    className="feedback-input profile-edit-input" 
+                    className={cx(styles, "feedback-input profile-edit-input")} 
                     value={editPhone} 
                     onChange={e => setEditPhone(e.target.value)} 
                     placeholder={language === "en" ? "Phone number" : language === "km" ? "លេខទូរស័ព្ទ" : "Số điện thoại"}
@@ -530,8 +532,8 @@ export const ProfilePage: React.FC = () => {
                   />
                   
                   {/* Collapsible Password Change Section */}
-                  <div className="profile-pw-checkbox-wrapper">
-                    <label className="profile-pw-label">
+                  <div className={cx(styles, "profile-pw-checkbox-wrapper")}>
+                    <label className={cx(styles, "profile-pw-label")}>
                       <input 
                         type="checkbox" 
                         checked={showPasswordChange} 
@@ -541,10 +543,10 @@ export const ProfilePage: React.FC = () => {
                     </label>
                     
                     {showPasswordChange && (
-                      <div className="profile-pw-fields">
+                      <div className={cx(styles, "profile-pw-fields")}>
                         <input 
                           type="password" 
-                          className="feedback-input profile-pw-input" 
+                          className={cx(styles, "feedback-input profile-pw-input")} 
                           value={newPassword} 
                           onChange={e => setNewPassword(e.target.value)} 
                           placeholder={language === "en" ? "New password (min 6 chars)" : language === "km" ? "លេខសម្ងាត់ថ្មី (យ៉ាងហោចណាស់ ៦ ខ្ទង់)" : "Mật khẩu mới (tối thiểu 6 ký tự)"}
@@ -553,7 +555,7 @@ export const ProfilePage: React.FC = () => {
                         />
                         <input 
                           type="password" 
-                          className="feedback-input profile-pw-input" 
+                          className={cx(styles, "feedback-input profile-pw-input")} 
                           value={confirmPassword} 
                           onChange={e => setConfirmPassword(e.target.value)} 
                           placeholder={language === "en" ? "Confirm new password" : language === "km" ? "បញ្ជាក់លេខសម្ងាត់ថ្មី" : "Nhập lại mật khẩu mới"}
@@ -564,11 +566,11 @@ export const ProfilePage: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="profile-edit-actions">
-                    <button className="submit-btn profile-save-btn" type="submit" disabled={editLoading}>
+                  <div className={cx(styles, "profile-edit-actions")}>
+                    <button className={cx(styles, "submit-btn profile-save-btn")} type="submit" disabled={editLoading}>
                       <Save size={14} /> {language === "en" ? "Save" : language === "km" ? "រក្សាទុក" : "Lưu"}
                     </button>
-                    <button type="button" onClick={() => { setIsEditing(false); setShowPasswordChange(false); }} className="profile-cancel-btn">
+                    <button type="button" onClick={() => { setIsEditing(false); setShowPasswordChange(false); }} className={cx(styles, "profile-cancel-btn")}>
                       <X size={14} /> {language === "en" ? "Cancel" : language === "km" ? "បោះបង់" : "Hủy"}
                     </button>
                   </div>
@@ -579,7 +581,7 @@ export const ProfilePage: React.FC = () => {
             {!isEditing && (
               <button 
                 onClick={() => setIsEditing(true)}
-                className="profile-edit-btn"
+                className={cx(styles, "profile-edit-btn")}
                 aria-label={language === "en" ? "Edit Profile" : language === "km" ? "កែសម្រួលព័ត៌មាន" : "Sửa hồ sơ"}
               >
                 <Edit2 size={16} />
@@ -589,52 +591,52 @@ export const ProfilePage: React.FC = () => {
 
           {/* Gamification Stats Block (Premium UI) */}
           {profile && (
-            <div className="profile-journey-stats-card">
+            <div className={cx(styles, "profile-journey-stats-card")}>
               {/* Title & Level */}
-              <div className="profile-journey-stats-header">
-                <div className="profile-journey-title-wrapper">
-                  <Award size={16} className="gold-text-icon" />
-                  <span className="profile-xp-title">
+              <div className={cx(styles, "profile-journey-stats-header")}>
+                <div className={cx(styles, "profile-journey-title-wrapper")}>
+                  <Award size={16} className={cx(styles, "gold-text-icon")} />
+                  <span className={cx(styles, "profile-xp-title")}>
                     {title}
                   </span>
                 </div>
-                <span className="profile-journey-level-badge">
+                <span className={cx(styles, "profile-journey-level-badge")}>
                   {language === "en" ? `Level ${level}` : language === "km" ? `កម្រិត ${level}` : `Cấp ${level}`}
                 </span>
               </div>
               
               {/* XP Progress Bar */}
-              <div className="profile-xp-progress-wrapper">
-                <div className="profile-xp-text-row">
+              <div className={cx(styles, "profile-xp-progress-wrapper")}>
+                <div className={cx(styles, "profile-xp-text-row")}>
                   <span>XP: {xp} / {nextLevelXp}</span>
                   <span>{Math.round((xp / nextLevelXp) * 100)}%</span>
                 </div>
-                <div className="profile-xp-progress-bar">
+                <div className={cx(styles, "profile-xp-progress-bar")}>
                   <div 
-                    className="profile-xp-progress-fill" 
+                    className={cx(styles, "profile-xp-progress-fill")} 
                     style={{ width: `${Math.min(100, (xp / nextLevelXp) * 100)}%` }} 
                   />
                 </div>
               </div>
 
               {/* Detailed Achievements counts */}
-              <div className="profile-achievements-row">
+              <div className={cx(styles, "profile-achievements-row")}>
                 <div>
-                  <span className="profile-achievement-val">{stampsCount}/{allPlaces.length}</span>
-                  <span className="profile-achievement-label">{language === "en" ? "Stamps" : language === "km" ? "ត្រាសញ្ញា" : "Dấu ấn"}</span>
+                  <span className={cx(styles, "profile-achievement-val")}>{stampsCount}/{allPlaces.length}</span>
+                  <span className={cx(styles, "profile-achievement-label")}>{language === "en" ? "Stamps" : language === "km" ? "ត្រាសញ្ញា" : "Dấu ấn"}</span>
                 </div>
                 <div>
-                  <span className="profile-achievement-val">{favoritesCount}</span>
-                  <span className="profile-achievement-label">{language === "en" ? "Favorites" : language === "km" ? "ចូលចិត្ត" : "Yêu thích"}</span>
+                  <span className={cx(styles, "profile-achievement-val")}>{favoritesCount}</span>
+                  <span className={cx(styles, "profile-achievement-label")}>{language === "en" ? "Favorites" : language === "km" ? "ចូលចិត្ត" : "Yêu thích"}</span>
                 </div>
                 <div>
-                  <span className="profile-achievement-val">{itinerariesCount}</span>
-                  <span className="profile-achievement-label">{language === "en" ? "Itineraries" : language === "km" ? "កម្មវិធីដំណើរ" : "Lịch trình"}</span>
+                  <span className={cx(styles, "profile-achievement-val")}>{itinerariesCount}</span>
+                  <span className={cx(styles, "profile-achievement-label")}>{language === "en" ? "Itineraries" : language === "km" ? "កម្មវិធីដំណើរ" : "Lịch trình"}</span>
                 </div>
               </div>
               
               {/* How to level up tip */}
-              <div className="profile-achievement-tip">
+              <div className={cx(styles, "profile-achievement-tip")}>
                 {language === "en" 
                   ? "* Stamps = 1000 XP | Favorites = 100 XP | Itineraries = 200 XP" 
                   : language === "km"
@@ -644,8 +646,8 @@ export const ProfilePage: React.FC = () => {
             </div>
           )}
 
-          <div className="profile-signout-row">
-            <button onClick={handleSignOut} className="profile-signout-btn">
+          <div className={cx(styles, "profile-signout-row")}>
+            <button onClick={handleSignOut} className={cx(styles, "profile-signout-btn")}>
               <LogOut size={14} />
               {t("profile.logout_btn")}
             </button>
@@ -653,12 +655,12 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Stamp Rally Collection Card */}
-        <div className="glass-card fade-in-up stagger-2">
-          <h3 className="profile-section-title">
-            <Award size={18} className="gold-text-icon" />
+        <div className={cx(styles, "glass-card fade-in-up stagger-2")}>
+          <h3 className={cx(styles, "profile-section-title")}>
+            <Award size={18} className={cx(styles, "gold-text-icon")} />
             <span>{t("profile.stamps")}</span>
           </h3>
-          <p className="profile-section-subtitle">
+          <p className={cx(styles, "profile-section-subtitle")}>
             {language === "en" 
               ? `Collected ${stamps.length}/${allPlaces.length} heritage stamps`
               : language === "km"
@@ -666,7 +668,7 @@ export const ProfilePage: React.FC = () => {
                 : `Đã tích lũy được ${stamps.length}/${allPlaces.length} dấu ấn`}
           </p>
 
-          <div className="profile-stamp-grid">
+          <div className={cx(styles, "profile-stamp-grid")}>
             {allPlaces.map((place, idx) => {
               const collected = isPlaceStamped(place.slug);
               const localizedName = language === "km" && place.name_km 
@@ -682,20 +684,20 @@ export const ProfilePage: React.FC = () => {
               return (
                 <div 
                   key={place.id}
-                  className={`profile-stamp-card fade-in-up stagger-${idx % 3 + 1} ${collected ? "is-collected" : "is-locked"}`}
+                  className={cx(styles, `profile-stamp-card fade-in-up stagger-${idx % 3 + 1} ${collected ? "is-collected" : "is-locked"}`)}
                   title={localizedName}
                 >
-                  <div className={`profile-stamp-badge-circle ${collected ? "is-collected" : "is-locked"}`}>
+                  <div className={cx(styles, `profile-stamp-badge-circle ${collected ? "is-collected" : "is-locked"}`)}>
                     {collected ? (
-                      <Check size={20} className="stroke-width-3" />
+                      <Check size={20} className={cx(styles, "stroke-width-3")} />
                     ) : (
                       <Lock size={14} />
                     )}
                   </div>
-                  <span className="profile-stamp-name">
+                  <span className={cx(styles, "profile-stamp-name")}>
                     {displayName}
                   </span>
-                  <span className="profile-stamp-status-badge">
+                  <span className={cx(styles, "profile-stamp-status-badge")}>
                     {collected ? (language === "en" ? "STAMPED" : language === "km" ? "បានទទួល" : "ĐÃ CÓ") : (language === "en" ? "LOCKED" : language === "km" ? "មិនទាន់មាន" : "CHƯA CÓ")}
                   </span>
                 </div>
@@ -706,18 +708,18 @@ export const ProfilePage: React.FC = () => {
 
         {/* Heritage Journey Completed - Congrats Card */}
         {stamps.length >= 3 && (
-          <div className="glass-card fade-in-up profile-journey-complete-card">
-            <div className="profile-journey-icon-circle">
+          <div className={cx(styles, "glass-card fade-in-up profile-journey-complete-card")}>
+            <div className={cx(styles, "profile-journey-icon-circle")}>
               <Award size={30} />
             </div>
-            <h4 className="profile-journey-title">
+            <h4 className={cx(styles, "profile-journey-title")}>
               {language === "en" 
                 ? "HERITAGE JOURNEY PROGRESS" 
                 : language === "km" 
                   ? "វឌ្ឍនភាពធ្វើដំណើរ" 
                   : "HÀNH TRÌNH DI SẢN XUẤT SẮC"}
             </h4>
-            <p className="profile-journey-desc">
+            <p className={cx(styles, "profile-journey-desc")}>
               {language === "en"
                 ? `Congratulations! You have successfully visited and collected ${stamps.length} heritage stamps. Your journey is now preserved in your memory!`
                 : language === "km"
@@ -729,14 +731,14 @@ export const ProfilePage: React.FC = () => {
         )}
 
         {/* Heritage Explorer Leaderboard */}
-        <div className="glass-card fade-in-up stagger-3">
-          <h3 className="profile-section-title">
-            <Award size={18} className="gold-text-icon" />
+        <div className={cx(styles, "glass-card fade-in-up stagger-3")}>
+          <h3 className={cx(styles, "profile-section-title")}>
+            <Award size={18} className={cx(styles, "gold-text-icon")} />
             <span>
               {language === "en" ? "Explorer Leaderboard" : language === "km" ? "តារាងពិន្ទុអ្នករុករក" : "Bảng Xếp Hạng Lữ Khách"}
             </span>
           </h3>
-          <p className="profile-section-subtitle">
+          <p className={cx(styles, "profile-section-subtitle")}>
             {language === "en" 
               ? "Top explorers based on stamps, favorites and itineraries" 
               : language === "km"
@@ -744,9 +746,9 @@ export const ProfilePage: React.FC = () => {
                 : "Top lữ khách tích cực khám phá, check-in di sản và thiết kế lộ trình"}
           </p>
 
-          <div className="profile-leaderboard-list">
+          <div className={cx(styles, "profile-leaderboard-list")}>
             {leaderboard.length === 0 ? (
-              <p className="profile-leaderboard-empty">
+              <p className={cx(styles, "profile-leaderboard-empty")}>
                 {language === "en" ? "No leaderboard data" : "Chưa có dữ liệu bảng xếp hạng"}
               </p>
             ) : (
@@ -762,11 +764,11 @@ export const ProfilePage: React.FC = () => {
                 return (
                   <div 
                     key={item.id}
-                    className={`profile-leaderboard-item ${isCurrentUser ? "is-current" : ""}`}
+                    className={cx(styles, `profile-leaderboard-item ${isCurrentUser ? "is-current" : ""}`)}
                   >
                     {/* Rank number or medal */}
                     <div 
-                      className="profile-leaderboard-rank"
+                      className={cx(styles, "profile-leaderboard-rank")}
                       style={{
                         backgroundColor: rankBadgeColor || "transparent",
                         color: rankBadgeColor ? rankTextColor : "var(--site-muted)"
@@ -776,27 +778,27 @@ export const ProfilePage: React.FC = () => {
                     </div>
 
                     {/* Avatar */}
-                    <div className={`profile-leaderboard-avatar ${isCurrentUser ? "is-current" : ""}`}>
+                    <div className={cx(styles, `profile-leaderboard-avatar ${isCurrentUser ? "is-current" : ""}`)}>
                       {item.avatar_url ? (
-                        <img src={item.avatar_url} alt={item.name} className="profile-avatar-img" />
+                        <img src={item.avatar_url} alt={item.name} className={cx(styles, "profile-avatar-img")} />
                       ) : (
                         item.name ? item.name.charAt(0).toUpperCase() : "U"
                       )}
                     </div>
 
                     {/* User details */}
-                    <div className="profile-leaderboard-info">
-                      <div className={`profile-leaderboard-name ${isCurrentUser ? "is-current" : ""}`}>
+                    <div className={cx(styles, "profile-leaderboard-info")}>
+                      <div className={cx(styles, `profile-leaderboard-name ${isCurrentUser ? "is-current" : ""}`)}>
                         {item.name || (language === "en" ? "Guest Tourist" : language === "km" ? "ភ្ញៀវទេសចរ" : "Khách du lịch")} {isCurrentUser && (language === "en" ? " (You)" : language === "km" ? " (អ្នក)" : " (Bạn)")}
                       </div>
-                      <div className="profile-leaderboard-stats">
+                      <div className={cx(styles, "profile-leaderboard-stats")}>
                         <span>🏆 {item.stamps_count} {language === "en" ? "stamps" : language === "km" ? "ត្រា" : "dấu ấn"}</span>
                         <span>❤️ {item.favorites_count}</span>
                       </div>
                     </div>
 
                     {/* XP score */}
-                    <div className="profile-leaderboard-xp">
+                    <div className={cx(styles, "profile-leaderboard-xp")}>
                       {item.total_xp.toLocaleString()} XP
                     </div>
                   </div>
@@ -807,38 +809,38 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Favorite Places List */}
-        <div className="glass-card fade-in-up stagger-4">
-          <h3 className="profile-section-title">
-            <Heart size={18} className="gold-fill-icon" />
+        <div className={cx(styles, "glass-card fade-in-up stagger-4")}>
+          <h3 className={cx(styles, "profile-section-title")}>
+            <Heart size={18} className={cx(styles, "gold-fill-icon")} />
             <span>{t("profile.favorites")}</span>
           </h3>
 
           {favorites.length === 0 ? (
-            <p className="profile-section-subtitle margin-0">
+            <p className={cx(styles, "profile-section-subtitle margin-0")}>
               {t("profile.no_favorites")}
             </p>
           ) : (
-            <div className="profile-favorites-list">
+            <div className={cx(styles, "profile-favorites-list")}>
               {favorites.map((fav) => (
                 <Link 
                   key={fav.id}
                   to={`/places/${fav.slug}`}
-                  className="profile-favorite-item"
+                  className={cx(styles, "profile-favorite-item")}
                 >
                   <img 
                     src={fav.image_url} 
                     alt={fav.name} 
-                    className="profile-favorite-img"
+                    className={cx(styles, "profile-favorite-img")}
                   />
-                  <div className="profile-favorite-info">
-                    <h4 className="profile-favorite-name">
+                  <div className={cx(styles, "profile-favorite-info")}>
+                    <h4 className={cx(styles, "profile-favorite-name")}>
                       {language === "km" && fav.name_km 
                         ? fav.name_km 
                         : language === "en" && fav.name_en 
                           ? fav.name_en 
                           : fav.name}
                     </h4>
-                    <span className="profile-favorite-category">
+                    <span className={cx(styles, "profile-favorite-category")}>
                       {getCategoryName(fav.category)}
                     </span>
                   </div>

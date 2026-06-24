@@ -4,6 +4,8 @@ import { Clock, Ticket, Navigation, ShieldCheck } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import api, { KnowledgeArticle } from "../services/api";
 import { useDragScroll } from "../hooks/useDragScroll";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 type TabType = "tickets" | "travel" | "rules";
 
@@ -315,23 +317,23 @@ export const VisitInfoPage: React.FC = () => {
       <Header title={t("info.title")} showBackIcon={true} />
 
       {/* Tabs Switcher */}
-      <div className="custom-tabs" ref={tabsRef}>
+      <div className={cx(styles, "custom-tabs")} ref={tabsRef}>
         <button 
-          className={`tab-btn ${activeTab === "tickets" ? "tab-btn-active" : ""}`}
+          className={cx(styles, `tab-btn ${activeTab === "tickets" ? "tab-btn-active" : ""}`)}
           onClick={() => setActiveTab("tickets")}
         >
           {language === "km" ? "សំបុត្រ & ម៉ោង" : language === "en" ? "Tickets & Hours" : "Lịch & Vé"}
         </button>
 
         <button 
-          className={`tab-btn ${activeTab === "travel" ? "tab-btn-active" : ""}`}
+          className={cx(styles, `tab-btn ${activeTab === "travel" ? "tab-btn-active" : ""}`)}
           onClick={() => setActiveTab("travel")}
         >
           {language === "km" ? "ការធ្វើដំណើរ" : language === "en" ? "Transport" : "Di chuyển"}
         </button>
 
         <button 
-          className={`tab-btn ${activeTab === "rules" ? "tab-btn-active" : ""}`}
+          className={cx(styles, `tab-btn ${activeTab === "rules" ? "tab-btn-active" : ""}`)}
           onClick={() => setActiveTab("rules")}
         >
           {language === "km" ? "បទប្បញ្ញត្តិ" : language === "en" ? "Rules" : "Nội quy"}
@@ -340,11 +342,11 @@ export const VisitInfoPage: React.FC = () => {
 
       {/* Tab 1 Content: Tickets & Hours */}
       {activeTab === "tickets" && (
-        <div className="info-tab-content">
+        <div className={cx(styles, "info-tab-content")}>
           {ticketsLoading ? (
             /* Loading skeleton */
             [1, 2, 3].map(i => (
-              <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
+              <div key={i} className={cx(styles, "glass-card")} style={{ opacity: 0.5 }}>
                 <div style={{ height: "18px", width: "60%", background: "rgba(0,0,0,0.08)", borderRadius: "6px", marginBottom: "14px" }} />
                 <div style={{ height: "12px", width: "100%", background: "rgba(0,0,0,0.06)", borderRadius: "4px", marginBottom: "8px" }} />
                 <div style={{ height: "12px", width: "80%", background: "rgba(0,0,0,0.06)", borderRadius: "4px" }} />
@@ -352,7 +354,7 @@ export const VisitInfoPage: React.FC = () => {
             ))
           ) : parsedSections.length === 0 ? (
             /* Empty state */
-            <div className="glass-card empty-state-text">
+            <div className={cx(styles, "glass-card empty-state-text")}>
               <Ticket size={36} style={{ color: "var(--site-gold)", opacity: 0.5, marginBottom: "12px" }} />
               <p style={{ margin: 0 }}>
                 {language === "km" ? "ព័ត៌មានសំបុត្រកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Ticket information is being updated. Please check back soon." : "Thông tin vé đang được cập nhật. Vui lòng quay lại sau."}
@@ -362,17 +364,17 @@ export const VisitInfoPage: React.FC = () => {
             parsedSections.map((section, sIdx) => {
               const hasOneway = section.items.some(item => !!item.priceOneway);
               return (
-                <div className="glass-card" key={sIdx}>
-                  <h3 className="info-section-header">
+                <div className={cx(styles, "glass-card")} key={sIdx}>
+                  <h3 className={cx(styles, "info-section-header")}>
                     <Ticket size={18} style={{ color: "var(--site-gold)" }} />
                     <span>{section.title}</span>
                   </h3>
 
-                  <table className="info-ticket-table">
+                  <table className={cx(styles, "info-ticket-table")}>
                     <thead>
-                      <tr className="info-table-head-row">
-                        <th className="info-table-th">{language === "km" ? "ប្រភេទភ្ញៀវទេសចរ" : language === "en" ? "Visitor Category" : "Đối tượng"}</th>
-                        <th className="info-table-th">
+                      <tr className={cx(styles, "info-table-head-row")}>
+                        <th className={cx(styles, "info-table-th")}>{language === "km" ? "ប្រភេទភ្ញៀវទេសចរ" : language === "en" ? "Visitor Category" : "Đối tượng"}</th>
+                        <th className={cx(styles, "info-table-th")}>
                           {language === "km" 
                             ? "តម្លៃសំបុត្រទៅមក" 
                             : hasOneway 
@@ -380,7 +382,7 @@ export const VisitInfoPage: React.FC = () => {
                               : (language === "en" ? "Round-trip Price" : "Giá vé khứ hồi")}
                         </th>
                         {hasOneway && (
-                          <th className="info-table-th">{language === "km" ? "មួយផ្លូវ" : language === "en" ? "One-way" : "Một chiều"}</th>
+                          <th className={cx(styles, "info-table-th")}>{language === "km" ? "មួយផ្លូវ" : language === "en" ? "One-way" : "Một chiều"}</th>
                         )}
                       </tr>
                     </thead>
@@ -388,13 +390,13 @@ export const VisitInfoPage: React.FC = () => {
                       {section.items.map((item, iIdx) => {
                         const isFree = item.price.toLowerCase().includes("miễn phí") || item.price.toLowerCase().includes("free") || item.price.toLowerCase().includes("mien phi") || item.price.toLowerCase().includes("ឥតគិតថ្លៃ");
                         return (
-                          <tr key={iIdx} className="info-table-tr">
-                            <td className="info-table-td-name">{item.name}</td>
-                            <td className="info-table-td-price" style={{ color: isFree ? "green" : "var(--alert-red)" }}>
+                          <tr key={iIdx} className={cx(styles, "info-table-tr")}>
+                            <td className={cx(styles, "info-table-td-name")}>{item.name}</td>
+                            <td className={cx(styles, "info-table-td-price")} style={{ color: isFree ? "green" : "var(--alert-red)" }}>
                               {item.price}
                             </td>
                             {hasOneway && (
-                              <td className="info-table-td-name">
+                              <td className={cx(styles, "info-table-td-name")}>
                                 {item.priceOneway || "-"}
                               </td>
                             )}
@@ -409,8 +411,8 @@ export const VisitInfoPage: React.FC = () => {
           )}
 
           {/* Giờ hoạt động */}
-          <div className="glass-card info-schedule-card">
-            <h3 className="info-section-header">
+          <div className={cx(styles, "glass-card info-schedule-card")}>
+            <h3 className={cx(styles, "info-section-header")}>
               <Clock size={18} style={{ color: "var(--site-gold)" }} />
               <span>{language === "km" ? "ម៉ោងដំណើរការខ្សែរថយន្តកាប៊ីនចុងក្រោយបង្អស់" : language === "en" ? "Latest Cable Car Operating Hours" : "Lịch vận hành cáp treo mới nhất"}</span>
             </h3>
@@ -420,11 +422,11 @@ export const VisitInfoPage: React.FC = () => {
                 {language === "km" ? "ម៉ោងប្រតិបត្តិការកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Operating hours are being updated. Please check back soon." : "Lịch hoạt động đang được cập nhật. Vui lòng quay lại sau."}
               </p>
             ) : (
-              <ul className="info-schedule-list">
+              <ul className={cx(styles, "info-schedule-list")}>
                 {scheduleSections.map((section, sIdx) => (
                   <li key={sIdx}>
                     <strong>{section.title}</strong>
-                    <div className="info-schedule-sublist">
+                    <div className={cx(styles, "info-schedule-sublist")}>
                       {section.items.map((item, iIdx) => (
                         <span key={iIdx}>
                           • {item.label}{item.label && item.hours ? ": " : ""}<b>{item.hours}</b>{item.note ? ` ${item.note}` : ""}
@@ -442,16 +444,16 @@ export const VisitInfoPage: React.FC = () => {
 
       {/* Tab 2 Content: Travel Guides - rendered from DB */}
       {activeTab === "travel" && (
-        <div className="info-tab-content">
+        <div className={cx(styles, "info-tab-content")}>
           {ticketsLoading ? (
             [1, 2].map(i => (
-              <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
+              <div key={i} className={cx(styles, "glass-card")} style={{ opacity: 0.5 }}>
                 <div style={{ height: "18px", width: "55%", background: "rgba(0,0,0,0.08)", borderRadius: "6px", marginBottom: "14px" }} />
                 {[1,2,3].map(j => <div key={j} style={{ height: "11px", width: `${90 - j*10}%`, background: "rgba(0,0,0,0.06)", borderRadius: "4px", marginBottom: "7px" }} />)}
               </div>
             ))
           ) : travelArticles.length === 0 ? (
-            <div className="glass-card empty-state-text">
+            <div className={cx(styles, "glass-card empty-state-text")}>
               <Navigation size={36} style={{ color: "var(--site-gold)", opacity: 0.5, marginBottom: "12px" }} />
               <p style={{ margin: 0 }}>
                 {language === "km" ? "ការណែនាំអំពីការធ្វើដំណើរកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Travel guide is being updated. Please check back soon." : "Hướng dẫn di chuyển đang được cập nhật. Vui lòng quay lại sau."}
@@ -462,20 +464,20 @@ export const VisitInfoPage: React.FC = () => {
               const content = (language === "km" && art.content_km) ? art.content_km : (language === "en" && art.content_en) ? art.content_en : (art.content || "");
               const items = parseArticleContent(content);
               return (
-                <div className="glass-card" key={art.id || aIdx}>
-                  <h3 className="info-section-header">
+                <div className={cx(styles, "glass-card")} key={art.id || aIdx}>
+                  <h3 className={cx(styles, "info-section-header")}>
                     <Navigation size={18} style={{ color: "var(--site-gold)" }} />
                     <span>{language === "km" ? (art.title_km || art.title) : language === "en" ? (art.title_en || art.title) : art.title}</span>
                   </h3>
 
-                  <div className="info-schedule-list">
+                  <div className={cx(styles, "info-schedule-list")}>
                     {items.map((item, idx) => (
                       item.isHeading ? (
-                        <div key={idx} className={`info-list-heading ${idx > 0 ? "has-margin" : ""}`}>
+                        <div key={idx} className={cx(styles, `info-list-heading ${idx > 0 ? "has-margin" : ""}`)}>
                           {item.text}
                         </div>
                       ) : (
-                        <div key={idx} className={`info-list-item ${item.level > 0 ? "level-1" : ""}`}>
+                        <div key={idx} className={cx(styles, `info-list-item ${item.level > 0 ? "level-1" : ""}`)}>
                           <span style={{ color: "var(--site-gold)", flexShrink: 0, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
                           <span>{item.text}</span>
                         </div>
@@ -491,16 +493,16 @@ export const VisitInfoPage: React.FC = () => {
 
       {/* Tab 3 Content: Rules & Etiquette - rendered from DB */}
       {activeTab === "rules" && (
-        <div className="info-tab-content">
+        <div className={cx(styles, "info-tab-content")}>
           {ticketsLoading ? (
             [1, 2].map(i => (
-              <div key={i} className="glass-card" style={{ opacity: 0.5 }}>
+              <div key={i} className={cx(styles, "glass-card")} style={{ opacity: 0.5 }}>
                 <div style={{ height: "18px", width: "55%", background: "rgba(0,0,0,0.08)", borderRadius: "6px", marginBottom: "14px" }} />
                 {[1,2,3,4].map(j => <div key={j} style={{ height: "11px", width: `${95 - j*8}%`, background: "rgba(0,0,0,0.06)", borderRadius: "4px", marginBottom: "7px" }} />)}
               </div>
             ))
           ) : rulesArticles.length === 0 ? (
-            <div className="glass-card empty-state-text">
+            <div className={cx(styles, "glass-card empty-state-text")}>
               <ShieldCheck size={36} style={{ color: "var(--site-gold)", opacity: 0.5, marginBottom: "12px" }} />
               <p style={{ margin: 0 }}>
                 {language === "km" ? "ព័ត៌មានបទប្បញ្ញត្តិកំពុងត្រូវបានធ្វើបច្ចុប្បន្នភាព។ សូមត្រលប់មកវិញឆាប់ៗនេះ។" : language === "en" ? "Rules & etiquette information is being updated." : "Thông tin nội quy đang được cập nhật. Vui lòng quay lại sau."}
@@ -511,21 +513,21 @@ export const VisitInfoPage: React.FC = () => {
               const content = (language === "km" && art.content_km) ? art.content_km : (language === "en" && art.content_en) ? art.content_en : (art.content || "");
               const items = parseArticleContent(content);
               return (
-                <div className="glass-card info-rules-card" key={art.id || aIdx}>
-                  <h3 className="info-section-header">
+                <div className={cx(styles, "glass-card info-rules-card")} key={art.id || aIdx}>
+                  <h3 className={cx(styles, "info-section-header")}>
                     <ShieldCheck size={18} style={{ color: "var(--site-gold)" }} />
                     <span>{language === "km" ? (art.title_km || art.title) : language === "en" ? (art.title_en || art.title) : art.title}</span>
                   </h3>
 
-                  <div className="info-schedule-list">
+                  <div className={cx(styles, "info-schedule-list")}>
                     {items.map((item, idx) => (
                       item.isHeading ? (
-                        <div key={idx} className={`info-rules-heading ${idx > 0 ? "has-margin" : ""}`}>
+                        <div key={idx} className={cx(styles, `info-rules-heading ${idx > 0 ? "has-margin" : ""}`)}>
                           <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--site-gold)", display: "inline-block", flexShrink: 0 }} />
                           {item.text}
                         </div>
                       ) : (
-                        <div key={idx} className={`info-rules-item ${item.level > 0 ? "level-1" : ""}`}>
+                        <div key={idx} className={cx(styles, `info-rules-item ${item.level > 0 ? "level-1" : ""}`)}>
                           <span style={{ color: item.level > 0 ? "var(--site-gold)" : "var(--site-navy)", flexShrink: 0, fontWeight: 600, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
                           <span>{item.text}</span>
                         </div>

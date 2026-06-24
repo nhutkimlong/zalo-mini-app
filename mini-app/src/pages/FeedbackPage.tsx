@@ -4,6 +4,8 @@ import { Header, Page } from "../components/WebPrimitives";
 import { AlertTriangle, CheckCircle, Image, MapPin } from "lucide-react";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 type ReportType = "ve_sinh" | "gia_ca" | "an_ninh" | "thai_do" | "ha_tang" | "cheo_keo" | "gop_y" | "khac";
 
@@ -233,12 +235,12 @@ export const FeedbackPage: React.FC = () => {
           showBackIcon={true}
         />
 
-        <div className="feedback-success-wrapper">
-          <CheckCircle size={60} className="feedback-success-icon" />
-          <h2 className="feedback-success-title">
+        <div className={cx(styles, "feedback-success-wrapper")}>
+          <CheckCircle size={60} className={cx(styles, "feedback-success-icon")} />
+          <h2 className={cx(styles, "feedback-success-title")}>
             {language === "km" ? "ការបញ្ជូនបានជោគជ័យ" : language === "en" ? "Submission Successful" : "Tiếp nhận thông tin thành công"}
           </h2>
-          <p className="feedback-success-desc">
+          <p className={cx(styles, "feedback-success-desc")}>
             {language === "km"
               ? "សូមអរគុណចំពោះការផ្តល់មតិយោបល់របស់អ្នក។ គណៈគ្រប់គ្រងភ្នំ Ba Den បានទទួលរបាយការណ៍របស់អ្នក ហើយនឹងសហការជាមួយអង្គភាពជំនាញដើម្បីដោះស្រាយឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។"
               : language === "en"
@@ -246,14 +248,14 @@ export const FeedbackPage: React.FC = () => {
                 : "Cảm ơn quý khách đã gửi phản ánh kiến nghị. Ban quản lý Khu du lịch Núi Bà Đen đã tiếp nhận thông tin và sẽ điều phối đơn vị nghiệp vụ xử lý sớm nhất."}
           </p>
 
-          <div className="glass-card feedback-success-card">
-            <div className="feedback-success-card-label">
+          <div className={cx(styles, "glass-card feedback-success-card")}>
+            <div className={cx(styles, "feedback-success-card-label")}>
               {language === "km" ? "លេខកូដយោង៖" : language === "en" ? "Reference Code:" : "Mã hồ sơ tiếp nhận:"}
             </div>
-            <div className="feedback-success-card-code">{trackingId}</div>
+            <div className={cx(styles, "feedback-success-card-code")}>{trackingId}</div>
           </div>
 
-          <Link to="/" className="submit-btn feedback-success-back-btn">
+          <Link to="/" className={cx(styles, "submit-btn feedback-success-back-btn")}>
             {language === "km" ? "ត្រឡប់ទៅទំព័រដើម" : language === "en" ? "Back to Homepage" : "Quay lại trang chủ"}
           </Link>
         </div>
@@ -267,7 +269,7 @@ export const FeedbackPage: React.FC = () => {
       <Header
         showBackIcon={true}
         title={
-          <div className="feedback-header-title">
+          <div className={cx(styles, "feedback-header-title")}>
             <AlertTriangle size={20} style={{ color: "var(--site-gold)" }} />
             <span>
               {t("feedback.title")}
@@ -277,11 +279,11 @@ export const FeedbackPage: React.FC = () => {
       />
 
       {/* Form Content */}
-      <form onSubmit={handleSubmit} className="feedback-form">
+      <form onSubmit={handleSubmit} className={cx(styles, "feedback-form")}>
         
         {/* Intro */}
-        <div className="glass-card feedback-notice-card">
-          <p className="feedback-notice-text">
+        <div className={cx(styles, "glass-card feedback-notice-card")}>
+          <p className={cx(styles, "feedback-notice-text")}>
             {language === "km"
               ? "ភ្ញៀវទេសចរអាចរាយការណ៍ដោយផ្ទាល់អំពីបញ្ហាពាក់ព័ន្ធនឹងអនាម័យ តម្លៃ សន្តិសុខ ការរំខាន ឬហេដ្ឋារចនាសម្ព័ន្ធ។ គណៈគ្រប់គ្រងនឹងទទួលយក និងដោះស្រាយភ្លាមៗ។"
               : language === "en"
@@ -291,15 +293,15 @@ export const FeedbackPage: React.FC = () => {
         </div>
 
         {/* Inputs */}
-        <div className="glass-card feedback-form-card">
+        <div className={cx(styles, "glass-card feedback-form-card")}>
           
           <div>
-            <label className="feedback-form-label">
+            <label className={cx(styles, "feedback-form-label")}>
               {language === "km" ? "ឈ្មោះភ្ញៀវទេសចរ (មិនបង្ខំ)" : language === "en" ? "Visitor Name (Optional)" : "Họ tên du khách (Tùy chọn)"}
             </label>
             <input 
               type="text" 
-              className="feedback-input" 
+              className={cx(styles, "feedback-input")} 
               placeholder={language === "km" ? "បញ្ចូលឈ្មោះរបស់អ្នក..." : language === "en" ? "Enter your name..." : "Nhập họ và tên..."} 
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -308,12 +310,12 @@ export const FeedbackPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="feedback-form-label">
+            <label className={cx(styles, "feedback-form-label")}>
               {language === "km" ? "លេខទូរស័ព្ទទំនាក់ទំនង" : language === "en" ? "Contact Phone Number" : "Số điện thoại liên hệ"}
             </label>
             <input 
               type="tel" 
-              className="feedback-input" 
+              className={cx(styles, "feedback-input")} 
               placeholder={language === "km" ? "បញ្ចូលលេខទូរស័ព្ទរបស់អ្នក..." : language === "en" ? "Enter your phone number..." : "Nhập số điện thoại..."} 
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -322,11 +324,11 @@ export const FeedbackPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="feedback-form-label">
+            <label className={cx(styles, "feedback-form-label")}>
               {language === "km" ? "ប្រភេទមតិយោបល់" : language === "en" ? "Feedback Category" : "Loại phản ánh kiến nghị"}
             </label>
             <select 
-              className="feedback-input" 
+              className={cx(styles, "feedback-input")} 
               value={reportType}
               onChange={(e) => setReportType(e.target.value as ReportType)}
               style={{ appearance: "none", WebkitAppearance: "none" }}
@@ -343,11 +345,11 @@ export const FeedbackPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="feedback-form-label">
+            <label className={cx(styles, "feedback-form-label")}>
               {language === "km" ? "ការពិពណ៌នាលម្អិត *" : language === "en" ? "Detailed Description *" : "Nội dung chi tiết phản ánh *"}
             </label>
             <textarea 
-              className="feedback-input" 
+              className={cx(styles, "feedback-input")} 
               rows={4}
               placeholder={language === "km" ? "ពិពណ៌នាអំពីព័ត៌មានលម្អិតនៃព្រឹត្តិការណ៍ ទីតាំង ពេលវេលា..." : language === "en" ? "Describe details of the event, location, time..." : "Mô tả chi tiết sự việc, địa điểm, thời gian phát sinh..."} 
               value={content}
@@ -359,10 +361,10 @@ export const FeedbackPage: React.FC = () => {
 
           {/* Photo upload */}
           <div>
-            <label className="feedback-form-label">
+            <label className={cx(styles, "feedback-form-label")}>
               {language === "km" ? "ភ្ជាប់ភស្តុតាងរូបថត" : language === "en" ? "Attach Photo Evidence" : "Ảnh đính kèm minh chứng"}
             </label>
-            <div className="feedback-photo-row">
+            <div className={cx(styles, "feedback-photo-row")}>
               <input 
                 type="file" 
                 id="file-upload" 
@@ -373,7 +375,7 @@ export const FeedbackPage: React.FC = () => {
               <button 
                 type="button"
                 onClick={handlePhotoSelect}
-                className="feedback-photo-btn"
+                className={cx(styles, "feedback-photo-btn")}
               >
                 <Image size={16} aria-hidden="true" />
                 <span>
@@ -382,17 +384,17 @@ export const FeedbackPage: React.FC = () => {
                     : (language === "km" ? "ជ្រើសរើសរូបថត" : language === "en" ? "Select photo" : "Chọn ảnh chụp")}
                 </span>
               </button>
-              {imageFile && <span className="feedback-photo-status">✓ {imageFile}</span>}
+              {imageFile && <span className={cx(styles, "feedback-photo-status")}>✓ {imageFile}</span>}
             </div>
           </div>
 
           {/* Geolocation */}
-          <div className="feedback-gps-row">
+          <div className={cx(styles, "feedback-gps-row")}>
             <div>
-              <h4 className="feedback-gps-heading">
+              <h4 className={cx(styles, "feedback-gps-heading")}>
                 {language === "km" ? "ភ្ជាប់កូអរដោនេទីតាំង" : language === "en" ? "Attach Event Location Coordinates" : "Đính kèm tọa độ vị trí sự việc"}
               </h4>
-              <p className="feedback-gps-desc">
+              <p className={cx(styles, "feedback-gps-desc")}>
                 {gpsEnabled && coords.lat 
                   ? `${language === "km" ? "កូអរដោនេ៖" : language === "en" ? "Coordinates:" : "Tọa độ:"} ${coords.lat.toFixed(6)}, ${coords.lng?.toFixed(6)}` 
                   : (language === "km" ? "ទទួលបានកូអរដោនេ GPS បច្ចុប្បន្នរបស់អ្នកដោយស្វ័យប្រវត្តិ" : language === "en" ? "Automatically acquire your current GPS coordinates" : "Tự động lấy vị trí GPS hiện tại của bạn")}
@@ -401,7 +403,7 @@ export const FeedbackPage: React.FC = () => {
             <button 
               type="button"
               onClick={handleGpsToggle}
-              className={`feedback-gps-btn ${gpsEnabled ? "is-active" : "is-inactive"}`}
+              className={cx(styles, `feedback-gps-btn ${gpsEnabled ? "is-active" : "is-inactive"}`)}
               style={{
                 border: "none",
                 borderRadius: "30px",
@@ -428,7 +430,7 @@ export const FeedbackPage: React.FC = () => {
         {/* Submit */}
         <button 
           type="submit" 
-          className="submit-btn" 
+          className={cx(styles, "submit-btn")} 
           style={{ marginTop: "8px", opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? "not-allowed" : "pointer" }}
           disabled={isSubmitting}
         >

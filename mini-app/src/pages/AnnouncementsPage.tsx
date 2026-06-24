@@ -4,6 +4,8 @@ import { Bell, ShieldAlert, CloudLightning, Calendar, Info, Search, ChevronDown,
 import api, { Announcement } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { useDragScroll } from "../hooks/useDragScroll";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 export const AnnouncementsPage: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -109,11 +111,11 @@ export const AnnouncementsPage: React.FC = () => {
       />
 
       {/* Hero Accent */}
-      <div className="ann-hero-accent">
-        <h2 className="ann-hero-title">
+      <div className={cx(styles, "ann-hero-accent")}>
+        <h2 className={cx(styles, "ann-hero-title")}>
           {language === "km" ? "ច្រកទ្វារព័ត៌មានផ្លូវការ" : language === "en" ? "Official Information Portal" : "Cổng thông tin chính thức"}
         </h2>
-        <p className="ann-hero-desc">
+        <p className={cx(styles, "ann-hero-desc")}>
           {language === "km"
             ? "ការធ្វើបច្ចុប្បន្នភាពតាមពេលវេលាជាក់ស្តែងអំពីកាលវិភាគថែទាំកាប៊ីនឡាន ពិធីបុណ្យវប្បធម៌ និងសុវត្ថិភាពអាកាសធាតុពីគណៈគ្រប់គ្រង។"
             : language === "en"
@@ -123,50 +125,50 @@ export const AnnouncementsPage: React.FC = () => {
       </div>
 
       {/* Filter and Search Section */}
-      <div className="ann-filter-section">
+      <div className={cx(styles, "ann-filter-section")}>
         {/* Search Bar */}
-        <div className="ann-search-wrapper">
+        <div className={cx(styles, "ann-search-wrapper")}>
           <input
             type="text"
-            className="feedback-input ann-search-input"
+            className={cx(styles, "feedback-input ann-search-input")}
             placeholder={language === "km" ? "ស្វែងរកសេចក្តីជូនដំណឹង..." : language === "en" ? "Search announcements..." : "Tìm kiếm thông báo..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             enterKeyHint="search"
             autoComplete="off"
           />
-          <Search size={18} className="ann-search-icon" />
+          <Search size={18} className={cx(styles, "ann-search-icon")} />
         </div>
 
         {/* Tab Buttons for Types */}
-        <div className="ann-tabs-scroll" ref={tabsRef}>
+        <div className={cx(styles, "ann-tabs-scroll")} ref={tabsRef}>
           <button 
             onClick={() => setSelectedType("all")}
-            className={`tab-btn ann-tab-btn-override ${selectedType === "all" ? "tab-btn-active" : ""}`}
+            className={cx(styles, `tab-btn ann-tab-btn-override ${selectedType === "all" ? "tab-btn-active" : ""}`)}
           >
             {t("places.all")}
           </button>
           <button 
             onClick={() => setSelectedType("emergency")}
-            className={`tab-btn ann-tab-btn-override ${selectedType === "emergency" ? "tab-btn-active" : ""}`}
+            className={cx(styles, `tab-btn ann-tab-btn-override ${selectedType === "emergency" ? "tab-btn-active" : ""}`)}
           >
             {language === "km" ? "អាសន្ន" : language === "en" ? "Emergency" : "Khẩn cấp"}
           </button>
           <button 
             onClick={() => setSelectedType("weather")}
-            className={`tab-btn ann-tab-btn-override ${selectedType === "weather" ? "tab-btn-active" : ""}`}
+            className={cx(styles, `tab-btn ann-tab-btn-override ${selectedType === "weather" ? "tab-btn-active" : ""}`)}
           >
             {language === "km" ? "អាកាសធាតុ" : language === "en" ? "Weather" : "Thời tiết"}
           </button>
           <button 
             onClick={() => setSelectedType("festival")}
-            className={`tab-btn ann-tab-btn-override ${selectedType === "festival" ? "tab-btn-active" : ""}`}
+            className={cx(styles, `tab-btn ann-tab-btn-override ${selectedType === "festival" ? "tab-btn-active" : ""}`)}
           >
             {language === "km" ? "ពិធីបុណ្យ" : language === "en" ? "Festival" : "Lễ hội"}
           </button>
           <button 
             onClick={() => setSelectedType("general")}
-            className={`tab-btn ann-tab-btn-override ${selectedType === "general" ? "tab-btn-active" : ""}`}
+            className={cx(styles, `tab-btn ann-tab-btn-override ${selectedType === "general" ? "tab-btn-active" : ""}`)}
           >
             {language === "km" ? "សេចក្តីជូនដំណឹង" : language === "en" ? "Notice" : "Thông tin"}
           </button>
@@ -174,16 +176,16 @@ export const AnnouncementsPage: React.FC = () => {
       </div>
 
       {/* Announcements List */}
-      <div className="ann-list-container">
+      <div className={cx(styles, "ann-list-container")}>
         {loading ? (
-          <div className="ann-loading-box">
-            <div className="spinner ann-loading-spinner"></div>
+          <div className={cx(styles, "ann-loading-box")}>
+            <div className={cx(styles, "spinner ann-loading-spinner")}></div>
             <span>{t("common.loading")}</span>
           </div>
         ) : filteredAnns.length === 0 ? (
-          <div className="glass-card ann-empty-card">
-            <Bell size={32} className="ann-empty-icon" />
-            <p className="ann-empty-text">
+          <div className={cx(styles, "glass-card ann-empty-card")}>
+            <Bell size={32} className={cx(styles, "ann-empty-icon")} />
+            <p className={cx(styles, "ann-empty-text")}>
               {language === "km" ? "រកមិនឃើញសេចក្តីជូនដំណឹងដែលត្រូវគ្នាទេ" : language === "en" ? "No matching announcements found" : "Không tìm thấy thông báo nào phù hợp"}
             </p>
           </div>
@@ -197,7 +199,7 @@ export const AnnouncementsPage: React.FC = () => {
             return (
               <div 
                 key={ann.id} 
-                className={`glass-card fade-in-up ann-card ann-card-${ann.type}`} 
+                className={cx(styles, `glass-card fade-in-up ann-card ann-card-${ann.type}`)} 
                 style={{ 
                   animationDelay: `${index * 0.05}s`
                 }}
@@ -213,31 +215,31 @@ export const AnnouncementsPage: React.FC = () => {
                 aria-expanded={isExpanded}
               >
                 {/* Announcement Top Info */}
-                <div className="ann-card-header">
-                  <div className={`ann-card-badge ${badge.className}`}>
+                <div className={cx(styles, "ann-card-header")}>
+                  <div className={cx(styles, `ann-card-badge ${badge.className}`)}>
                     {badge.icon}
                     <span>{badge.text}</span>
                   </div>
-                  <span className="ann-card-date">
+                  <span className={cx(styles, "ann-card-date")}>
                     {formatDate(ann.published_at)}
                   </span>
                 </div>
 
                 {/* Title */}
-                <div className="ann-card-title-row">
-                  <h3 className="ann-card-title">
+                <div className={cx(styles, "ann-card-title-row")}>
+                  <h3 className={cx(styles, "ann-card-title")}>
                     {titleText}
                   </h3>
                   {isExpanded ? (
-                    <ChevronUp size={18} className="ann-card-arrow" />
+                    <ChevronUp size={18} className={cx(styles, "ann-card-arrow")} />
                   ) : (
-                    <ChevronDown size={18} className="ann-card-arrow" />
+                    <ChevronDown size={18} className={cx(styles, "ann-card-arrow")} />
                   )}
                 </div>
 
                 {/* Content */}
                 <div 
-                  className="ann-card-content"
+                  className={cx(styles, "ann-card-content")}
                   style={{ 
                     maxHeight: isExpanded ? "500px" : "40px",
                     transition: "max-height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",

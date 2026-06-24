@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Bot, Compass, AlertTriangle, User, Map, Menu, X, Newspaper, Info, ArrowLeft } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import logoImageUrl from "../assets/logo.png";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -212,12 +214,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [...primaryNavItems, ...utilityNavItems];
 
   return (
-    <div className={`app-layout-wrapper ${isFullscreenPage ? "is-fullscreen-route" : ""}`}>
-      <header className={`site-header ${path !== "/" ? "is-subpage-header" : ""}`}>
+    <div className={cx(styles, `app-layout-wrapper ${isFullscreenPage ? "is-fullscreen-route" : ""}`)}>
+      <header className={cx(styles, `site-header ${path !== "/" ? "is-subpage-header" : ""}`)}>
         {path !== "/" && !menuOpen && (
           <button
             type="button"
-            className="layout-back-button mobile-only"
+            className={cx(styles, "layout-back-button mobile-only")}
             onClick={() => navigate(-1)}
             aria-label="Quay lại"
           >
@@ -225,8 +227,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </button>
         )}
 
-        <Link to="/" className={`site-brand ${path !== "/" && !menuOpen ? "desktop-only" : ""}`} aria-label={t("nav.home")}>
-          <img src={logoImageUrl} alt={t("header.brand_name")} className="site-logo" />
+        <Link to="/" className={cx(styles, `site-brand ${path !== "/" && !menuOpen ? "desktop-only" : ""}`)} aria-label={t("nav.home")}>
+          <img src={logoImageUrl} alt={t("header.brand_name")} className={cx(styles, "site-logo")} />
           <span>
             <strong>{t("header.brand_name")}</strong>
             <small>{t("header.subtitle")}</small>
@@ -234,18 +236,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Link>
 
         {path !== "/" && !menuOpen && (
-          <div className="layout-mobile-title mobile-only">
+          <div className={cx(styles, "layout-mobile-title mobile-only")}>
             {getPageTitle()}
           </div>
         )}
 
-        <nav className="site-nav" aria-label="Điều hướng chính">
+        <nav className={cx(styles, "site-nav")} aria-label="Điều hướng chính">
           {primaryNavItems.map(({ to, icon: Icon, label, id }) => (
             <Link
               key={to}
               to={to}
               id={`${id}-desktop`}
-              className={`site-nav-link ${isLinkActive(to) ? "is-active" : ""}`}
+              className={cx(styles, `site-nav-link ${isLinkActive(to) ? "is-active" : ""}`)}
               aria-current={isLinkActive(to) ? "page" : undefined}
             >
               <Icon size={17} aria-hidden="true" />
@@ -254,28 +256,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
         </nav>
 
-        <div className="site-actions">
-          <div className="site-lang-toggle" aria-label="Chọn ngôn ngữ">
+        <div className={cx(styles, "site-actions")}>
+          <div className={cx(styles, "site-lang-toggle")} aria-label="Chọn ngôn ngữ">
             {(["vi", "en", "km"] as const).map((lang) => (
               <button
                 key={lang}
                 type="button"
                 onClick={() => setLanguage(lang)}
-                className={language === lang ? "active" : ""}
+                className={cx(styles, language === lang ? "active" : "")}
               >
                 {lang.toUpperCase()}
               </button>
             ))}
           </div>
 
-          <Link to="/chat" className="site-ai-button">
+          <Link to="/chat" className={cx(styles, "site-ai-button")}>
             <Bot size={17} aria-hidden="true" />
             <span>{t("nav.chat")}</span>
           </Link>
 
           <button
             type="button"
-            className="site-menu-button"
+            className={cx(styles, "site-menu-button")}
             onClick={() => setMenuOpen((open) => !open)}
             aria-expanded={menuOpen}
             aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
@@ -286,26 +288,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       {menuOpen && (
-        <nav className="mobile-drawer" aria-label="Menu di động">
+        <nav className={cx(styles, "mobile-drawer")} aria-label="Menu di động">
           {navItems.map(({ to, icon: Icon, label, id }) => (
             <Link
               key={to}
               to={to}
               id={`${id}-drawer`}
-              className={`mobile-drawer-link ${isLinkActive(to) ? "is-active" : ""}`}
+              className={cx(styles, `mobile-drawer-link ${isLinkActive(to) ? "is-active" : ""}`)}
               aria-current={isLinkActive(to) ? "page" : undefined}
             >
               <Icon size={18} aria-hidden="true" />
               <span>{label}</span>
             </Link>
           ))}
-          <div className="mobile-drawer-lang">
+          <div className={cx(styles, "mobile-drawer-lang")}>
             {(["vi", "en", "km"] as const).map((lang) => (
               <button
                 key={lang}
                 type="button"
                 onClick={() => setLanguage(lang)}
-                className={language === lang ? "active" : ""}
+                className={cx(styles, language === lang ? "active" : "")}
               >
                 {lang.toUpperCase()}
               </button>
@@ -314,10 +316,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
       )}
 
-      <div className="main-content-area">
+      <div className={cx(styles, "main-content-area")}>
         <main
           ref={pageContainerRef}
-          className="app-scroll-container"
+          className={cx(styles, "app-scroll-container")}
           style={
             isFullscreenPage
               ? { paddingBottom: 0, height: "100%", overflow: "hidden" }

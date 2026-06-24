@@ -5,16 +5,18 @@ import { MapPin, Map } from "lucide-react";
 import api, { TouristPlace } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { useDragScroll } from "../hooks/useDragScroll";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 type CategoryFilter = "all" | "tam_linh" | "phong_canh" | "dich_vu";
 
 const SkeletonCard = () => (
-  <div className="glass-card place-skeleton-card">
-    <div className="skeleton place-skeleton-img" />
-    <div className="place-skeleton-info">
-      <div className="skeleton place-skeleton-title" />
-      <div className="skeleton place-skeleton-desc" />
-      <div className="skeleton place-skeleton-meta" />
+  <div className={cx(styles, "glass-card place-skeleton-card")}>
+    <div className={cx(styles, "skeleton place-skeleton-img")} />
+    <div className={cx(styles, "place-skeleton-info")}>
+      <div className={cx(styles, "skeleton place-skeleton-title")} />
+      <div className={cx(styles, "skeleton place-skeleton-desc")} />
+      <div className={cx(styles, "skeleton place-skeleton-meta")} />
     </div>
   </div>
 );
@@ -48,11 +50,11 @@ export const PlacesPage: React.FC = () => {
     <Page>
       <Header title={t("places.title")} showBackIcon={true} />
 
-      <div className="places-filter-container" ref={tabsRef}>
+      <div className={cx(styles, "places-filter-container")} ref={tabsRef}>
         {(["all", "tam_linh", "phong_canh", "dich_vu"] as CategoryFilter[]).map((filter) => (
           <button
             key={filter}
-            className={`filter-btn ${activeFilter === filter ? "active" : ""}`}
+            className={cx(styles, `filter-btn ${activeFilter === filter ? "active" : ""}`)}
             onClick={() => setActiveFilter(filter)}
           >
             {filter === "all" ? t("places.all") : getCategoryName(filter)}
@@ -60,11 +62,11 @@ export const PlacesPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="places-list-container">
+      <div className={cx(styles, "places-list-container")}>
         {loading ? (
           [1, 2, 3].map((i) => <SkeletonCard key={i} />)
         ) : places.length === 0 ? (
-          <div className="empty-state-text">
+          <div className={cx(styles, "empty-state-text")}>
             {t("common.no_data")}
           </div>
         ) : (
@@ -75,16 +77,16 @@ export const PlacesPage: React.FC = () => {
               <Link 
                 key={place.id}
                 to={`/places/${place.slug}`}
-                className="glass-card place-card-link fade-in-up"
+                className={cx(styles, "glass-card place-card-link fade-in-up")}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <div className="place-card-img-wrapper">
-                  <img src={place.image_url} alt={localizedName} className="place-card-img" />
+                <div className={cx(styles, "place-card-img-wrapper")}>
+                  <img src={place.image_url} alt={localizedName} className={cx(styles, "place-card-img")} />
                 </div>
-                <div className="place-card-info">
-                  <h3 className="place-card-title">{localizedName}</h3>
-                  <p className="place-card-desc">{localizedDesc}</p>
-                  <div className="place-card-meta">
+                <div className={cx(styles, "place-card-info")}>
+                  <h3 className={cx(styles, "place-card-title")}>{localizedName}</h3>
+                  <p className={cx(styles, "place-card-desc")}>{localizedDesc}</p>
+                  <div className={cx(styles, "place-card-meta")}>
                     <MapPin size={12} />
                     <span>{getCategoryName(place.category)}</span>
                   </div>
@@ -97,7 +99,7 @@ export const PlacesPage: React.FC = () => {
 
       <Link
         to="/map"
-        className="place-floating-map-btn"
+        className={cx(styles, "place-floating-map-btn")}
       >
         <Map size={20} />
         <span>

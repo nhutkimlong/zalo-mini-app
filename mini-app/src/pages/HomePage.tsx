@@ -9,6 +9,8 @@ import { Page } from "../components/WebPrimitives";
 import api, { Announcement, supabase } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import heroImageUrl from "../assets/hero.webp";
+import cx from "../utils/cx";
+import styles from "../app.module.css";
 
 export const HomePage: React.FC = () => {
   const [tickerAnns, setTickerAnns] = useState<Announcement[]>([]);
@@ -155,36 +157,36 @@ export const HomePage: React.FC = () => {
 
   return (
     <Page>
-      <div className={`home-layout-container ${loading ? "is-loading-data" : ""}`}>
+      <div className={cx(styles, `home-layout-container ${loading ? "is-loading-data" : ""}`)}>
         {/* Cột chính (trái trên Desktop) */}
-        <div className="home-main-col">
+        <div className={cx(styles, "home-main-col")}>
           {/* Hero Banner */}
           <div
-            className="home-banner"
+            className={cx(styles, "home-banner")}
             style={{ backgroundImage: `url("${heroImageUrl}")` }}
             role="img"
             aria-label={language === "en" ? "Black Lady Mountain scenic view" : "Cảnh quan Núi Bà Đen"}
           >
-            <div className="banner-content">
-              <div className="banner-title">
+            <div className={cx(styles, "banner-content")}>
+              <div className={cx(styles, "banner-title")}>
                 {language === "km" ? (
                   <>
-                    <span className="banner-label">តំបន់ទេសចរណ៍ជាតិ</span>
-                    <span className="banner-main-name">ភ្នំបាដេន</span>
+                    <span className={cx(styles, "banner-label")}>តំបន់ទេសចរណ៍ជាតិ</span>
+                    <span className={cx(styles, "banner-main-name")}>ភ្នំបាដេន</span>
                   </>
                 ) : language === "en" ? (
                   <>
-                    <span className="banner-label">NATIONAL TOURIST AREA</span>
-                    <span className="banner-main-name">BLACK LADY MOUNTAIN</span>
+                    <span className={cx(styles, "banner-label")}>NATIONAL TOURIST AREA</span>
+                    <span className={cx(styles, "banner-main-name")}>BLACK LADY MOUNTAIN</span>
                   </>
                 ) : (
                   <>
-                    <span className="banner-label">KHU DU LỊCH QUỐC GIA</span>
-                    <span className="banner-main-name">NÚI BÀ ĐEN</span>
+                    <span className={cx(styles, "banner-label")}>KHU DU LỊCH QUỐC GIA</span>
+                    <span className={cx(styles, "banner-main-name")}>NÚI BÀ ĐEN</span>
                   </>
                 )}
               </div>
-              <div className="banner-sub">
+              <div className={cx(styles, "banner-sub")}>
                 {language === "km"
                   ? "រឿងព្រេងស័ក្តិសិទ្ធិ • ដំបូលនៃភាគខាងត្បូងវៀតណាម ៩៨៦ម"
                   : language === "en"
@@ -198,13 +200,13 @@ export const HomePage: React.FC = () => {
           {tickerAnns.length > 0 && (
             <Link
               to="/announcements"
-              className="ticker-container"
+              className={cx(styles, "ticker-container")}
               style={{ textDecoration: "none", display: "flex" }}
               aria-label={language === "en" ? "View latest announcements" : "Xem thông báo mới nhất"}
             >
               <Bell size={15} style={{ stroke: "var(--accent-gold)", flexShrink: 0 }} aria-hidden="true" />
-              <div className="ticker-wrapper">
-                <div className="ticker-text">
+              <div className={cx(styles, "ticker-wrapper")}>
+                <div className={cx(styles, "ticker-text")}>
                   {tickerAnns.map((ann, idx) => (
                     <span key={ann.id ?? idx}>
                       <span style={{ fontWeight: 700, color: "var(--alert-red)" }}>[HOT] </span>
@@ -224,9 +226,9 @@ export const HomePage: React.FC = () => {
           )}
 
           {/* Bento Menu Grid (3-column) */}
-          <div className="menu-grid-container">
+          <div className={cx(styles, "menu-grid-container")}>
             <div
-              className="menu-grid"
+              className={cx(styles, "menu-grid")}
               role="navigation"
               aria-label={language === "en" ? "Main navigation" : "Menu chính"}
             >
@@ -235,9 +237,9 @@ export const HomePage: React.FC = () => {
                   key={to}
                   to={to}
                   id={id}
-                  className={`menu-card fade-in-up stagger-${Math.min(idx + 3, 5)}`}
+                  className={cx(styles, `menu-card fade-in-up stagger-${Math.min(idx + 3, 5)}`)}
                 >
-                  <div className="menu-icon-container">
+                  <div className={cx(styles, "menu-icon-container")}>
                     <Icon size={22} aria-hidden="true" />
                   </div>
                   <span>{label}</span>
@@ -248,20 +250,20 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Cột bổ trợ (phải trên Desktop) */}
-        <div className="home-sidebar-col">
+        <div className={cx(styles, "home-sidebar-col")}>
           {/* Weather Widget + AI CTA Row */}
-          <div className="home-widgets-container">
+          <div className={cx(styles, "home-widgets-container")}>
             {/* Realtime Weather */}
             {realtime && (
-              <div className="glass-card home-weather-card fade-in-up stagger-1">
-                <div className="home-weather-temp-info">
+              <div className={cx(styles, "glass-card home-weather-card fade-in-up stagger-1")}>
+                <div className={cx(styles, "home-weather-temp-info")}>
                   <Thermometer size={16} style={{ color: "var(--site-gold)" }} />
                   <span>{t("realtime.weather")}:</span>
-                  <span className="home-weather-temp-value">{realtime.weather_temp}°C</span>
+                  <span className={cx(styles, "home-weather-temp-value")}>{realtime.weather_temp}°C</span>
                 </div>
-                <div className="home-weather-status-info">
+                <div className={cx(styles, "home-weather-status-info")}>
                   {getWeatherIcon(realtime.weather_status)}
-                  <span className="home-weather-status-text">
+                  <span className={cx(styles, "home-weather-status-text")}>
                     {realtime.weather_status}
                   </span>
                 </div>
@@ -271,26 +273,26 @@ export const HomePage: React.FC = () => {
             <Link
               to="/profile"
               id="home-profile-entry"
-              className={`glass-card home-profile-card fade-in-up stagger-2 ${homeUser ? "is-signed-in" : "is-signed-out"}`}
+              className={cx(styles, `glass-card home-profile-card fade-in-up stagger-2 ${homeUser ? "is-signed-in" : "is-signed-out"}`)}
               aria-label={homeUser
                 ? language === "km" ? "បើកប្រវត្តិរូបផ្ទាល់ខ្លួន" : language === "en" ? "Open your profile" : "Mở hồ sơ cá nhân"
                 : language === "km" ? "ចូលគណនី ឬ ចុះឈ្មោះ" : language === "en" ? "Log in or sign up" : "Đăng nhập hoặc đăng ký"}
             >
-              <div className="home-profile-card-top">
-                <div className="home-profile-icon">
+              <div className={cx(styles, "home-profile-card-top")}>
+                <div className={cx(styles, "home-profile-icon")}>
                   {homeUser?.avatar_url ? (
-                    <img src={homeUser.avatar_url} alt="User Avatar" className="home-profile-avatar-img" />
+                    <img src={homeUser.avatar_url} alt="User Avatar" className={cx(styles, "home-profile-avatar-img")} />
                   ) : (
                     <User size={18} aria-hidden="true" />
                   )}
                 </div>
-                <div className="home-profile-copy">
-                  <h3 className="home-profile-title">
+                <div className={cx(styles, "home-profile-copy")}>
+                  <h3 className={cx(styles, "home-profile-title")}>
                     {homeUser
                       ? language === "km" ? "ប្រវត្តិរូបអ្នកទេសចរ" : language === "en" ? "Your visitor profile" : "Hồ sơ du khách"
                       : language === "km" ? "ចូល / ចុះឈ្មោះ" : language === "en" ? "Log in / Sign up" : "Đăng nhập / Đăng ký"}
                   </h3>
-                  <p className="home-profile-desc">
+                  <p className={cx(styles, "home-profile-desc")}>
                     {homeUser
                       ? (homeUser.name || homeUser.email || (language === "km" ? "បានចូលគណនី" : language === "en" ? "Signed in" : "Đã đăng nhập"))
                       : language === "km"
@@ -301,13 +303,13 @@ export const HomePage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="home-profile-action-row">
-                <span className="home-profile-status">
+              <div className={cx(styles, "home-profile-action-row")}>
+                <span className={cx(styles, "home-profile-status")}>
                   {homeUser
                     ? language === "km" ? "បានចូលគណនី" : language === "en" ? "Signed in" : "Đã đăng nhập"
                     : language === "km" ? "មិនទាន់ចូលគណនី" : language === "en" ? "Not signed in" : "Chưa đăng nhập"}
                 </span>
-                <span className="home-profile-action">
+                <span className={cx(styles, "home-profile-action")}>
                   {homeUser
                     ? language === "km" ? "មើលប្រវត្តិរូប" : language === "en" ? "View profile" : "Xem hồ sơ"
                     : language === "km" ? "ចាប់ផ្តើមឥឡូវនេះ" : language === "en" ? "Start now" : "Bắt đầu ngay"}
@@ -320,19 +322,19 @@ export const HomePage: React.FC = () => {
             <Link
               to="/chat"
               id="home-ai-cta"
-              className="ai-cta-card fade-in-up stagger-3"
+              className={cx(styles, "ai-cta-card fade-in-up stagger-3")}
               aria-label={language === "vi" ? "Trò chuyện với Trợ lý Du lịch AI" : "Chat with AI Tour Guide"}
             >
-              <div className="home-ai-cta-content">
-                <div className="home-ai-cta-left">
-                  <div className="home-ai-cta-icon-wrapper">
+              <div className={cx(styles, "home-ai-cta-content")}>
+                <div className={cx(styles, "home-ai-cta-left")}>
+                  <div className={cx(styles, "home-ai-cta-icon-wrapper")}>
                     <Bot size={20} aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="home-ai-cta-title">
+                    <h3 className={cx(styles, "home-ai-cta-title")}>
                       {language === "km" ? "សួរនាំជំនួយការ AI" : language === "en" ? "Ask AI Tour Guide" : "Hỏi Trợ lý Du lịch AI"}
                     </h3>
-                    <p className="home-ai-cta-desc">
+                    <p className={cx(styles, "home-ai-cta-desc")}>
                       {language === "km"
                         ? "ព័ត៌មានគ្រប់ប្រភេទអំពីភ្នំបាដេន"
                         : language === "en"
@@ -347,30 +349,30 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Emergency Hotlines */}
-          <div className="home-hotlines-container">
-            <div className="glass-card home-hotlines-card fade-in-up stagger-5">
+          <div className={cx(styles, "home-hotlines-container")}>
+            <div className={cx(styles, "glass-card home-hotlines-card fade-in-up stagger-5")}>
               <div>
-                <h4 className="home-hotlines-title">
+                <h4 className={cx(styles, "home-hotlines-title")}>
                   {language === "km" ? "ខ្សែទូរស័ព្ទទាន់ហេតុការណ៍" : language === "en" ? "Tourist Support Hotlines" : "Đường dây nóng hỗ trợ"}
                 </h4>
-                <p className="home-hotlines-desc">
+                <p className={cx(styles, "home-hotlines-desc")}>
                   {language === "km" ? "ប៉ះដើម្បីទូរស័ព្ទ" : language === "en" ? "Tap to call support" : "Nhấn để gọi hỗ trợ nhanh"}
                 </p>
               </div>
 
-              <div className="home-hotlines-grid">
+              <div className={cx(styles, "home-hotlines-grid")}>
                 {hotlines.map((hotline) => (
                   <a
                     key={hotline.phone}
                     href={`tel:${hotline.phone}`}
                     id={`hotline-${hotline.phone}`}
-                    className={`home-hotline-item ${hotline.className}`}
+                    className={cx(styles, `home-hotline-item ${hotline.className}`)}
                   >
-                    <span className="home-hotline-label">
+                    <span className={cx(styles, "home-hotline-label")}>
                       <PhoneCall size={12} aria-hidden="true" />
                       {hotline.label}
                     </span>
-                    <span className="home-hotline-number">
+                    <span className={cx(styles, "home-hotline-number")}>
                       {hotline.display}
                     </span>
                   </a>
