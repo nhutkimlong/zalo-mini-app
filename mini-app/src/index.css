@@ -1239,24 +1239,21 @@ a:active,
   }
 }
 
-/* Keyboard open styling overrides to prevent scrolling & layout gaps on mobile devices */
+/* Keyboard open: lock body scroll, size to usable viewport height.
+   No `position: fixed` on html/body — that resets scroll origin on iOS
+   causing a flash. The .app-layout-wrapper (position:fixed, top:0) already
+   anchors everything; body just needs overflow:hidden. */
 html.keyboard-open,
 body.keyboard-open {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100% !important;
-  height: var(--app-height) !important;
   overflow: hidden !important;
   overscroll-behavior: none !important;
+  height: var(--app-height, 100dvh) !important;
 }
 
 .keyboard-open .app-layout-wrapper {
   position: fixed !important;
-  top: var(--app-top, 0px) !important;
-  left: var(--app-left, 0px) !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: var(--app-height) !important;
   overflow: hidden !important;

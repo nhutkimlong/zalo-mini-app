@@ -295,24 +295,16 @@ button:disabled {
 
 /* --- 7. Layout shell stability while keyboard is open -------------------- */
 
-/* Pin the whole app shell to the visual-viewport box. Because Layout.tsx no
-longer force-scrolls the window, we lock the shell here in CSS instead so the
-browser can't pan the document behind the keyboard (the old jank source).
-The shell is sized by the JS --app-height var (the visual viewport height). */
+/* Keyboard-open: shell is sized by --app-height (set by JS from vv.height).
+   index.css owns the authoritative position:fixed rules on .app-layout-wrapper;
+   here we only add the in-page scroll container constraints. */
 .keyboard-open {
-  /* Prevent the document itself from scrolling/panning. */
   overflow: hidden !important;
   overscroll-behavior: none;
 }
 
-.keyboard-open .app-layout-wrapper {
-  height: var(--app-height, 100%) !important;
-  overflow: hidden !important;
-}
-
 /* Only the in-page scroll container scrolls; it fills the space above the
-   keyboard. Heights are driven by --app-height so there is no second
-   competing scroll surface and therefore no fighting between them. */
+   keyboard. Heights driven by --app-height. */
 .keyboard-open .main-content-area,
 .keyboard-open .app-scroll-container {
   height: 100% !important;
@@ -321,8 +313,7 @@ The shell is sized by the JS --app-height var (the visual viewport height). */
   overscroll-behavior: contain;
 }
 
-/* Smooth the shell resize as the keyboard animates in/out (respects reduced
-   motion via the global rule in section 5). Transform/height only. */
+/* Smooth height transition as keyboard animates in/out. */
 .app-layout-wrapper {
   transition: height 180ms ease;
 }

@@ -36,29 +36,35 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   // ---------------------------------------------------------------------------
-  // Viewport + mobile keyboard handler (rewritten to remove the scroll-jank loop)
+  // Viewport + mobile keyboard handler
   //
-  // Why the old version juddered: it called window.scrollTo(0,0) inside the
-  // visualViewport "scroll"/"resize" listeners AND inside focusin (plus an extra
-  // rAF). Each forced scroll re-fired the scroll event, which forced another
-  // scroll -> a feedback loop that visibly shook the page whenever the keyboard
-  // opened. It also toggled `keyboard-open` from two competing sources.
+  // KEY FIX (iOS Safari on HTTPS / Render):
+  //   On HTTPS, iOS Safari can fire only a visualViewport "scroll" event (not
+  //   "resize") when the keyboard opens/closes. The old code only measured on
+  //   "resize", so --app-height was never updated → layout gap/break on prod.
   //
-  // New approach:
-  //   * ONE source of truth for `keyboard-open`, derived from visualViewport,
-  //     throttled via requestAnimationFrame and guarded by hysteresis so it
-  //     never flickers.
-  //   * NEVER force window scrolling. The page is pinned via CSS instead.
-  //   * Only publish CSS vars when the value actually changed.
+  // Strategy:
+  //   1. Always scheduleMeasure on BOTH vv "resize" AND vv "scroll".
+  //   2. --app-height = vv.height (the actual usable height after keyboard).
+  //   3. Lock window scroll to 0 via a passive listener + rAF (avoids
+  //      "Ignored attempt to cancel a touchmove event" warnings on iOS).
+  //   4. Drop --app-top / --app-left — nothing in CSS uses them.
+  //   5. Hysteresis thresholds prevent oscillation at the boundary.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const KB_OPEN_THRESHOLD = 160; // px the viewport must shrink to count as "open"
-    const KB_CLOSE_THRESHOLD = 100; // must recover past this to count as "closed"
+    const KB_OPEN_THRESHOLD = 150; // px the viewport must shrink to count as "open"
+    const KB_CLOSE_THRESHOLD = 80;  // must recover past this to count as "closed"
 
+    // Passive scroll lock — rAF so we don't block the scroll event on iOS
+    let scrollLockRaf: number | null = null;
     const lockWindowScroll = () => {
-      if (window.scrollY !== 0) {
-        window.scrollTo(0, 0);
-      }
+      if (scrollLockRaf != null) return;
+      scrollLockRaf = requestAnimationFrame(() => {
+        scrollLockRaf = null;
+        if (window.scrollY !== 0 || window.scrollX !== 0) {
+          window.scrollTo(0, 0);
+        }
+      });
     };
 
     const applyKeyboardState = (open: boolean) => {
@@ -66,38 +72,34 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       kbStateRef.current = open;
       document.documentElement.classList.toggle("keyboard-open", open);
       document.body.classList.toggle("keyboard-open", open);
-      if (open) {
-        window.scrollTo(0, 0);
-      }
     };
 
     const measure = () => {
       rafRef.current = null;
       const vv = window.visualViewport;
+      // vv.height = actual usable height (shrinks when keyboard opens).
+      // On iOS HTTPS this is correctly reported on BOTH resize AND scroll events.
       const height = Math.round(vv ? vv.height : window.innerHeight);
-      const offsetTop = Math.round(vv ? vv.offsetTop : 0);
-      const offsetLeft = Math.round(vv ? vv.offsetLeft : 0);
 
-      // Publish CSS vars only when the height actually moved (avoids churn).
+      // Always update --app-height so CSS layout tracks the real usable area.
       if (height !== lastHeightRef.current) {
         lastHeightRef.current = height;
-        const root = document.documentElement.style;
-        root.setProperty("--app-height", `${height}px`);
-        root.setProperty("--app-top", `${offsetTop}px`);
-        root.setProperty("--app-left", `${offsetLeft}px`);
+        document.documentElement.style.setProperty("--app-height", `${height}px`);
       }
 
-      // Keyboard state with hysteresis so it can't oscillate on the boundary.
+      // Keyboard open/close detection with hysteresis.
       const shrink = window.innerHeight - height;
       if (!kbStateRef.current && shrink > KB_OPEN_THRESHOLD) {
         applyKeyboardState(true);
+        // Lock scroll to top whenever keyboard opens (iOS sometimes scrolls doc).
+        window.scrollTo(0, 0);
       } else if (kbStateRef.current && shrink < KB_CLOSE_THRESHOLD) {
         applyKeyboardState(false);
       }
     };
 
     const scheduleMeasure = () => {
-      if (rafRef.current != null) return; // already scheduled this frame
+      if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(measure);
     };
 
@@ -111,17 +113,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       ) {
         return;
       }
-
-      // The bottom chat input is pinned above the keyboard by CSS; do nothing.
+      // The bottom chat input is pinned above the keyboard by CSS; skip.
       if (target.id === "chat-input") return;
 
-      // For in-page form fields, gently bring the field into view AFTER the
-      // keyboard animation settles. No window.scrollTo, no rAF loop.
+      // For in-page form fields, gently bring the field into view after the
+      // keyboard animation settles.
       window.setTimeout(() => {
         if (document.activeElement === target) {
           target.scrollIntoView({ block: "center", behavior: "smooth" });
         }
-      }, 300);
+      }, 320);
     };
 
     const handleFocusOut = () => {
@@ -136,15 +137,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           applyKeyboardState(false);
           scheduleMeasure();
         }
-      }, 120);
+      }, 150);
     };
 
     const vv = window.visualViewport;
+    // CRITICAL: listen to BOTH resize AND scroll on visualViewport.
+    // On iOS HTTPS only a scroll event fires when keyboard opens.
     vv?.addEventListener("resize", scheduleMeasure);
     vv?.addEventListener("scroll", scheduleMeasure);
     window.addEventListener("resize", scheduleMeasure);
     window.addEventListener("orientationchange", scheduleMeasure);
-    window.addEventListener("scroll", lockWindowScroll);
+    // Passive scroll lock — does NOT block iOS touch scroll
+    window.addEventListener("scroll", lockWindowScroll, { passive: true });
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("focusout", handleFocusOut);
 
@@ -152,6 +156,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     return () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (scrollLockRaf != null) cancelAnimationFrame(scrollLockRaf);
       vv?.removeEventListener("resize", scheduleMeasure);
       vv?.removeEventListener("scroll", scheduleMeasure);
       window.removeEventListener("resize", scheduleMeasure);
