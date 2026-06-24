@@ -203,20 +203,22 @@ export const HomePage: React.FC = () => {
               aria-label={language === "en" ? "View latest announcements" : "Xem thông báo mới nhất"}
             >
               <Bell size={15} style={{ stroke: "var(--accent-gold)", flexShrink: 0 }} aria-hidden="true" />
-              <div className="ticker-text">
-                {tickerAnns.map((ann, idx) => (
-                  <span key={ann.id ?? idx}>
-                    <span style={{ fontWeight: 700, color: "var(--alert-red)" }}>[HOT] </span>
-                    {language === "km" && ann.title_km
-                      ? ann.title_km
-                      : language === "en" && ann.title_en
-                        ? ann.title_en
-                        : ann.title}
-                    {idx < tickerAnns.length - 1 && (
-                      <span style={{ margin: "0 16px", opacity: 0.4 }}>·</span>
-                    )}
-                  </span>
-                ))}
+              <div className="ticker-wrapper">
+                <div className="ticker-text">
+                  {tickerAnns.map((ann, idx) => (
+                    <span key={ann.id ?? idx}>
+                      <span style={{ fontWeight: 700, color: "var(--alert-red)" }}>[HOT] </span>
+                      {language === "km" && ann.title_km
+                        ? ann.title_km
+                        : language === "en" && ann.title_en
+                          ? ann.title_en
+                          : ann.title}
+                      {idx < tickerAnns.length - 1 && (
+                        <span style={{ margin: "0 16px", opacity: 0.4 }}>·</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
               </div>
             </Link>
           )}
