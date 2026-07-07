@@ -85,7 +85,7 @@ class EmbeddingService:
 
         return config
 
-    def generate_embedding(self, text: str) -> List[float]:
+    def generate_embedding(self, text: str, log_statistics: bool = True) -> List[float]:
         """
         Generate embedding with automatic fallback chain.
         Chain: primary model → fallback models → deterministic mock vector.
@@ -127,7 +127,7 @@ class EmbeddingService:
                     prompt_tokens = max(1, len(text) // 4)
 
                 # Log usage to Supabase chat_logs for statistics
-                if self.supabase:
+                if log_statistics and self.supabase:
                     try:
                         embed_cost = dyn_config["embed_cost"]
                         estimated_cost = (prompt_tokens / 1_000_000.0) * embed_cost
@@ -285,9 +285,11 @@ class EmbeddingService:
                     clean_content = content
 
             chunks = self.split_text(f"Tiêu đề: {title}\n\nNội dung: {clean_content}")
+            chunks_to_insert = []
             for i, chunk_text in enumerate(chunks):
-                embedding = self.normalize_embedding_dim(self.generate_embedding(chunk_text))
-                self.supabase.table("knowledge_chunks").insert({
+                # Gọi generate_embedding với log_statistics=False để tránh ghi rác logs khi reindex
+                embedding = self.normalize_embedding_dim(self.generate_embedding(chunk_text, log_statistics=False))
+                chunks_to_insert.append({
                     "article_id": str(article_id),
                     "chunk_text": chunk_text,
                     "embedding": embedding,
@@ -297,7 +299,11 @@ class EmbeddingService:
                         "chunk_index": i,
                         "total_chunks": len(chunks),
                     }
-                }).execute()
+                })
+                
+            # Ghi hàng loạt (Bulk Insert) để tối ưu hóa tốc độ ghi và tiết kiệm tài nguyên RAM/CPU
+            if chunks_to_insert:
+                self.supabase.table("knowledge_chunks").insert(chunks_to_insert).execute()
             print(f"[Embedding] Indexed article {article_id} into {len(chunks)} chunks.")
             return True
         except Exception as e:
