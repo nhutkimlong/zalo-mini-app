@@ -255,8 +255,15 @@ const parseArticleContent = (content: string): Array<{ text: string; level: numb
   const result: Array<{ text: string; level: number; isHeading: boolean }> = [];
 
   for (const line of lines) {
-    const trimmed = line.trim();
+    let trimmed = line.trim();
     if (!trimmed) continue;
+
+    // Nhận diện và tự động cắt bỏ tiêu đề Markdown (#)
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      result.push({ text: headingMatch[2].trim(), level: 0, isHeading: true });
+      continue;
+    }
 
     const isNumberedSection = /^\d+\.\s+/.test(trimmed) && trimmed.endsWith(":");
     const isNumberedItem = /^\d+\.\s+/.test(trimmed) && !trimmed.endsWith(":");
@@ -275,6 +282,17 @@ const parseArticleContent = (content: string): Array<{ text: string; level: numb
   }
 
   return result;
+};
+
+// Hàm helper render chữ in đậm (**) thành thẻ <strong> trong React
+const renderTextWithBold = (text: string): React.ReactNode => {
+  if (!text.includes("**")) return text;
+  const parts = text.split("**");
+  return (
+    <>
+      {parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))}
+    </>
+  );
 };
 
 export const VisitInfoPage: React.FC = () => {
@@ -474,12 +492,12 @@ export const VisitInfoPage: React.FC = () => {
                     {items.map((item, idx) => (
                       item.isHeading ? (
                         <div key={idx} className={cx(styles, `info-list-heading ${idx > 0 ? "has-margin" : ""}`)}>
-                          {item.text}
+                          {renderTextWithBold(item.text)}
                         </div>
                       ) : (
                         <div key={idx} className={cx(styles, `info-list-item ${item.level > 0 ? "level-1" : ""}`)}>
                           <span style={{ color: "var(--site-gold)", flexShrink: 0, marginTop: "1px" }}>{item.level > 0 ? "•" : "›"}</span>
-                          <span>{item.text}</span>
+                          <span>{renderTextWithBold(item.text)}</span>
                         </div>
                       )
                     ))}
