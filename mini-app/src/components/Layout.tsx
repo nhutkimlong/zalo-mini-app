@@ -60,7 +60,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Passive scroll lock — rAF so we don't block the scroll event on iOS
     let scrollLockRaf: number | null = null;
     const lockWindowScroll = () => {
-      if (kbStateRef.current) return; // Do not fight scroll when keyboard is open
       if (scrollLockRaf != null) return;
       scrollLockRaf = requestAnimationFrame(() => {
         scrollLockRaf = null;
@@ -340,7 +339,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className={cx(styles, "main-content-area")}>
         <main
           ref={pageContainerRef}
-          className={cx(styles, "app-scroll-container")}
+          className={cx(styles, "app-scroll-container", isFullscreenPage ? "is-fullscreen-container" : "")}
           style={
             isFullscreenPage
               ? { paddingBottom: 0, height: "100%", overflow: "hidden" }

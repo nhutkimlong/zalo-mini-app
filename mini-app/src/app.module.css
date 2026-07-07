@@ -1359,6 +1359,11 @@ select:focus-visible {
   padding-bottom: 0;
 }
 
+.is-fullscreen-container {
+  overflow: hidden !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
 .web-page {
   min-height: 100%;
   margin: 0 auto;
