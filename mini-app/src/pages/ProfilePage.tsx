@@ -278,15 +278,6 @@ export const ProfilePage: React.FC = () => {
                 <p className={cx(styles, "profile-intro-subtitle")}>{t("profile.logged_out")}</p>
               </div>
             </div>
-            
-            <p className={cx(styles, "profile-intro-desc")}>
-              {language === "km" 
-                ? "សូមចូលគណនីរបស់អ្នកដើម្បីចូលរួមដំណើរការប្រមូលត្រាសញ្ញាបេតិកភណ្ឌ (Stamp Rally) និងចូលចិត្តទីកន្លែងដែលអ្នកស្រឡាញ់ដើម្បីរក្សាទុកការចងចាំដ៏ល្អរបស់អ្នក!"
-                : language === "en"
-                  ? "Log in to participate in the Heritage Stamp Rally and save your favorite landmarks to keep beautiful memories!"
-                  : "Đăng nhập để tham gia Hành trình sưu tập dấu ấn di sản (Stamp Rally) và thả tim lưu trữ địa danh yêu thích để lưu giữ những kỷ niệm đẹp!"
-              }
-            </p>
           </div>
 
           <div className={cx(styles, "glass-card fade-in-up stagger-2 profile-auth-card")}>
