@@ -398,29 +398,7 @@ export const ChatPage: React.FC = () => {
               {messages.map((msg) => {
                 const isUser = msg.sender === "user";
 
-                // Welcome card (shown before first user message)
-                if (msg.id === "welcome") {
-                  if (hasUserMessage) return null;
-                  return (
-                    <div key={msg.id} className={cx(styles, "welcome-guide-card")}>
-                      <div className={cx(styles, "welcome-logo-wrapper")}>
-                        <img
-                          src={logoImageUrl}
-                          alt="Logo"
-                          width={64}
-                          height={64}
-                          className={cx(styles, "welcome-logo")}
-                        />
-                      </div>
-                      <h2 className={cx(styles, "welcome-title")}>
-                        {language === "vi" ? "TRỢ LÝ DU LỊCH AI" : language === "en" ? "AI TRAVEL ASSISTANT" : "ជំនួយការទេសចរណ៍ AI"}
-                      </h2>
-                      <div className={cx(styles, "welcome-desc")}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  );
-                }
+
 
                 return (
                   <div

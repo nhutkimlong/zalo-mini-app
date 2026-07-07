@@ -177,6 +177,9 @@ body {
 :global(body.dark-body-bg) {
   background-color: #06152a;
 }
+:global(body.dark-body-bg) .app-scroll-container {
+  background-color: #06152a;
+}
 :global(body.dark-body-bg) .page-container {
   background-color: #06152a;
 }

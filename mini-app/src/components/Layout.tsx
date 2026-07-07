@@ -82,9 +82,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const vv = window.visualViewport;
       // vv.height = actual usable height (shrinks when keyboard opens).
       // On iOS HTTPS this is correctly reported on BOTH resize AND scroll events.
-      const height = Math.round(vv ? vv.height : window.innerHeight);
+      let height = Math.round(vv ? vv.height : window.innerHeight);
       const top = vv ? Math.round(vv.offsetTop) : 0;
       const left = vv ? Math.round(vv.offsetLeft) : 0;
+
+      // Keyboard open/close detection with hysteresis.
+      const shrink = window.innerHeight - height;
+      
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const active = document.activeElement;
+      const isInputFocused = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT");
+      
+      let isOpen = false;
+      if (shrink > KB_OPEN_THRESHOLD) {
+        isOpen = true;
+      } else if (kbStateRef.current && shrink >= KB_CLOSE_THRESHOLD) {
+        isOpen = true;
+      } else if (isMobile && isInputFocused) {
+        // Fallback for WebViews (e.g. Zalo) where visualViewport.height doesn't shrink on keyboard open
+        const estimatedKbHeight = 290;
+        height = window.innerHeight - estimatedKbHeight;
+        isOpen = true;
+      }
 
       // Always update --app-height so CSS layout tracks the real usable area.
       if (height !== lastHeightRef.current) {
@@ -96,13 +115,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       document.documentElement.style.setProperty("--app-top", `${top}px`);
       document.documentElement.style.setProperty("--app-left", `${left}px`);
 
-      // Keyboard open/close detection with hysteresis.
-      const shrink = window.innerHeight - height;
-      if (!kbStateRef.current && shrink > KB_OPEN_THRESHOLD) {
-        applyKeyboardState(true);
-      } else if (kbStateRef.current && shrink < KB_CLOSE_THRESHOLD) {
-        applyKeyboardState(false);
-      }
+      applyKeyboardState(isOpen);
     };
 
     const scheduleMeasure = () => {
@@ -110,26 +123,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       rafRef.current = requestAnimationFrame(measure);
     };
 
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        !target ||
-        (target.tagName !== "INPUT" &&
-          target.tagName !== "TEXTAREA" &&
-          target.tagName !== "SELECT")
-      ) {
-        return;
-      }
-      // The bottom chat input is pinned above the keyboard by CSS; skip.
-      if (target.id === "chat-input") return;
-
-      // For in-page form fields, gently bring the field into view after the
-      // keyboard animation settles.
-      window.setTimeout(() => {
-        if (document.activeElement === target) {
-          target.scrollIntoView({ block: "center", behavior: "smooth" });
-        }
-      }, 320);
+    const handleFocusIn = () => {
+      // Let the browser handle focus scrolling natively to avoid double-scroll jumping on iOS
+      scheduleMeasure();
     };
 
     const handleFocusOut = () => {
@@ -176,6 +172,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, []);
 
+  const isFullscreenPage = path === "/map" || path === "/chat";
+
   // Scroll to top & manage dark body on route change
   useEffect(() => {
     if (pageContainerRef.current) {
@@ -194,13 +192,31 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [location.pathname, path]);
 
+  // Lock scroll on fullscreen pages to prevent iOS focus-scrolling from breaking layouts
+  useEffect(() => {
+    const container = pageContainerRef.current;
+    if (!container || !isFullscreenPage) return;
+
+    const handleScroll = () => {
+      if (container.scrollTop !== 0) {
+        container.scrollTop = 0;
+      }
+      if (container.scrollLeft !== 0) {
+        container.scrollLeft = 0;
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+    };
+  }, [isFullscreenPage]);
+
   const isLinkActive = (targetPath: string) => {
     if (targetPath === "/" && path === "/") return true;
     if (targetPath !== "/" && path.startsWith(targetPath)) return true;
     return false;
   };
-
-  const isFullscreenPage = path === "/map" || path === "/chat";
 
   const primaryNavItems = [
     { to: "/", icon: Home, label: t("nav.home"), id: "nav-home" },
