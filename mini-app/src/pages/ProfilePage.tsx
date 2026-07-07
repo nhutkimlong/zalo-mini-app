@@ -614,7 +614,7 @@ export const ProfilePage: React.FC = () => {
                 <div className={cx(styles, "profile-xp-progress-bar")}>
                   <div 
                     className={cx(styles, "profile-xp-progress-fill")} 
-                    style={{ width: `${Math.min(100, (xp / nextLevelXp) * 100)}%` }} 
+                    style={{ transform: `scaleX(${Math.min(100, (xp / nextLevelXp) * 100) / 100})` }} 
                   />
                 </div>
               </div>

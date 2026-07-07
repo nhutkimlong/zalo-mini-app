@@ -159,17 +159,14 @@ def generate_itinerary_endpoint(
   }
 ]"""
 
-    # Fetch weather settings from database
+    # Fetch weather settings using helper
     weather_status = "sunny"
     weather_temp = "30"
     try:
-        weather_res = db.table("system_settings").select("key, value").in_("key", ["REALTIME_WEATHER_STATUS", "REALTIME_WEATHER_TEMP"]).execute()
-        if weather_res.data:
-            for row in weather_res.data:
-                if row["key"] == "REALTIME_WEATHER_STATUS":
-                    weather_status = row["value"]
-                elif row["key"] == "REALTIME_WEATHER_TEMP":
-                    weather_temp = row["value"]
+        from app.core.weather import get_current_weather
+        weather_info = get_current_weather(db)
+        weather_status = weather_info["weather_status"]
+        weather_temp = weather_info["weather_temp"]
     except Exception as e:
         print(f"Failed to fetch weather for itinerary: {e}")
 

@@ -38,59 +38,12 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 @router.get("/realtime")
 def get_realtime_status(db: Client = Depends(get_db_client)):
     try:
-        response = db.table("system_settings").select("*").execute()
-        data = response.data or []
-        
-        # Default fallbacks
-        status_map = {
-            "REALTIME_WEATHER_AUTO": "true",
-            "REALTIME_WEATHER_STATUS": "sunny",
-            "REALTIME_WEATHER_TEMP": "30"
-        }
-        
-        for row in data:
-            key = row.get("key")
-            val = row.get("value")
-            if key in status_map:
-                status_map[key] = val
-                
-        weather_status = status_map["REALTIME_WEATHER_STATUS"]
-        weather_temp = int(status_map["REALTIME_WEATHER_TEMP"])
-        weather_auto = status_map["REALTIME_WEATHER_AUTO"].lower() == "true"
-        
-        if weather_auto:
-            try:
-                import urllib.request
-                import json
-                # Coordinates for Ba Den Mountain peak
-                lat = 11.382056
-                lon = 106.172218
-                url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code"
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    weather_data = json.loads(resp.read().decode('utf-8'))
-                    current = weather_data.get("current", {})
-                    if "temperature_2m" in current and "weather_code" in current:
-                        raw_temp = current["temperature_2m"]
-                        weather_temp = round(raw_temp)
-                        code = current["weather_code"]
-                        # Map meteorological code to status
-                        if code == 0:
-                            weather_status = "sunny"
-                        elif code in [1, 2, 3, 45, 48, 71, 73, 75, 77, 85, 86]:
-                            weather_status = "cloudy"
-                        elif code in [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82]:
-                            weather_status = "rainy"
-                        elif code in [95, 96, 99]:
-                            weather_status = "windy"
-            except Exception as api_err:
-                print(f"[Weather API] Failed to fetch from Open-Meteo: {api_err}")
-                # Fail silently and fall back to database values
-                
+        from app.core.weather import get_current_weather
+        weather_info = get_current_weather(db)
         return {
-            "weather_auto": weather_auto,
-            "weather_status": weather_status,
-            "weather_temp": weather_temp
+            "weather_auto": weather_info["weather_auto"],
+            "weather_status": weather_info["weather_status"],
+            "weather_temp": int(weather_info["weather_temp"])
         }
     except Exception as e:
         print(f"Failed to fetch realtime status: {e}")

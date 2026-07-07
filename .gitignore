@@ -43,3 +43,8 @@ Dang
 Hoac
 Quan
 Swagger
+
+# Temporary development states
+.gemini/
+.impeccable/
+temp-impeccable/

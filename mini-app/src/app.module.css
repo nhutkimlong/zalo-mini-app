@@ -23,7 +23,11 @@
   --radius-pill: 9999px;
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-spring: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  --touch-target-compact: 36px;
+  --touch-target-standard: 42px;
+  --card-min-width: 290px;
+  --card-min-width-wide: 300px;
   --site-navy: #12345a;
   --site-blue: #1f5b86;
   --site-jade: #3f7b68;
@@ -71,6 +75,18 @@ a, button, [role="button"] {
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+}
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+.site-nav-link:focus-visible,
+.mobile-drawer-link:focus-visible,
+.detail-gps-refresh-btn:focus-visible,
+.site-ai-button:focus-visible,
+.site-menu-button:focus-visible {
+  outline: 2px solid var(--site-gold);
+  outline-offset: 2px;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -136,8 +152,7 @@ body {
   overflow: hidden;
   position: relative;
   background-color: var(--surface-0);
-  /* Smooth height animation as keyboard opens/closes */
-  transition: height 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Keyboard height transition removed to prevent layout thrash */
   background:
     linear-gradient(120deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
     radial-gradient(circle at 100% 0, rgba(197, 155, 50, 0.12), transparent 26rem);
@@ -477,7 +492,7 @@ body.dark-body-bg .page-container {
   line-height: 1.55;
   align-self: flex-end;
   position: relative;
-  animation: slide-bubble-user 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.2) both;
+  animation: slide-bubble-user 0.25s cubic-bezier(0.165, 0.84, 0.44, 1) both;
   background: #d7b256;
   color: #102033;
   border: 0;
@@ -495,7 +510,7 @@ body.dark-body-bg .page-container {
   line-height: 1.55;
   align-self: flex-start;
   position: relative;
-  animation: slide-bubble-assistant 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.2) both;
+  animation: slide-bubble-assistant 0.25s cubic-bezier(0.165, 0.84, 0.44, 1) both;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
@@ -655,7 +670,7 @@ body.dark-body-bg .page-container {
   border-radius: 999px;
   background: #d7b256;
   color: #102033;
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
               opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -888,6 +903,7 @@ body.dark-body-bg .page-container {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transition: all var(--transition-fast);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 16px;
 }
 
@@ -1032,28 +1048,28 @@ a:active,
    No `position: fixed` on html/body — that resets scroll origin on iOS
    causing a flash. The .app-layout-wrapper (position:fixed, top:0) already
    anchors everything; body just needs overflow:hidden. */
-html.keyboard-open,
-body.keyboard-open {
+:global(html.keyboard-open),
+:global(body.keyboard-open) {
   overflow: hidden;
   overscroll-behavior: none;
   height: var(--app-height, 100dvh);
 }
 
-.keyboard-open .app-layout-wrapper {
+:global(.keyboard-open) .app-layout-wrapper {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: var(--app-top, 0px);
+  left: var(--app-left, 0px);
   width: 100%;
   height: var(--app-height);
   overflow: hidden;
 }
 
-.keyboard-open .chat-page-dark {
+:global(.keyboard-open) .chat-page-dark {
   height: 100%;
   overflow: hidden;
 }
 
-.keyboard-open .app-scroll-container {
+:global(.keyboard-open) .app-scroll-container {
   padding-bottom: 0;
   overscroll-behavior-y: contain;
 }
@@ -1195,7 +1211,7 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 42px;
+  min-height: var(--touch-target-standard);
   padding: 0 12px;
   border-radius: 999px;
   color: #3b4d61;
@@ -1239,11 +1255,11 @@ select:focus-visible {
   cursor: pointer;
   font-size: 11px;
   font-weight: 850;
-  transition: all var(--transition-fast, 200ms) cubic-bezier(0.4, 0, 0.2, 1)-in-out;
-  min-height: var(--tap-min);
-  min-width: var(--tap-min);
-  width: var(--tap-min);
-  height: var(--tap-min);
+  transition: all var(--transition-fast);
+  min-height: var(--touch-target-compact);
+  min-width: var(--touch-target-compact);
+  width: var(--touch-target-compact);
+  height: var(--touch-target-compact);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1262,7 +1278,7 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: var(--touch-target-compact);
   padding: 0 15px;
   border-radius: 999px;
   background: var(--site-gold);
@@ -1279,8 +1295,8 @@ select:focus-visible {
 }
 
 .site-menu-button {
-  width: 42px;
-  height: 42px;
+  width: var(--touch-target-compact);
+  height: var(--touch-target-compact);
   border: 1px solid var(--site-line);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
@@ -1591,7 +1607,7 @@ select:focus-visible {
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
-  transition: max-height 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* Layout transitions on max-height removed to avoid layout thrashing */
   overflow-y: auto;
   z-index: 1001;
   padding: 0 16px max(8px, env(safe-area-inset-bottom, 0px)) 16px;
@@ -1609,9 +1625,6 @@ select:focus-visible {
 }
 
 /* ─── Premium Animation System ──────────────────────────────────────────────── */
-
-@keyframes fadeInUp {
-}
 
 /* ─── HomePage Classes ─────────────────────────────────────────────────────── */
 .home-weather-card {
@@ -1654,7 +1667,7 @@ select:focus-visible {
   gap: 14px;
   color: inherit;
   text-decoration: none;
-  border-left: 4px solid var(--site-gold);
+  border-left: 1px solid var(--site-gold);
 }
 
 .home-profile-card:hover {
@@ -1842,7 +1855,7 @@ select:focus-visible {
   display: grid;
   gap: 16px;
   padding: 0;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), 1fr));
 }
 .place-card-link {
   display: flex;
@@ -2213,7 +2226,7 @@ select:focus-visible {
 .guide-list {
   flex-direction: column;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), 1fr));
   gap: 14px;
 }
 .guide-card-item {
@@ -2273,7 +2286,7 @@ select:focus-visible {
 /* ─── FeedbackPage Classes ─────────────────────────────────────────────────── */
 .feedback-intro-card {
   background: rgba(217, 83, 79, 0.05);
-  border-left: 4px solid var(--alert-red);
+  border-left: 1px solid var(--alert-red);
 }
 .feedback-form-container {
   display: flex;
@@ -2434,13 +2447,26 @@ select:focus-visible {
   color: var(--site-navy);
   line-height: 1.4;
 }
+.ann-card-content {
+  font-size: 13.5px;
+  color: var(--ink-body);
+  line-height: 1.5;
+  overflow: hidden;
+  max-height: 40px;
+  opacity: 0.9;
+  margin-top: 4px;
+  transition: opacity 0.25s ease-out;
+}
+.ann-card-content.is-expanded {
+  max-height: none;
+  opacity: 1;
+}
 .ann-content-collapsed {
   font-size: 13.5px;
   color: var(--ink-body);
   line-height: 1.5;
   overflow: hidden;
   max-height: 40px;
-  transition: max-height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   opacity: 0.9;
   margin-top: 4px;
 }
@@ -2643,7 +2669,9 @@ select:focus-visible {
   height: 100%;
   background: linear-gradient(90deg, var(--site-gold), #eab308);
   border-radius: 4px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1)-out;
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
 }
 .profile-gamification-stats-table {
   display: grid;
@@ -2904,7 +2932,7 @@ select:focus-visible {
 .info-list-heading {
   font-weight: 700;
   color: var(--site-navy);
-  border-left: 3px solid var(--site-gold);
+  border-left: 1px solid var(--site-gold);
   padding-left: 8px;
 }
 
@@ -2923,7 +2951,7 @@ select:focus-visible {
 }
 
 .info-rules-card {
-  border-left: 4px solid var(--site-gold);
+  border-left: 1px solid var(--site-gold);
 }
 
 .info-rules-heading {
@@ -3044,7 +3072,7 @@ select:focus-visible {
 }
 .feedback-notice-card {
   background: rgba(217, 83, 79, 0.05);
-  border-left: 4px solid #d9534f;
+  border-left: 1px solid #d9534f;
   padding: 12px;
 }
 .feedback-notice-text {
@@ -3114,7 +3142,7 @@ select:focus-visible {
   gap: 12px;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width-wide), 1fr));
   align-items: start;
 }
 .ann-loading-box {
@@ -3223,16 +3251,16 @@ select:focus-visible {
 }
 
 .ann-card-emergency {
-  border-left: 4px solid #d9534f;
+  border-left: 1px solid #d9534f;
 }
 .ann-card-weather {
-  border-left: 4px solid #f0ad4e;
+  border-left: 1px solid #f0ad4e;
 }
 .ann-card-festival {
-  border-left: 4px solid var(--site-gold);
+  border-left: 1px solid var(--site-gold);
 }
 .ann-card-general {
-  border-left: 4px solid var(--site-navy);
+  border-left: 1px solid var(--site-navy);
 }
 
 /* Profile styles */
@@ -3255,7 +3283,7 @@ select:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border-left: 4px solid var(--site-gold);
+  border-left: 1px solid var(--site-gold);
 }
 .profile-intro-header {
   display: flex;
@@ -3539,7 +3567,9 @@ select:focus-visible {
   height: 100%;
   background: linear-gradient(90deg, var(--site-gold), #eab308);
   border-radius: 4px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1)-out;
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
 }
 .profile-achievements-row {
   display: grid;
@@ -5085,8 +5115,8 @@ button:disabled {
 
 /* html.keyboard-open, body.keyboard-open overflow/height are owned by index.css.
    Scroll-container constraints below are additive — not defined elsewhere. */
-.keyboard-open .main-content-area,
-.keyboard-open .app-scroll-container {
+:global(.keyboard-open) .main-content-area,
+:global(.keyboard-open) .app-scroll-container {
   height: 100%;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
@@ -5097,7 +5127,7 @@ button:disabled {
 
 /* The chips row is hidden while typing; fade it rather than hard-cutting so the
    layout settles without a visible snap. */
-.keyboard-open .chips-slider-wrapper {
+:global(.keyboard-open) .chips-slider-wrapper {
   opacity: 0;
   pointer-events: none;
 }
@@ -5567,7 +5597,7 @@ p, .detail-body-text, .ann-card-content, .info-schedule-list {
     color: var(--site-gold);
     background: linear-gradient(90deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.02) 100%);
     border-color: rgba(212, 175, 55, 0.4);
-    border-left: 3px solid var(--site-gold);
+    border-left: 1px solid var(--site-gold);
     font-weight: 800;
     box-shadow: 0 4px 12px rgba(212, 175, 55, 0.05);
   }

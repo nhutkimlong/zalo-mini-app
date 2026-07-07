@@ -239,11 +239,11 @@ export const AnnouncementsPage: React.FC = () => {
 
                 {/* Content */}
                 <div 
-                  className={cx(styles, "ann-card-content")}
-                  style={{ 
-                    maxHeight: isExpanded ? "500px" : "40px",
-                    transition: "max-height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
-                  }}
+                  className={cx(
+                    styles, 
+                    "ann-card-content", 
+                    isExpanded ? "is-expanded" : "is-collapsed"
+                  )}
                 >
                   {contentText}
                 </div>

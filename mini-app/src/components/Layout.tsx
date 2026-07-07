@@ -60,6 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Passive scroll lock — rAF so we don't block the scroll event on iOS
     let scrollLockRaf: number | null = null;
     const lockWindowScroll = () => {
+      if (kbStateRef.current) return; // Do not fight scroll when keyboard is open
       if (scrollLockRaf != null) return;
       scrollLockRaf = requestAnimationFrame(() => {
         scrollLockRaf = null;
@@ -82,6 +83,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       // vv.height = actual usable height (shrinks when keyboard opens).
       // On iOS HTTPS this is correctly reported on BOTH resize AND scroll events.
       const height = Math.round(vv ? vv.height : window.innerHeight);
+      const top = vv ? Math.round(vv.offsetTop) : 0;
+      const left = vv ? Math.round(vv.offsetLeft) : 0;
 
       // Always update --app-height so CSS layout tracks the real usable area.
       if (height !== lastHeightRef.current) {
@@ -89,12 +92,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         document.documentElement.style.setProperty("--app-height", `${height}px`);
       }
 
+      // Update offsets to align fixed containers to the visual viewport
+      document.documentElement.style.setProperty("--app-top", `${top}px`);
+      document.documentElement.style.setProperty("--app-left", `${left}px`);
+
       // Keyboard open/close detection with hysteresis.
       const shrink = window.innerHeight - height;
       if (!kbStateRef.current && shrink > KB_OPEN_THRESHOLD) {
         applyKeyboardState(true);
-        // Lock scroll to top whenever keyboard opens (iOS sometimes scrolls doc).
-        window.scrollTo(0, 0);
       } else if (kbStateRef.current && shrink < KB_CLOSE_THRESHOLD) {
         applyKeyboardState(false);
       }

@@ -167,6 +167,11 @@ def test_rag_chat_multilingual(api_client: TestClient, db_client: Client):
 def test_rag_chat_history_logical_continuity(db_client: Client):
     """Verify chatbot retains memory of previous recommendations and uses active announcements on subsequent turns."""
     import uuid
+    
+    # Clear cache to force database fetch of announcements
+    rag_service._cached_announcements = None
+    rag_service._cached_announcements_at = 0.0
+    
     announcement_id = str(uuid.uuid4())
     
     # 1. Insert a temporary promotional announcement in the database
@@ -214,6 +219,11 @@ def test_rag_chat_history_logical_continuity(db_client: Client):
     finally:
         # Cleanup
         db_client.table("announcements").delete().eq("id", announcement_id).execute()
+        
+        # Clear cache again to leave system clean
+        rag_service._cached_announcements = None
+        rag_service._cached_announcements_at = 0.0
+        
         questions_to_delete = [q for q in [q1, q2] if q is not None]
         if questions_to_delete:
             db_client.table("chat_logs").delete().in_("question", questions_to_delete).execute()

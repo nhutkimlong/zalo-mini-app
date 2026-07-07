@@ -879,7 +879,7 @@ export const MapPage: React.FC = () => {
           border: 2.5px solid #ffffff;
           border-radius: 50%;
           box-shadow: 0 0 12px var(--accent-gold);
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -893,6 +893,7 @@ export const MapPage: React.FC = () => {
           box-shadow: 0 0 12px #f97316 !important;
           border-color: #ffffff !important;
           transform: scale(1.25);
+          z-index: 10;
         }
 
         .marker-inner-dot.is-in-route {
@@ -914,7 +915,7 @@ export const MapPage: React.FC = () => {
           color: var(--primary-navy);
           font-size: 10px;
           font-weight: 900;
-          font-family: Arial, sans-serif;
+          font-family: "Noto Sans", sans-serif;
           line-height: 1;
         }
       ` }} />
