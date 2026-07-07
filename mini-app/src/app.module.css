@@ -173,11 +173,11 @@ body {
 }
 
 /* ─── Dark Body Background ──────────────────────────────────────────────────── */
-html.dark-body-bg,
-body.dark-body-bg {
+:global(html.dark-body-bg),
+:global(body.dark-body-bg) {
   background-color: #06152a;
 }
-body.dark-body-bg .page-container {
+:global(body.dark-body-bg) .page-container {
   background-color: #06152a;
 }
 
@@ -1127,7 +1127,7 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
-.dark-body-bg {
+:global(.dark-body-bg) {
   background: #071626;
 }
 

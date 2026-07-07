@@ -77,14 +77,14 @@ export const ChatPage: React.FC = () => {
 
   const getWelcomeText = (name?: string) => {
     if (language === "km") {
-      const g = name ? `សួស្តីបង ${name}!` : "សួស្តីបង!";
-      return `${g} ខ្ញុំជាជំនួយការទេសចរណ៍ AI របស់ភ្នំបាដេន។ តើខ្ញុំអាចជួយអ្វីដល់បងនៅថ្ងៃនេះបានទេ?`;
+      const g = name ? `សួស្តីបង ${name}!` : "សួស្តី!";
+      return `${g} ខ្ញុំជាជំនួយការទេសចរណ៍ AI ភ្នំបាដេន តើខ្ញុំអាចជួយអ្វីបានខ្លះ?`;
     } else if (language === "en") {
       const g = name ? `Hello ${name}!` : "Hello!";
-      return `${g} I am your AI Travel Assistant for Black Lady Mountain. How can I help you today?`;
+      return `${g} I'm your AI Travel Assistant for Black Lady Mountain, how can I help you today?`;
     } else {
-      const g = name ? `Xin chào anh/chị ${name}!` : "Xin chào quý khách!";
-      return `${g} Tôi là Trợ lý du lịch AI của Núi Bà Đen. Hôm nay tôi có thể giúp gì cho bạn?`;
+      const g = name ? `Xin chào ${name}!` : "Xin chào!";
+      return `${g} Tôi là Trợ lý du lịch AI của Núi Bà Đen, tôi có thể giúp gì cho bạn?`;
     }
   };
 
