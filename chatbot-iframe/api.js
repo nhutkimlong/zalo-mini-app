@@ -2,7 +2,7 @@
 
 const BACKEND_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:8000'
-    : 'https://nui-ba-den-travel-assistant-backend.onrender.com';
+    : ''; // Rỗng để sử dụng Proxy /api/* của Netlify ở Production
 
 export const apiService = {
     /**

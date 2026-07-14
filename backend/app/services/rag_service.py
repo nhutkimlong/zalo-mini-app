@@ -620,20 +620,28 @@ class RAGService:
         detected_code = detected_info["code"]
         detected_name = detected_info["name"]
 
-        # Check if we should override manual language selection
-        # (Auto-detect activates if dropdown is 'auto', the default 'vi', OR if the user's question language is not vi, en, or km)
-        if language in {"auto", "vi"}:
-            resolved_lang = detected_code
-            resolved_lang_name = detected_name
-            print(f"[{LOG_NAME}] Dropdown is default/auto '{language}'. Auto-detected language: {resolved_lang} ({resolved_lang_name})")
-        else:
-            if detected_code not in {"vi", "en", "km"}:
+        # Smart language resolution to prevent false detection on short texts
+        lang_names_map = {"vi": "Vietnamese", "en": "English", "km": "Khmer"}
+        
+        if language == "auto":
+            # If auto, use detected language if it's one of vi, en, km. Otherwise, default to vi.
+            if detected_code in {"vi", "en", "km"}:
                 resolved_lang = detected_code
-                resolved_lang_name = detected_name
-                print(f"[{LOG_NAME}] Question in non-supported language '{detected_code}' auto-activates language detection (overrides manual '{language}').")
+                resolved_lang_name = detected_info["name"]
+            else:
+                resolved_lang = "vi"
+                resolved_lang_name = "Vietnamese"
+            print(f"[{LOG_NAME}] Dropdown is auto. Auto-resolved language: {resolved_lang} ({resolved_lang_name})")
+        else:
+            # If user explicitly selected a language (vi, en, km)
+            # Only override if the detected language is one of the other officially supported languages (en or km)
+            # and the input text length is long enough to be confident to prevent false positives.
+            if language == "vi" and detected_code in {"en", "km"} and len(question) > 15:
+                resolved_lang = detected_code
+                resolved_lang_name = detected_info["name"]
+                print(f"[{LOG_NAME}] Dropdown is vi, but user typed in supported language '{detected_code}' (length > 15). Overriding to: {resolved_lang}")
             else:
                 resolved_lang = language
-                lang_names_map = {"vi": "Vietnamese", "en": "English", "km": "Khmer"}
                 resolved_lang_name = lang_names_map.get(language, "Vietnamese")
                 print(f"[{LOG_NAME}] Respecting manual selection: {resolved_lang} ({resolved_lang_name})")
 

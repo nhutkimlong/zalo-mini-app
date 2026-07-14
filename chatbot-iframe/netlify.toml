@@ -1,0 +1,10 @@
+# netlify.toml - Netlify Configuration for Chatbot Iframe
+
+# Redirects / Rewrites for API Proxying
+# This hides the backend URL and forwards requests from /api/* to the actual FastAPI Backend.
+[[redirects]]
+  from = "/api/*"
+  to = "https://nui-ba-den-travel-assistant-backend.onrender.com/api/:splat"
+  status = 200
+  force = true
+  headers = {X-From = "Netlify-Proxy"}
