@@ -12,6 +12,7 @@ from supabase import Client, create_client
 from app.core.config import settings
 from app.services.embedding_service import embedding_service
 from app.models.chat import SourceCitation, ChatResponse
+from app.services.moderation_service import moderation_service
 
 # ─── CrawBot Identity ─────────────────────────────────────────────────────────
 CRAWBOT_NAME = "Hướng dẫn viên 4.0"
@@ -638,6 +639,51 @@ class RAGService:
 
         language = resolved_lang
         language_name = resolved_lang_name
+
+        # Moderation check for spam, excessive emojis, and vulgarity
+        is_valid, reason = moderation_service.validate_message(question)
+        if not is_valid:
+            if language == "en":
+                lang_reasons = {
+                    "Tin nhắn chứa quá nhiều biểu tượng cảm xúc (emoji).": "Your message contains too many emojis.",
+                    "Tin nhắn chứa ký tự lặp lại quá nhiều lần.": "Your message contains too many repetitive characters.",
+                    "Tin nhắn chứa từ ngữ không phù hợp.": "Your message contains inappropriate language."
+                }
+                answer = lang_reasons.get(reason, "Your message is invalid.")
+            elif language == "km":
+                lang_reasons = {
+                    "Tin nhắn chứa quá nhiều biểu tượng cảm xúc (emoji).": "សាររបស់អ្នកមានរូបសញ្ញាអារម្មណ៍ច្រើនពេក។",
+                    "Tin nhắn chứa ký tự lặp lại quá nhiều lần.": "សាររបស់អ្នកមានតួអក្សរដដែលៗច្រើនដងពេក។",
+                    "Tin nhắn chứa từ ngữ không phù hợp.": "សាររបស់អ្នកមានពាក្យសម្តីមិនសមរម្យ។"
+                }
+                answer = lang_reasons.get(reason, "សាររបស់អ្នកមិនត្រឹមត្រូវទេ។")
+            else:
+                answer = f"Chào bạn, câu hỏi chưa phù hợp: {reason} Bạn vui lòng điều chỉnh lại câu hỏi nhé!"
+
+            # Log blocked request to database
+            if self.supabase:
+                try:
+                    self.supabase.table("chat_logs").insert({
+                        "user_id": str(user_id) if user_id else None,
+                        "channel": channel,
+                        "question": question,
+                        "answer": answer,
+                        "source_article_ids": [],
+                        "confidence_score": 0.0,
+                        "model": "moderation_filter",
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0,
+                        "estimated_cost_usd": 0.0,
+                    }).execute()
+                except Exception as log_err:
+                    print(f"[{LOG_NAME}] Moderation log failed: {log_err}")
+
+            return ChatResponse(
+                answer=answer,
+                confidence_score=0.0,
+                sources=[],
+            )
 
         # history_context and question_with_context are removed; history is passed natively in messages
 

@@ -137,11 +137,109 @@ function updateSuggestions() {
 
 // ---------------- Actions ----------------
 
+function removeAccents(str) {
+    return str.normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[đĐ]/g, m => m === 'đ' ? 'd' : 'D');
+}
+
+function validateMessage(text) {
+    if (!text || !text.trim()) return { isValid: true };
+
+    // 1. Emoji count validation (limit to maximum 3 emojis)
+    const emojiCount = (text.match(/\p{Extended_Pictographic}/gu) || []).length;
+    if (emojiCount > 3) {
+        return {
+            isValid: false,
+            reason: "Tin nhắn chứa quá nhiều biểu tượng cảm xúc (emoji).",
+            reasonEn: "Message contains too many emojis.",
+            reasonKm: "សារមានរូបសញ្ញាអារម្មណ៍ច្រើនពេក។"
+        };
+    }
+
+    // 2. Repetitive characters validation
+    if (/([^\w\s])\1{3,}/g.test(text) || /(.)\1{5,}/gi.test(text)) {
+        return {
+            isValid: false,
+            reason: "Tin nhắn chứa ký tự lặp lại quá nhiều lần.",
+            reasonEn: "Message contains too many repetitive characters.",
+            reasonKm: "សារមានតួអក្សរដដែលៗច្រើនដងពេក។"
+        };
+    }
+
+    // 3. Vulgar language validation
+    const textLower = text.toLowerCase().trim();
+    const textNormalized = removeAccents(textLower);
+
+    const accentedVulgar = ["cặc", "lồn", "đéo", "buồi", "địt", "đụ", "ỉa", "đái", "óc chó", "chó đẻ", "khốn nạn", "thằng chó", "con đĩ", "đĩ", "mẹ kiếp"];
+    const unaccentedVulgar = ["dit", "du", "dm", "dkm", "clm", "vcl", "cmn", "cmnr", "dcm", "vl", "vkl", "đm", "dkmm", "clmn", "vcln"];
+    const phrasalVulgar = [
+        "con cac", "con cack", "con cak", "con c@c", "con c*c",
+        "cai lon", "cai l0n", "cai l*n",
+        "an cac", "an cặc", "an buoi", "an buồi",
+        "phat deo", "phat đéo", "thang cho", "thằng chó",
+        "dit me", "địt mẹ", "dit con me", "địt con mẹ",
+        "du me", "đụ mẹ", "du ma", "đụ má", "dcm",
+        "oc cho", "óc chó", "cho de", "chó đẻ", "khon nan", "khốn nạn"
+    ];
+
+    for (const phrase of phrasalVulgar) {
+        if (textLower.includes(phrase) || textNormalized.includes(phrase)) {
+            return {
+                isValid: false,
+                reason: "Tin nhắn chứa từ ngữ không phù hợp.",
+                reasonEn: "Message contains inappropriate language.",
+                reasonKm: "សារមានពាក្យសម្តីមិនសមរម្យ។"
+            };
+        }
+    }
+
+    const wordsOriginal = textLower.split(/[^a-z0-9ăâđêôơưàảãáạằẳẵắặầẩẫấậèẻẽéẹềểễếệìỉĩíịòỏõóọồổỗốộờởỡớợùủũúụừửữứựỳỷỹýỵ]/i);
+    const wordsNormalized = textNormalized.split(/[^a-z0-9]/i);
+
+    for (const word of accentedVulgar) {
+        if (wordsOriginal.includes(word)) {
+            return {
+                isValid: false,
+                reason: "Tin nhắn chứa từ ngữ không phù hợp.",
+                reasonEn: "Message contains inappropriate language.",
+                reasonKm: "សារមានពាក្យសម្តីមិនសមរម្យ។"
+            };
+        }
+    }
+
+    for (const word of unaccentedVulgar) {
+        if (wordsNormalized.includes(word)) {
+            return {
+                isValid: false,
+                reason: "Tin nhắn chứa từ ngữ không phù hợp.",
+                reasonEn: "Message contains inappropriate language.",
+                reasonKm: "សារមានពាក្យសម្តីមិនសមរម្យ។"
+            };
+        }
+    }
+
+    return { isValid: true };
+}
+
 async function handleSend() {
     startChatSession();
     const text = userInput.value.trim();
     if (!text || isLoading) return;
     
+    // Local validation
+    const validation = validateMessage(text);
+    if (!validation.isValid) {
+        // Render user message first to show their context
+        addMessage('user', text);
+        const errorMsg = currentLang === 'en' ? `Message rejected: ${validation.reasonEn}` :
+                         currentLang === 'km' ? `សារមិនត្រឹមត្រូវ៖ ${validation.reasonKm}` :
+                         `Chào bạn, câu hỏi chưa phù hợp: ${validation.reason} Bạn vui lòng điều chỉnh lại câu hỏi nhé!`;
+        addMessage('model', errorMsg);
+        userInput.value = '';
+        return;
+    }
+
     // Hide suggestions after the first message is sent
     if (suggestionsArea) {
         suggestionsArea.style.opacity = '0';
