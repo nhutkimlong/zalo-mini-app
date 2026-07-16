@@ -240,6 +240,39 @@ async def send_zalo_chat_action(bot_token: str, recipient_id: str, action: str =
         except Exception as e:
             print(f"[ZaloBot] Failed to send chat action via Zalo API: {e} | Sent Payload: {payload}")
 
+async def download_and_upload_zalo_image(image_url: str, db) -> str:
+    """Download image from Zalo CDN and re-upload to Supabase baden_assets bucket."""
+    if not image_url or image_url.startswith("image_received") or "supabase.co" in image_url:
+        return image_url
+        
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(image_url, timeout=10.0)
+            if resp.status_code == 200:
+                contents = resp.content
+                import uuid
+                unique_filename = f"{uuid.uuid4()}.jpg"
+                file_path = f"images/{unique_filename}"
+                
+                try:
+                    db.storage.create_bucket("baden_assets", options={"public": True})
+                except Exception:
+                    pass # Bucket likely exists
+                    
+                db.storage.from_("baden_assets").upload(
+                    path=file_path,
+                    file=contents,
+                    file_options={"content-type": "image/jpeg"}
+                )
+                
+                public_url = db.storage.from_("baden_assets").get_public_url(file_path)
+                return public_url
+    except Exception as e:
+        print(f"[ZaloBot] Error downloading/uploading Zalo image {image_url}: {e}")
+        
+    return image_url # Fallback to original URL
+
+
 async def process_zalo_message(sender_id: str, message_text: str, image_url: Optional[str] = None):
     """Asynchronous worker to process query with RAG service and reply to Zalo user."""
     bot_token = settings.ZALO_BOT_TOKEN
@@ -256,42 +289,53 @@ async def process_zalo_message(sender_id: str, message_text: str, image_url: Opt
     async with zalo_sessions_lock:
         session_state = zalo_sessions.get(sender_id, {}).get("state", "normal")
 
-    # If the user is currently in the feedback flow
-    if session_state == "awaiting_feedback":
-        try:
-            from supabase import create_client
-            db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
-            
-            # Combine text and image_url for content if there's no text
-            content = message_text.strip() if message_text else "Khách hàng gửi hình ảnh đính kèm."
-            
-            payload = {
-                "report_type": "khac",
-                "content": content,
-                "reporter_name": "Khách qua Zalo",
-                "image_url": image_url
-            }
-            db.table("feedback_reports").insert(payload).execute()
-            
-            answer = "Cảm ơn bạn! Ban quản lý đã ghi nhận thông tin phản ánh và sẽ xử lý sớm nhất. Bạn có cần mình hỗ trợ thông tin gì khác không ạ?"
-            
-            # Reset state
+    # If the user was asked to provide a fallback image for their complaint
+    if session_state == "awaiting_feedback_image":
+        if image_url:
+            try:
+                from supabase import create_client
+                db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                
+                # Upload Zalo CDN link to our Supabase Storage
+                final_image_url = await download_and_upload_zalo_image(image_url, db)
+                
+                last_feedback_id = None
+                async with zalo_sessions_lock:
+                    if sender_id in zalo_sessions:
+                        last_feedback_id = zalo_sessions[sender_id].get("last_feedback_id")
+                        zalo_sessions[sender_id]["state"] = "normal"
+                        
+                if last_feedback_id:
+                    # Update existing report with image
+                    db.table("feedback_reports").update({"image_url": final_image_url}).eq("id", last_feedback_id).execute()
+                else:
+                    # Insert new if we somehow lost the ID
+                    payload = {
+                        "report_type": "khac",
+                        "content": message_text.strip() if message_text else "Khách hàng gửi hình ảnh đính kèm.",
+                        "reporter_name": "Khách qua Zalo",
+                        "image_url": final_image_url
+                    }
+                    db.table("feedback_reports").insert(payload).execute()
+                
+                answer = "Cảm ơn bạn! Hình ảnh minh chứng của bạn đã được cập nhật vào báo cáo."
+                await add_zalo_message(sender_id, "user", "Đã gửi hình ảnh minh chứng")
+                await add_zalo_message(sender_id, "assistant", answer)
+                await send_zalo_message(bot_token, sender_id, answer)
+                return
+                
+            except Exception as e:
+                print(f"[ZaloBot] Error saving feedback image: {e}")
+                answer = "Xin lỗi, đã xảy ra lỗi khi tải hình ảnh. Vui lòng thử lại sau."
+                await send_zalo_message(bot_token, sender_id, answer)
+                return
+        else:
+            # User ignored the image request and sent normal text, exit state and process normally
             async with zalo_sessions_lock:
                 if sender_id in zalo_sessions:
                     zalo_sessions[sender_id]["state"] = "normal"
-                    
-            await add_zalo_message(sender_id, "user", content)
-            await add_zalo_message(sender_id, "assistant", answer)
-            await send_zalo_message(bot_token, sender_id, answer)
-            return
-            
-        except Exception as e:
-            print(f"[ZaloBot] Error saving feedback: {e}")
-            answer = "Xin lỗi, đã xảy ra lỗi khi ghi nhận phản ánh. Vui lòng thử lại sau."
-            await send_zalo_message(bot_token, sender_id, answer)
-            return
 
-    # Normal RAG processing
+    # Normal RAG processing (or initial complaint)
     loop = asyncio.get_running_loop()
     try:
         # If user only sent an image but not in feedback state
@@ -312,11 +356,37 @@ async def process_zalo_message(sender_id: str, message_text: str, image_url: Opt
             
             # Check if LLM decided it's a feedback intent
             if getattr(chat_response, "type", None) == "feedback_request":
-                async with zalo_sessions_lock:
-                    if sender_id in zalo_sessions:
-                        zalo_sessions[sender_id]["state"] = "awaiting_feedback"
-                # Append instruction
-                answer += "\n\n*(Vui lòng gõ nội dung chi tiết hoặc gửi hình ảnh trực tiếp tại đây để Ban quản lý ghi nhận nhé)*"
+                # Save the initial complaint immediately
+                try:
+                    from supabase import create_client
+                    db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                    
+                    final_image_url = None
+                    if image_url:
+                        final_image_url = await download_and_upload_zalo_image(image_url, db)
+                    
+                    payload = {
+                        "report_type": "khac",
+                        "content": message_text,
+                        "reporter_name": "Khách qua Zalo",
+                        "image_url": final_image_url  # Populated if they sent text + image together
+                    }
+                    response = db.table("feedback_reports").insert(payload).execute()
+                    
+                    if not final_image_url:
+                        # Case 1: They complained but NO image sent yet -> Ask for image
+                        feedback_id = response.data[0]["id"] if response.data else None
+                        async with zalo_sessions_lock:
+                            if sender_id in zalo_sessions:
+                                zalo_sessions[sender_id]["state"] = "awaiting_feedback_image"
+                                zalo_sessions[sender_id]["last_feedback_id"] = feedback_id
+                        answer += "\n\n*(Sự cố của bạn đã được ghi nhận. Nếu có hình ảnh minh chứng, vui lòng gửi tại đây để BQL xử lý tốt hơn nhé)*"
+                    else:
+                        # Case 2: They complained AND sent an image together
+                        answer += "\n\n*(Sự cố và hình ảnh đính kèm của bạn đã được hệ thống ghi nhận thành công)*"
+
+                except Exception as e:
+                    print(f"[ZaloBot] Error saving initial feedback: {e}")
 
     except Exception as e:
         print(f"[ZaloBot] RAG pipeline error: {e}")
@@ -341,7 +411,6 @@ async def zalo_webhook(
     Webhook receiver endpoint for Zalo Bot events.
     Verifies secret token, extracts text message/image, schedules processing in background, and returns 200 OK immediately.
     """
-    # Verify secure token if configured
     expected_secret = settings.ZALO_WEBHOOK_SECRET_TOKEN
     if expected_secret and x_bot_api_secret_token != expected_secret:
         raise HTTPException(status_code=401, detail="Unauthorized request secret mismatch")
@@ -358,26 +427,42 @@ async def zalo_webhook(
         event_data = payload["result"]
         event_name = event_data.get("event_name")
     
-    # Process text and image messages
-    if event_name in ("message.text.received", "message.image.received", "user_send_text", "user_send_image") or not event_name:
-        # Fallback extraction
-        sender_id = event_data.get("sender", {}).get("id")
-        if not sender_id:
-            sender_id = event_data.get("message", {}).get("chat", {}).get("id")
+    # Process all events that might be user messages
+    sender_id = event_data.get("sender", {}).get("id")
+    if not sender_id:
+        sender_id = event_data.get("message", {}).get("chat", {}).get("id")
+        
+    message_text = event_data.get("message", {}).get("text", "")
+    
+    # Check for Zalo OA image attachments or Telegram photos
+    image_url = None
+    
+    # 1. Zalo OA Format
+    attachments = event_data.get("message", {}).get("attachments", [])
+    if isinstance(attachments, list):
+        for att in attachments:
+            if att.get("type") == "image":
+                image_url = att.get("payload", {}).get("url")
+                break
+                
+    # 2. Extract from root payload if it's placed differently
+    if not image_url and event_data.get("message", {}).get("photo"):
+        photos = event_data.get("message", {}).get("photo")
+        if isinstance(photos, list) and len(photos) > 0:
+            image_url = f"telegram_photo_id:{photos[-1].get('file_id')}"
             
-        message_text = event_data.get("message", {}).get("text", "")
-        
-        # Check for Zalo OA image attachments
-        image_url = None
-        attachments = event_data.get("message", {}).get("attachments", [])
-        if attachments and isinstance(attachments, list):
-            for att in attachments:
-                if att.get("type") == "image":
-                    image_url = att.get("payload", {}).get("url")
-                    break
-        
-        if sender_id and (message_text or image_url):
-            # Execute processing asynchronously in FastAPI background tasks to return 200 OK immediately
-            background_tasks.add_task(process_zalo_message, sender_id, message_text, image_url)
+    # 3. Aggressive generic search for any URL if event indicates image
+    if not image_url and event_name in ("user_send_image", "message.image.received"):
+        import json
+        dumped = json.dumps(event_data)
+        urls = re.findall(r'https?://[^\s"]+', dumped)
+        if urls:
+            image_url = urls[0]
+        else:
+            image_url = "image_received_but_no_url_found"
+
+    if sender_id and (message_text or image_url):
+        # Execute processing asynchronously in FastAPI background tasks to return 200 OK immediately
+        background_tasks.add_task(process_zalo_message, sender_id, message_text, image_url)
 
     return {"status": "success"}
