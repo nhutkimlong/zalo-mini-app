@@ -8,6 +8,7 @@ interface ChatsPanelProps {
   formatUsd: (value: number) => string;
   formatNumber: (value: number) => string;
   handleResetChatLogs: () => void;
+  handleOpenAddArticle?: (defaultCat?: string, defaultTitle?: string) => void;
 }
 
 export const ChatsPanel: React.FC<ChatsPanelProps> = ({
@@ -17,6 +18,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
   formatUsd,
   formatNumber,
   handleResetChatLogs,
+  handleOpenAddArticle,
 }) => {
   const [visibleCount, setVisibleCount] = React.useState(20);
 
@@ -119,7 +121,19 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     </div>
                   </td>
                   <td className={scoreClass} style={{ fontSize: "14px", textAlign: "center" }}>
-                    {Math.round(c.confidence_score * 100)}%
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                      <span>{Math.round(c.confidence_score * 100)}%</span>
+                      {handleOpenAddArticle && c.confidence_score < 0.6 && (
+                        <button 
+                          className="btn btn-primary"
+                          title="Tạo bài viết hướng dẫn cho câu hỏi này"
+                          style={{ padding: "2px 6px", fontSize: "11px", backgroundColor: "#D4AF37", color: "#000", border: "none" }}
+                          onClick={() => handleOpenAddArticle("khac", c.question)}
+                        >
+                          + Tạo bài
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td style={{ maxWidth: "150px" }}>
                     <div className="rag-meta-box" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }} title={c.matched_chunks}>

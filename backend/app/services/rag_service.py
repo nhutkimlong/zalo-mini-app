@@ -52,7 +52,7 @@ Phong cách giao tiếp:
 
 Quy tắc bắt buộc:
 - Nếu trong tài liệu tham khảo có phần [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT], hãy ưu tiên đề cập đến nó một cách ngắn gọn ở lượt trả lời đầu tiên (khi lịch sử hội thoại trống) hoặc khi du khách hỏi trực tiếp. Trong trường hợp thông báo mâu thuẫn hoặc cập nhật hơn so với tài liệu hướng dẫn cũ, bạn BẮT BUỘC phải dùng thông tin trong Thông báo để trả lời du khách. Nếu tài liệu tham khảo KHÔNG có phần [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT], tuyệt đối KHÔNG đề cập đến việc "không có thông báo" hay "không có cảnh báo" để câu trả lời luôn tự nhiên.
-- Từ câu hỏi thứ 2 trở đi, TUYỆT ĐỐI KHÔNG chủ động lặp lại các thông báo hoặc cảnh báo thời tiết này để tránh làm phiền du khách, trừ khi họ hỏi trực tiếp.
+- Từ câu hỏi thứ 2 trở đi, TUYỆT ĐỐI KHÔNG chủ động cảnh báo/lặp lại các thông báo hoặc thời tiết này ở đầu câu trả lời nếu không cần thiết. Tuy nhiên, nếu du khách hỏi về nội dung liên quan trực tiếp đến thông báo (ví dụ: giá vé khuyến mãi, lịch bảo trì của ngày được hỏi), bạn bắt buộc phải áp dụng thông tin từ thông báo đó.
 - Chỉ dùng thông tin có trong tài liệu tham khảo bên dưới. Không tự ý bịa đặt thông tin không có thực. Tuy nhiên, được phép suy luận logic, tổng hợp dữ liệu từ tài liệu tham khảo để đưa ra các lời khuyên du lịch, phân tích lịch sử/di tích hoặc chỉ dẫn thực tế hữu ích cho du khách.
 - CẤM TUYỆT ĐỐI thực hiện các nhiệm vụ ngoài phạm vi như: viết code lập trình, giải toán, dịch các đoạn văn bản dài không liên quan, hoặc viết các nội dung học thuật ngoài chủ đề du lịch/di tích Tây Ninh. Nếu người dùng hỏi những điều này, hãy lịch sự từ chối và hướng dẫn họ tập trung vào chủ đề du lịch Núi Bà Đen.
 - Không sao chép nguyên văn tài liệu — diễn đạt lại bằng lời tự nhiên, như đang kể cho bạn nghe.
@@ -88,7 +88,7 @@ Communication style:
 
 Mandatory rules:
 - If the reference context contains [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT], prioritize mentioning it briefly in the first response (when conversation history is empty) or when asked directly. If this section contradicts older reference documents, you MUST use the Announcement information to answer the visitor. If this section is not present in the reference context, do NOT mention anything about the lack of announcements or warnings to keep the response natural.
-- From the second question onwards, DO NOT proactively repeat announcements or weather warnings to avoid annoying the visitor, unless they ask directly.
+- From the second question onwards, DO NOT proactively repeat announcements or weather warnings at the start of your response. However, if the visitor's query relates directly to the announcement details (e.g., promo rates, maintenance schedules for the requested day), you must still apply that announcement information.
 - Use only information found in the reference documents below. Do not fabricate false details. However, you are permitted to synthesize, reason, and deduce logically from the context to provide helpful travel advice, historical/cultural insights, or practical guidance related to the mountain.
 - STRICTLY FORBIDDEN to perform unrelated tasks such as writing programming code, solving math problems, translating long unrelated texts, or writing academic essays on topics outside of Ba Den Mountain or Tay Ninh tourism. If asked, politely refuse and redirect the visitor to topics related to Ba Den Mountain.
 - Never copy text verbatim from the documents — always rephrase naturally in your own words.
@@ -124,7 +124,7 @@ SYSTEM_PROMPT_KM = """អ្នកគឺជា {name} — ជាមគ្គុ�
 
 ច្បាប់ដាច់ខាត៖
 - ប្រសិនបើឯកសារយោងមានផ្នែក [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] សូមផ្តល់អាទិភាពលើការលើកឡើងពីវាយ៉ាងសង្ខេបនៅក្នុងការឆ្លើយតបដំបូង (នៅពេលដែលប្រវត្តិនៃការសន្ទនានៅទំនេរ) ឬនៅពេលសួរដោយផ្ទាល់។ ប្រសិនបើផ្ទុយគ្នាជាមួយឯកសារយោងចាស់ៗ អ្នកត្រូវតែប្រើប្រាស់ព័ត៌មានពីសេចក្តីជូនដំណឹងនេះដើម្បីឆ្លើយតប។ ប្រសិនបើផ្នែកនេះមិនមាននៅក្នុងឯកសារយោងទេ សូមកុំនិយាយអ្វីទាំងអស់អំពីការមិនមានសេចក្តីជូនដំណឹង ឬការមិនមានការព្រមាន ដើម្បីរក្សាការឆ្លើយតបឱ្យមានលក្ខណៈធម្មជាតិ។
-- ចាប់ពីសំណួរទី ២ ទៅ សូមកុំនិយាយដដែលៗនូវសេចក្តីជូនដំណឹង ឬការព្រមានទាំងនេះ ដើម្បីជៀសវាងការរំខានដល់ភ្ញៀវ លើកលែងតែពួកគេសួរដោយផ្ទាល់។
+- ចាប់ពីសំណួរទី ២ ទៅ សូមកុំនិយាយដដែលៗនូវសេចក្តីជូនដំណឹង ឬការព្រមានទាំងនេះដោយគ្មានការចាំបាច់។ ទោះយ៉ាងណាក៏ដោយ ប្រសិនបើភ្ញៀវសួរអំពីព័ត៌មានដែលទាក់ទងដោយផ្ទាល់ទៅនឹងសេចក្តីជូនដំណឹង (ឧទាហរណ៍៖ តម្លៃពិសេស កាលវិភាគថែទាំ) អ្នកត្រូវតែប្រើប្រាស់ព័ត៌មានពីសេចក្តីជូនដំណឹងនោះដដែល។
 - ប្រើតែព័ត៌មានដែលមាននៅក្នុងឯកសារយោងខាងក្រោមប៉ុណ្ណោះ។ កុំបង្កើតព័ត៌មានមិនពិតឡើងដោយខ្លួនឯងឡើយ។ ទោះយ៉ាងណាក៏ដោយ អ្នកត្រូវបានអនុញ្ញាតឱ្យសំយោគ ពិភាក្សា និងសន្និដ្ឋានដោយសមហេតុផលពីបរិបទ ដើម្បីផ្តល់ដំបូន្មានធ្វើដំណើរ ការយល់ដឹងអំពីប្រវត្តិសាស្ត្រ/វប្បធម៌ ឬការណែនាំជាក់ស្តែង។
 - ត្រូវបានហាមឃាត់យ៉ាងតឹងរ៉ឹងចំពោះកិច្ចការដែលមិនទាក់ទងគ្នា ដូចជាការសរសេរកូដកម្មវិធី ការដោះស្រាយលំហាត់គណិតវិទ្យា ការបកប្រែអត្ថបទវែងៗដែលមិនទាក់ទង ឬសរសេរខ្លឹមសារសិក្សាក្រៅពីប្រធានបទទេសចរណ៍ភ្នំបាដិន។ ប្រសិនបើសួរ សូមបដិសេធដោយគួរសម ហើយណែនាំភ្ញៀវឱ្យផ្តោតលើប្រធានបទភ្នំបាដិនវិញ។
 - កុំចម្លងអត្ថបទទាំងស្រុងពីឯកសារយោង — ត្រូវតែនិយាយឡើងវិញដោយធម្មជាតិតាមរយៈពាក្យរបស់អ្នកផ្ទាល់។
@@ -161,7 +161,7 @@ Communication style:
 
 Mandatory rules:
 - If the reference context contains [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT], prioritize mentioning it briefly in the first response (when conversation history is empty) or when asked directly. If this section contradicts older reference documents, you MUST use the Announcement information to answer the visitor in {language_name}. If this section is not present in the reference context, do NOT mention anything about the lack of announcements or warnings in {language_name} to keep the response natural.
-- From the second question onwards, DO NOT proactively repeat announcements or weather warnings to avoid annoying the visitor, unless they ask directly.
+- From the second question onwards, DO NOT proactively repeat announcements or weather warnings at the start of your response. However, if the visitor's query relates directly to the announcement details (e.g., promo rates, maintenance schedules for the requested day), you must still apply that announcement information.
 - Use only information found in the reference documents below. Do not fabricate false details. However, you are permitted to synthesize, reason, and deduce logically from the context to provide helpful travel advice, historical/cultural insights, or practical guidance related to the mountain.
 - STRICTLY FORBIDDEN to perform unrelated tasks such as writing programming code, solving math problems, translating long unrelated texts, or writing academic essays on topics outside of Ba Den Mountain or Tay Ninh tourism. If asked, politely refuse and redirect the visitor to topics related to Ba Den Mountain.
 - Never copy text verbatim from the documents — always rephrase naturally in your own words in {language_name}.
@@ -794,29 +794,7 @@ class RAGService:
                 print(f"[{LOG_NAME}] Failed to fetch weather for general chat: {e}")
 
         if not schedules_json_str:
-            schedules_json_str = """[
-  {
-    "title": "Tuyến Đỉnh Vân Sơn",
-    "items": [
-      {"label": "Thứ 2 - Thứ 6", "hours": "07:00 - 18:00"},
-      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 21:00", "note": "Ngắm led đỉnh núi ban đêm"}
-    ]
-  },
-  {
-    "title": "Tuyến Chùa Hang ( Khu vực Chùa Bà - Điện Bà)",
-    "items": [
-      {"label": "Thứ 2 - Thứ 6", "hours": "06:00 - 18:00"},
-      {"label": "Thứ 7 - Chủ Nhật", "hours": "05:30 - 22:00"}
-    ]
-  },
-  {
-    "title": "Tuyến Tâm An ( Kết nối Đỉnh núi và Chùa Bà)",
-    "items": [
-      {"label": "Thứ 2 - Thứ 6", "note": "Đóng cửa"},
-      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 19:00"}
-    ]
-  }
-]"""
+            schedules_json_str = "Không có dữ liệu lịch trình hoạt động. Vui lòng liên hệ hotline (0276) 3823.378."
 
         chunks = self.retrieve_context(question)
         answer = ""
@@ -1031,6 +1009,13 @@ class RAGService:
                     )
                     prompt += zalo_formatting_instruction
 
+                feedback_instruction = (
+                    "\n\n[FEEDBACK & COMPLAINT HANDLING]\n"
+                    "- If the visitor is expressing dissatisfaction, complaining, reporting an issue, or providing feedback (e.g., poor service, lost items, bad attitude, suggestions), you MUST prepend exactly the tag `[FEEDBACK_REQUEST]` at the very beginning of your response.\n"
+                    "- After the tag, respond politely, apologize for the inconvenience, and ask them to provide more details so you can forward it to the Management Board."
+                )
+                prompt += feedback_instruction
+
                 try:
                     dyn_config = self._get_dynamic_settings()
                     # Prepends dynamic hour/minute metadata to the user question so the system prompt remains static
@@ -1074,6 +1059,11 @@ class RAGService:
                 # No LLM available — return best matching chunk directly
                 answer = chunks[0]["text"] if chunks else self._no_info_response(language)
 
+        response_type = "chat"
+        if answer.startswith("[FEEDBACK_REQUEST]"):
+            response_type = "feedback_request"
+            answer = answer.replace("[FEEDBACK_REQUEST]", "").strip()
+
         # Log to Supabase
         if self.supabase:
             try:
@@ -1097,6 +1087,7 @@ class RAGService:
             answer=answer,
             confidence_score=float(confidence_score),
             sources=sources,
+            type=response_type
         )
 
 

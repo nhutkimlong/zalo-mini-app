@@ -134,30 +134,7 @@ def generate_itinerary_endpoint(
         print(f"Failed to fetch cable car schedules for itinerary: {e}")
 
     if not schedules_data_str:
-        # Fallback in case of database issue
-        schedules_data_str = """[
-  {
-    "title": "Tuyến Đỉnh Vân Sơn",
-    "items": [
-      {"label": "Thứ 2 - Thứ 6", "hours": "07:00 - 18:00"},
-      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 21:00", "note": "Ngắm led đỉnh núi ban đêm"}
-    ]
-  },
-  {
-    "title": "Tuyến Chùa Hang ( Khu vực Chùa Bà - Điện Bà)",
-    "items": [
-      {"label": "Thứ 2 - Thứ 6", "hours": "06:00 - 18:00"},
-      {"label": "Thứ 7 - Chủ Nhật", "hours": "05:30 - 22:00"}
-    ]
-  },
-  {
-    "title": "Tuyến Tâm An ( Kết nối Đỉnh núi và Chùa Bà)",
-    "items": [
-      {"label": "Thứ 2 - Thứ 6", "note": "Đóng cửa"},
-      {"label": "Thứ 7 - Chủ Nhật", "hours": "06:00 - 19:00"}
-    ]
-  }
-]"""
+        schedules_data_str = "Không có dữ liệu lịch trình hoạt động. Vui lòng liên hệ hotline (0276) 3823.378."
 
     # Fetch weather settings using helper
     weather_status = "sunny"
@@ -236,7 +213,7 @@ def generate_itinerary_endpoint(
          - Nếu cả tuyến Vân Sơn và tuyến Tâm An đều không hoạt động vào ngày tham quan (ví dụ: ngày thường cáp Vân Sơn bảo trì, hoặc cả hai cáp đều bảo trì): du khách KHÔNG THỂ lên đỉnh núi.
          - Bạn phải TỪ CHỐI lập lộ trình lên đỉnh núi. Phản hồi bằng một thông báo rõ ràng về lý do các tuyến cáp đóng cửa trong phần mô tả lộ trình, và gợi ý lộ trình thay thế chỉ tham quan Chùa Bà và Chân núi. Tuyệt đối không gợi ý leo bộ lên đỉnh hay đi cáp đã đóng cửa.
     5. TUẦN TỰ VẬT LÝ: Bước đi cáp treo từ A lên B → bước tiếp theo PHẢI ở khu vực B.
-    6. BUFFET: Chỉ có Buffet TRƯA (11h-14h) tại nhà hàng trên Đỉnh núi, KHÔNG có buffet sáng.
+    6. BUFFET: Chỉ có Buffet TRƯA tại nhà hàng trên Đỉnh núi, KHÔNG có buffet sáng.
     7. THỜI GIAN CÁP TREO: Cộng thêm 20-30 phút cho mỗi lần di chuyển cáp treo (bao gồm chờ + đi).
     8. HỢP LÝ: Tránh lên xuống núi nhiều lần không cần thiết.
 

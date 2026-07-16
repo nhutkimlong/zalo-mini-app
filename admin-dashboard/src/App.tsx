@@ -980,6 +980,7 @@ export const App: React.FC = () => {
                   formatUsd={formatUsd}
                   formatNumber={formatNumber}
                   handleResetChatLogs={handleResetChatLogs}
+                  handleOpenAddArticle={handleOpenAddArticle}
                 />
               )}
 

@@ -27,6 +27,7 @@ class ChatResponse(BaseModel):
     answer: str = Field(..., description="Câu trả lời từ trợ lý AI")
     confidence_score: float = Field(..., description="Mức độ tự tin của câu trả lời")
     sources: List[SourceCitation] = Field(default_factory=list, description="Nguồn bài viết tham khảo trong kho tri thức")
+    type: str = Field("chat", description="Loại phản hồi (chat, feedback_request)")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

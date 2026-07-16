@@ -28,6 +28,37 @@ export const apiService = {
 
         if (!response.ok) throw new Error("API Connection Failed");
         const data = await response.json();
-        return data.answer || "Tôi đang gặp chút sự cố kết nối. Anh/Chị vui lòng thử lại sau giây lát ạ!";
+        return data;
+    },
+
+    /**
+     * Uploads an image for a feedback report
+     */
+    async uploadFeedbackImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Note: Using the admin upload endpoint, but it doesn't enforce auth.
+        const response = await fetch(`${BACKEND_BASE_URL}/api/admin/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error("Image Upload Failed");
+        return await response.json();
+    },
+
+    /**
+     * Submits feedback to the backend
+     */
+    async submitFeedback(feedbackData) {
+        const response = await fetch(`${BACKEND_BASE_URL}/api/feedback/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(feedbackData)
+        });
+        
+        if (!response.ok) throw new Error("Feedback Submission Failed");
+        return await response.json();
     }
 };

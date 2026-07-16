@@ -253,15 +253,20 @@ async function handleSend() {
     const loadingEl = addMessage('model', '', true);
     
     try {
-        const reply = await apiService.sendMessage(messages, text, currentLang);
+        const replyData = await apiService.sendMessage(messages, text, currentLang);
         loadingEl.remove();
-        addMessage('model', reply);
+        const replyText = replyData.answer || replyData; // Fallback in case of string
+        addMessage('model', replyText);
         
         // History management
         messages.push({ role: 'user', parts: [{ text }] });
-        messages.push({ role: 'model', parts: [{ text: reply }] });
+        messages.push({ role: 'model', parts: [{ text: replyText }] });
         // Keep history short for performance
         if (messages.length > 20) messages = messages.slice(-10);
+
+        if (replyData.type === 'feedback_request') {
+            renderFeedbackForm();
+        }
     } catch (err) {
         console.error(err);
         loadingEl.remove();
@@ -271,6 +276,104 @@ async function handleSend() {
     } finally {
         isLoading = false;
     }
+}
+
+function renderFeedbackForm() {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `flex items-start gap-3 message-animate`;
+    
+    msgDiv.innerHTML = `
+        <div style="width:36px;height:36px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div style="max-width:82%;width:100%;padding:16px;background:#ffffff;border:1px solid #e2e8f0;border-radius:0.25rem 1rem 1rem 1rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <h3 style="font-weight:600;font-size:15px;margin-bottom:12px;color:#0f172a;">Gửi Phản Ánh / Góp Ý</h3>
+            <form id="feedbackFormInner" class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Loại phản ánh *</label>
+                    <select id="fbType" required class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-brand-500 bg-slate-50">
+                        <option value="khac">Khác</option>
+                        <option value="ve_sinh">Vệ sinh môi trường</option>
+                        <option value="gia_ca">Giá cả dịch vụ</option>
+                        <option value="an_ninh">An ninh trật tự</option>
+                        <option value="thai_do">Thái độ nhân viên</option>
+                        <option value="ha_tang">Hạ tầng/Cơ sở vật chất</option>
+                        <option value="cheo_keo">Tình trạng chèo kéo</option>
+                        <option value="gop_y">Góp ý cải thiện</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nội dung chi tiết *</label>
+                    <textarea id="fbContent" required rows="3" placeholder="Xin vui lòng mô tả chi tiết..." class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-brand-500 bg-slate-50 resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Hình ảnh đính kèm (nếu có)</label>
+                    <input type="file" id="fbImage" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Số điện thoại (tùy chọn)</label>
+                    <input type="text" id="fbPhone" placeholder="Để BQL liên hệ lại..." class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-brand-500 bg-slate-50">
+                </div>
+                <button type="submit" id="fbSubmitBtn" class="mt-2 w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">
+                    Gửi Phản Ánh
+                </button>
+            </form>
+        </div>
+    `;
+    getMsgWrapper().appendChild(msgDiv);
+    msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: 'smooth' });
+
+    const form = msgDiv.querySelector('#feedbackFormInner');
+    const submitBtn = msgDiv.querySelector('#fbSubmitBtn');
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const type = form.querySelector('#fbType').value;
+        const content = form.querySelector('#fbContent').value.trim();
+        const phone = form.querySelector('#fbPhone').value.trim();
+        const fileInput = form.querySelector('#fbImage');
+        
+        if (!content) return;
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Đang gửi...";
+        submitBtn.classList.add('opacity-70');
+
+        try {
+            let imageUrl = null;
+            if (fileInput.files.length > 0) {
+                const uploadRes = await apiService.uploadFeedbackImage(fileInput.files[0]);
+                imageUrl = uploadRes.url;
+            }
+
+            await apiService.submitFeedback({
+                report_type: type,
+                content: content,
+                phone: phone,
+                image_url: imageUrl,
+                reporter_name: "Khách qua Chatbot"
+            });
+            
+            form.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-4 text-center">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-3">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
+                    <p class="text-sm font-medium text-slate-700">Cảm ơn bạn! BQL đã ghi nhận thông tin phản ánh.</p>
+                </div>
+            `;
+            // Add a follow up AI message to make it smooth
+            setTimeout(() => {
+                addMessage('model', "Mình đã chuyển thông tin phản ánh của bạn đến Ban Quản Lý (BQL). Bạn có cần mình hỗ trợ thêm thông tin gì khác không ạ?");
+            }, 1000);
+        } catch (err) {
+            console.error(err);
+            alert("Đã xảy ra lỗi khi gửi phản ánh. Vui lòng thử lại.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Gửi Phản Ánh";
+            submitBtn.classList.remove('opacity-70');
+        }
+    };
 }
 
 // ---------------- UI Translation ----------------

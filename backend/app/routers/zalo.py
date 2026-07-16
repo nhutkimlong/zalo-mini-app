@@ -240,7 +240,7 @@ async def send_zalo_chat_action(bot_token: str, recipient_id: str, action: str =
         except Exception as e:
             print(f"[ZaloBot] Failed to send chat action via Zalo API: {e} | Sent Payload: {payload}")
 
-async def process_zalo_message(sender_id: str, message_text: str):
+async def process_zalo_message(sender_id: str, message_text: str, image_url: Optional[str] = None):
     """Asynchronous worker to process query with RAG service and reply to Zalo user."""
     bot_token = settings.ZALO_BOT_TOKEN
     if not bot_token:
@@ -250,32 +250,86 @@ async def process_zalo_message(sender_id: str, message_text: str):
     # Send typing action to let the user know the bot is processing/typing
     await send_zalo_chat_action(bot_token, sender_id, "typing")
 
-    # 1. Fetch active history
+    # Fetch active history and session state
     history = await get_zalo_conversation_history(sender_id)
+    
+    async with zalo_sessions_lock:
+        session_state = zalo_sessions.get(sender_id, {}).get("state", "normal")
 
-    # 2. Query RAG service (run in executor since RAG ask pipeline is synchronous)
+    # If the user is currently in the feedback flow
+    if session_state == "awaiting_feedback":
+        try:
+            from supabase import create_client
+            db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+            
+            # Combine text and image_url for content if there's no text
+            content = message_text.strip() if message_text else "Khách hàng gửi hình ảnh đính kèm."
+            
+            payload = {
+                "report_type": "khac",
+                "content": content,
+                "reporter_name": "Khách qua Zalo",
+                "image_url": image_url
+            }
+            db.table("feedback_reports").insert(payload).execute()
+            
+            answer = "Cảm ơn bạn! Ban quản lý đã ghi nhận thông tin phản ánh và sẽ xử lý sớm nhất. Bạn có cần mình hỗ trợ thông tin gì khác không ạ?"
+            
+            # Reset state
+            async with zalo_sessions_lock:
+                if sender_id in zalo_sessions:
+                    zalo_sessions[sender_id]["state"] = "normal"
+                    
+            await add_zalo_message(sender_id, "user", content)
+            await add_zalo_message(sender_id, "assistant", answer)
+            await send_zalo_message(bot_token, sender_id, answer)
+            return
+            
+        except Exception as e:
+            print(f"[ZaloBot] Error saving feedback: {e}")
+            answer = "Xin lỗi, đã xảy ra lỗi khi ghi nhận phản ánh. Vui lòng thử lại sau."
+            await send_zalo_message(bot_token, sender_id, answer)
+            return
+
+    # Normal RAG processing
     loop = asyncio.get_running_loop()
     try:
-        chat_response = await loop.run_in_executor(
-            None,
-            lambda: rag_service.ask(
-                question=message_text,
-                channel="zalo_bot",
-                language="auto",  # Always auto-detect question language for Zalo channel
-                conversation_history=history
+        # If user only sent an image but not in feedback state
+        if not message_text and image_url:
+            answer = "Bạn vừa gửi một hình ảnh. Hiện tại mình chỉ hỗ trợ trả lời qua tin nhắn văn bản. Bạn cần hỏi thông tin gì về Núi Bà Đen ạ?"
+            chat_response = None
+        else:
+            chat_response = await loop.run_in_executor(
+                None,
+                lambda: rag_service.ask(
+                    question=message_text,
+                    channel="zalo_bot",
+                    language="auto",
+                    conversation_history=history
+                )
             )
-        )
-        answer = chat_response.answer
+            answer = chat_response.answer
+            
+            # Check if LLM decided it's a feedback intent
+            if getattr(chat_response, "type", None) == "feedback_request":
+                async with zalo_sessions_lock:
+                    if sender_id in zalo_sessions:
+                        zalo_sessions[sender_id]["state"] = "awaiting_feedback"
+                # Append instruction
+                answer += "\n\n*(Vui lòng gõ nội dung chi tiết hoặc gửi hình ảnh trực tiếp tại đây để Ban quản lý ghi nhận nhé)*"
+
     except Exception as e:
         print(f"[ZaloBot] RAG pipeline error: {e}")
         answer = "Xin lỗi, hệ thống đang gặp sự cố nhỏ. Vui lòng thử lại sau giây lát ạ!"
 
-    # 3. Save to conversation history
-    await add_zalo_message(sender_id, "user", message_text)
+    # Save to conversation history
+    if message_text:
+        await add_zalo_message(sender_id, "user", message_text)
     await add_zalo_message(sender_id, "assistant", answer)
 
-    # 4. Outgoing sendMessage call
+    # Outgoing sendMessage call
     await send_zalo_message(bot_token, sender_id, answer)
+
 
 @router.post("/webhook")
 async def zalo_webhook(
@@ -285,7 +339,7 @@ async def zalo_webhook(
 ):
     """
     Webhook receiver endpoint for Zalo Bot events.
-    Verifies secret token, extracts text message, schedules processing in background, and returns 200 OK immediately.
+    Verifies secret token, extracts text message/image, schedules processing in background, and returns 200 OK immediately.
     """
     # Verify secure token if configured
     expected_secret = settings.ZALO_WEBHOOK_SECRET_TOKEN
@@ -304,18 +358,26 @@ async def zalo_webhook(
         event_data = payload["result"]
         event_name = event_data.get("event_name")
     
-    # Process only text message events
-    if event_name == "message.text.received":
-        # First try to get sender.id
+    # Process text and image messages
+    if event_name in ("message.text.received", "message.image.received", "user_send_text", "user_send_image") or not event_name:
+        # Fallback extraction
         sender_id = event_data.get("sender", {}).get("id")
-        # Fallback to chat.id in case sender.id is not present
         if not sender_id:
             sender_id = event_data.get("message", {}).get("chat", {}).get("id")
             
-        message_text = event_data.get("message", {}).get("text")
+        message_text = event_data.get("message", {}).get("text", "")
         
-        if sender_id and message_text:
+        # Check for Zalo OA image attachments
+        image_url = None
+        attachments = event_data.get("message", {}).get("attachments", [])
+        if attachments and isinstance(attachments, list):
+            for att in attachments:
+                if att.get("type") == "image":
+                    image_url = att.get("payload", {}).get("url")
+                    break
+        
+        if sender_id and (message_text or image_url):
             # Execute processing asynchronously in FastAPI background tasks to return 200 OK immediately
-            background_tasks.add_task(process_zalo_message, sender_id, message_text)
+            background_tasks.add_task(process_zalo_message, sender_id, message_text, image_url)
 
     return {"status": "success"}
