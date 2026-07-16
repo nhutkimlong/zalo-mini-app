@@ -765,18 +765,23 @@ class RAGService:
                 schedules_json_str = RAGService._cached_schedules
             else:
                 try:
-                    schedule_res = self.supabase.table("knowledge_articles").select("content").eq("id", "a1c3d359-fe2c-42da-9d19-d94dfcedb022").execute()
+                    # Dynamically search for schedule data in ve_va_gio_mo_cua category instead of hardcoded UUID
+                    schedule_res = self.supabase.table("knowledge_articles").select("content").eq("category", "ve_va_gio_mo_cua").execute()
                     if schedule_res.data:
                         import json
-                        raw_content = schedule_res.data[0].get("content", "")
-                        try:
-                            parsed = json.loads(raw_content)
-                            if "schedules" in parsed:
-                                schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
-                            else:
-                                schedules_json_str = raw_content
-                        except Exception:
-                            schedules_json_str = raw_content
+                        for row in schedule_res.data:
+                            raw_content = row.get("content", "")
+                            try:
+                                parsed = json.loads(raw_content)
+                                if isinstance(parsed, dict) and "schedules" in parsed:
+                                    schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
+                                    break
+                                elif isinstance(parsed, list):
+                                    # It might be a direct list of schedule items
+                                    schedules_json_str = json.dumps(parsed, ensure_ascii=False, indent=2)
+                                    break
+                            except Exception:
+                                continue
                     RAGService._cached_schedules = schedules_json_str
                     RAGService._cached_schedules_at = now
                 except Exception as e:

@@ -25,7 +25,8 @@ const TRANSLATIONS = {
             "Săn mây vào giờ nào thì đẹp?",
             "Cần chuẩn bị gì khi đi bộ lên núi?"
         ],
-        errorMsg: "Rất tiếc, đã có lỗi kết nối. Anh/Chị vui lòng thử lại sau giây lát ạ!"
+        errorMsg: "Rất tiếc, đã có lỗi kết nối. Anh/Chị vui lòng thử lại sau giây lát ạ!",
+        disclaimer: "Câu trả lời từ AI chỉ mang tính chất tham khảo."
     },
     en: {
         online: "Online",
@@ -39,7 +40,8 @@ const TRANSLATIONS = {
             "What is the best time to hunt for clouds?",
             "What to prepare when hiking the mountain?"
         ],
-        errorMsg: "Sorry, there was a connection error. Please try again in a moment!"
+        errorMsg: "Sorry, there was a connection error. Please try again in a moment!",
+        disclaimer: "AI-generated answers are for reference only."
     },
     km: {
         online: "អនឡាញ",
@@ -48,12 +50,13 @@ const TRANSLATIONS = {
         welcome: "សូមស្វាគមន៍មកកាន់ <strong style=\"color:#15803d;\">រមណីយដ្ឋានទេសចរណ៍ជាតិភ្នំបាដិន</strong>! ⛰️<br> ខ្ញុំជាជំនួយការ AI ឆ្លាតវៃ រីករាយនឹងជួយអ្នករៀបចំផែនការ និងស្វែងយល់អំពីភ្នំបាដិន។ តើអ្នកចង់សួរអ្វីដែរ?",
         welcomeReset: "សូមស្វាគមន៍ត្រឡប់មកវិញ! ⛰️<br>ខ្ញុំរួចរាល់សម្រាប់ការសន្ទនាថ្មី។ តើអ្នកត្រូវការជំនួយអ្វីខ្លះ?",
         suggestions: [
-            "តើឡានកាបបើកដំណើរការម៉ោងប៉ុន្មាន?",
-            "កញ្ចប់អាហារប៊ូហ្វេ និងសំបុត្រឡានកាប?",
-            "តើម៉ោងណាដែលស្អាតបំផុតសម្រាប់មើលពពក?",
-            "តើត្រូវរៀបចំអ្វីខ្លះពេលដើរឡើងភ្នំ?"
+            "តើឡានកាបបើកម៉ោងប៉ុន្មាន?",
+            "សំបុត្រឡានកាបនិងអាហារប៊ូហ្វេ?",
+            "តើពេលណាទើបអាចមើលពពកស្អាត?",
+            "គួរត្រៀមអ្វីខ្លះពេលឡើងភ្នំ?"
         ],
-        errorMsg: "សុំទោស មានកំហុសក្នុងការតភ្ជាប់។ សូមព្យាយាមម្តងទៀតនៅពេលបន្តិចទៀត!"
+        errorMsg: "សូមអភ័យទោស មានបញ្ហាក្នុងការភ្ជាប់បណ្ដាញ។ សូមព្យាយាមម្ដងទៀតនៅពេលក្រោយ!",
+        disclaimer: "ចម្លើយដែលបង្កើតដោយ AI គឺសម្រាប់តែជាឯកសារយោងប៉ុណ្ណោះ。"
     }
 };
 
@@ -404,7 +407,13 @@ function updateUILanguage(lang) {
     // 4. Update suggestions list
     updateSuggestions();
 
-    // 5. Update dropdown trigger display (SVG Flag and selection text)
+    // 5. Update AI disclaimer text
+    const aiDisclaimerText = document.getElementById('aiDisclaimerText');
+    if (aiDisclaimerText && trans.disclaimer) {
+        aiDisclaimerText.textContent = trans.disclaimer;
+    }
+
+    // 6. Update dropdown trigger display (SVG Flag and selection text)
     const selectedFlag = document.getElementById('langDropdownSelectedFlag');
     const selectedText = document.getElementById('langDropdownSelectedText');
     if (selectedFlag) {

@@ -19,7 +19,7 @@ class ModerationService:
 
     # 2. Unaccented Vulgar Words (Safe to block standalone without false positives)
     UNACCENTED_VULGAR = {
-        "dit", "du", "dm", "dkm", "clm", "vcl", "cmn", "cmnr", "dcm", "vl", "vkl", "đm", "dkm", "dkmm", "clmn", "vcln"
+        "dit", "dm", "dkm", "clm", "vcl", "cmn", "cmnr", "dcm", "vl", "vkl", "đm", "dkm", "dkmm", "clmn", "vcln"
     }
 
     # 3. Phrasal Vulgar (Multi-word phrases, accented or unaccented)
