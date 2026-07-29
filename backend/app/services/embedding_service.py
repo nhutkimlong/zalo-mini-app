@@ -275,7 +275,15 @@ class EmbeddingService:
                         for sec in tickets:
                             title_vi = sec.get("title", "")
                             title_en = sec.get("titleEn", "")
-                            text_parts.append(f"\n--- {title_vi} ({title_en}) ---")
+                            
+                            extra_desc = ""
+                            title_vi_lower = title_vi.lower()
+                            if "đỉnh" in title_vi_lower and "chùa" in title_vi_lower and "buffet" in title_vi_lower:
+                                extra_desc = " [Gói Combo 2 tuyến cáp: Khứ hồi Đỉnh Vân Sơn + Khứ hồi Chùa Hang + Buffet trưa]"
+                            elif "đỉnh" in title_vi_lower and "buffet" in title_vi_lower:
+                                extra_desc = " [Gói Combo 1 tuyến cáp: Khứ hồi Đỉnh Vân Sơn + Buffet trưa]"
+                                
+                            text_parts.append(f"\n--- {title_vi}{extra_desc} ({title_en}) ---")
                             for item in sec.get("items", []):
                                 name_vi = item.get("name", "")
                                 name_en = item.get("nameEn", "")
