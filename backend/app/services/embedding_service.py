@@ -228,10 +228,39 @@ class EmbeddingService:
             # Detect JSON and format it into plain text for better RAG indexing
             clean_content = content
             trimmed = content.strip()
+            
+            import json
+            import re
+
+            json_str = None
             if trimmed.startswith("[") or trimmed.startswith("{"):
-                import json
+                json_str = trimmed
+            else:
+                # Try finding JSON block inside ```json ... ``` or first { ... } / [ ... ]
+                match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", trimmed)
+                if match:
+                    json_str = match.group(1).strip()
+                else:
+                    first_brace = trimmed.find("{")
+                    first_bracket = trimmed.find("[")
+                    idx = -1
+                    if first_brace != -1 and first_bracket != -1:
+                        idx = min(first_brace, first_bracket)
+                    elif first_brace != -1:
+                        idx = first_brace
+                    elif first_bracket != -1:
+                        idx = first_bracket
+                        
+                    if idx != -1:
+                        last_brace = trimmed.rfind("}")
+                        last_bracket = trimmed.rfind("]")
+                        last_idx = max(last_brace, last_bracket)
+                        if last_idx > idx:
+                            json_str = trimmed[idx:last_idx+1].strip()
+
+            if json_str:
                 try:
-                    data = json.loads(trimmed)
+                    data = json.loads(json_str)
                     text_parts = []
                     
                     # For category ve_va_gio_mo_cua, separate indexing concern by title keywords to avoid outdated overlaps.
@@ -240,9 +269,9 @@ class EmbeddingService:
                     is_schedules_article = any(k in title_lower for k in ["giờ", "gio", "lịch", "lich", "schedule", "operating", "hour"])
                     
                     # Format tickets
-                    tickets = data.get("tickets", [])
+                    tickets = data.get("tickets", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
                     if tickets and (is_tickets_article or not is_schedules_article or category != "ve_va_gio_mo_cua"):
-                        text_parts.append("DANH SÁCH GIÁ VÉ / TICKET PRICES:")
+                        text_parts.append("DANH SÁCH GIÁ VÉ VÀ CÁC GÓI COMBO / TICKET PRICES & COMBOS:")
                         for sec in tickets:
                             title_vi = sec.get("title", "")
                             title_en = sec.get("titleEn", "")
@@ -260,7 +289,7 @@ class EmbeddingService:
                                 text_parts.append(price_line)
                                 
                     # Format schedules
-                    schedules = data.get("schedules", [])
+                    schedules = data.get("schedules", []) if isinstance(data, dict) else []
                     if schedules and (is_schedules_article or not is_tickets_article or category != "ve_va_gio_mo_cua"):
                         text_parts.append("\n\nLỊCH VẬN HÀNH / OPERATING HOURS:")
                         for sec in schedules:
@@ -279,9 +308,11 @@ class EmbeddingService:
                                     sched_line += f" | Lưu ý / Note: {note_vi} ({note_en})"
                                 text_parts.append(sched_line)
                     
-                    clean_content = "\n".join(text_parts)
+                    if text_parts:
+                        clean_content = "\n".join(text_parts)
+                        print(f"[Embedding] Successfully extracted and formatted JSON for article: '{title}' ({len(text_parts)} sections/lines)")
                 except Exception as e:
-                    print(f"[Embedding] JSON format parser failed: {e}")
+                    print(f"[Embedding] JSON format parser failed for '{title}': {e}")
                     clean_content = content
 
             chunks = self.split_text(f"Tiêu đề: {title}\n\nNội dung: {clean_content}")
