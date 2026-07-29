@@ -985,6 +985,12 @@ class RAGService:
                 if announcements_str:
                     context_parts.append("[THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT ĐANG DIỄN RA TẠI DI TÍCH NÚI BÀ ĐEN]\n" + announcements_str)
 
+                # Inject Smart Calculator math if quantities & pricing matched
+                from app.services.calculator_service import calculator_service
+                calc_result = calculator_service.calculate_totals(question)
+                if calc_result:
+                    context_parts.append(calc_result)
+
                 for i, chunk in enumerate(chunks, 1):
                     title = chunk["metadata"].get("title", f"Tài liệu {i}")
                     context_parts.append(f"[Tài liệu {i} — {title}]\n{chunk['text']}")

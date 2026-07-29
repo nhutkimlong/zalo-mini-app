@@ -21,29 +21,44 @@ def get_db():
     except Exception:
         return None
 
+from app.core.rate_limiter import rate_limiter
+from app.services.cache_service import cache_service
+from fastapi import Request
+
 @router.post("/", response_model=ChatResponse)
 def ask_ai_assistant(
+    request: Request,
     payload: ChatRequest, 
     db: Client = Depends(get_db),
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
     """
-    RAG Assistant Chat endpoint.
+    RAG Assistant Chat endpoint with Rate Limiting & FAQ Caching.
     Retrieves knowledge context and responds with sources.
     """
     if not payload.question or not payload.question.strip():
         raise HTTPException(status_code=400, detail="Câu hỏi không được để trống")
+
+    # Rate Limiting check (15 requests per minute per IP / User)
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    user_key = current_user.get("id") if current_user else client_ip
+    if not rate_limiter.is_allowed(user_key):
+        raise HTTPException(
+            status_code=429, 
+            detail="Quý khách đã gửi quá nhiều câu hỏi trong thời gian ngắn. Vui lòng đợi 1 phút để tiếp tục trò chuyện."
+        )
+
+    # FAQ Caching Check (< 5ms response)
+    cached_resp = cache_service.get(payload.question, payload.language)
+    if cached_resp:
+        return cached_resp
         
     resolved_user_uuid = None
-    
-    # 1. Nếu có người dùng đăng nhập qua JWT (Supabase Auth)
     if current_user:
         try:
             resolved_user_uuid = UUID(current_user["id"])
         except ValueError:
             pass
-            
-
 
     user_id_to_log = resolved_user_uuid or payload.user_id
 
@@ -55,6 +70,9 @@ def ask_ai_assistant(
             language=payload.language,
             conversation_history=payload.conversation_history
         )
+        # Store successful responses in FAQ cache
+        if response and response.confidence_score > 0.3:
+            cache_service.set(payload.question, payload.language, response)
         return response
     except Exception as e:
         print(f"RAG query API endpoint error: {e}")

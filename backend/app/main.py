@@ -25,19 +25,35 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None
 )
 
+from app.core.logger import logger
+
 # Set up CORS middleware for secure API calls from PWA and Admin Dashboard
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "https://chatbot-nuibaden.netlify.app",
+    "https://zalo.me",
+    "*"  # Configurable per deployment environment
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict to specific allowed web PWA and admin domains
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# Standard error handler for unhandled exceptions to ensure backend doesn't leak tracebacks
+# Standard error handler for unhandled exceptions
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    print(f"Global server error: {exc}")
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    logger.error(f"Global server error on {request.url}: {exc}")
     return JSONResponse(
         status_code=500,
         content={"detail": "Hệ thống đang gặp sự cố. Quý khách vui lòng thử lại sau."}
