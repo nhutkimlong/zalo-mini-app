@@ -1173,7 +1173,6 @@ class RAGService:
                         model=dyn_config["model"],
                         input_cost_per_1m=dyn_config["input_cost"],
                         output_cost_per_1m=dyn_config["output_cost"],
-                        max_tokens=450,
                         conversation_history=conversation_history,
                     )
                     # If LLM says "no info" → clear sources
