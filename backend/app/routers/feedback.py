@@ -78,9 +78,9 @@ def submit_feedback(
         response = db.table("feedback_reports").insert(payload).execute()
         if response.data:
             created_row = response.data[0]
-            # Tự động gửi tin nhắn Telegram thông báo tới Admin (Zalo tạm ngưng do sự cố server Zalo)
+            # Tự động gửi tin nhắn Telegram & Zalo thông báo tới Admin
             background_tasks.add_task(telegram_notifier.notify_admin_feedback, created_row, is_update=False)
-            # background_tasks.add_task(zalo_notifier.notify_admin_feedback, created_row, is_update=False)
+            background_tasks.add_task(zalo_notifier.notify_admin_feedback, created_row, is_update=False)
             return created_row
 
         raise HTTPException(status_code=400, detail="Không thể lưu phản ánh của quý khách")
@@ -133,6 +133,7 @@ def append_feedback(
             if upd_res.data:
                 updated_row = upd_res.data[0]
                 background_tasks.add_task(telegram_notifier.notify_admin_feedback, updated_row, is_update=True)
+                background_tasks.add_task(zalo_notifier.notify_admin_feedback, updated_row, is_update=True)
                 return updated_row
 
         return existing

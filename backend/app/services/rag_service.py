@@ -696,9 +696,11 @@ class RAGService:
                         if upd_res.data:
                             try:
                                 from app.services.telegram_notifier import send_admin_feedback_bg
+                                from app.services.zalo_notifier import send_admin_zalo_feedback_bg
                                 send_admin_feedback_bg(upd_res.data[0], is_update=True)
+                                send_admin_zalo_feedback_bg(upd_res.data[0], is_update=True)
                             except Exception as notify_err:
-                                print(f"[{LOG_NAME}] Telegram notification error: {notify_err}")
+                                print(f"[{LOG_NAME}] Notification error: {notify_err}")
 
                         
                         return ChatResponse(
@@ -1187,9 +1189,11 @@ class RAGService:
                         feedback_id = str(created_fb.get("id"))
                         try:
                             from app.services.telegram_notifier import send_admin_feedback_bg
+                            from app.services.zalo_notifier import send_admin_zalo_feedback_bg
                             send_admin_feedback_bg(created_fb, is_update=False)
+                            send_admin_zalo_feedback_bg(created_fb, is_update=False)
                         except Exception as notify_err:
-                            print(f"[{LOG_NAME}] Telegram notify error on chatbot feedback: {notify_err}")
+                            print(f"[{LOG_NAME}] Notify error on chatbot feedback: {notify_err}")
 
 
                 except Exception as fe:

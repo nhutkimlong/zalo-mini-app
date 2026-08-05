@@ -99,3 +99,21 @@ class ZaloNotifierService:
         await self.send_zalo_message(admin_target, alert_msg)
 
 zalo_notifier = ZaloNotifierService()
+
+import threading
+import asyncio
+
+def send_admin_zalo_feedback_bg(report_data: Dict[str, Any], is_update: bool = False):
+    """
+    Fire-and-forget background thread notifier so main HTTP request never blocks or timeouts.
+    """
+    def _worker():
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(zalo_notifier.notify_admin_feedback(report_data, is_update=is_update))
+            loop.close()
+        except Exception as e:
+            print(f"[ZaloNotifier] Background worker error: {e}")
+
+    threading.Thread(target=_worker, daemon=True).start()
