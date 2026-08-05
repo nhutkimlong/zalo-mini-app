@@ -631,8 +631,12 @@ class RAGService:
         if not session_id or not str(session_id).strip():
             session_id = f"sess_{uuid.uuid4().hex[:12]}"
 
-        session_store = self._session_cache.setdefault(session_id, {"active_feedback_id": None})
+        session_store = self._session_cache.setdefault(session_id, {"active_feedback_id": None, "history": []})
         active_feedback_id = active_feedback_id or session_store.get("active_feedback_id")
+        
+        # Nếu client không truyền lịch sử hoặc lịch sử rỗng, tự động dùng lịch sử lưu theo session_id
+        if not conversation_history:
+            conversation_history = session_store.get("history", [])
 
         # Auto-append to existing active feedback ticket if user continues typing follow-up details in chat
         if active_feedback_id and self.supabase:
@@ -1249,6 +1253,15 @@ class RAGService:
 
         if feedback_id:
             session_store["active_feedback_id"] = feedback_id
+
+        # Cập nhật lịch sử hội thoại server-side theo session_id (giữ 10 lượt gần nhất)
+        try:
+            sess_hist = session_store.setdefault("history", [])
+            sess_hist.append({"role": "user", "content": question})
+            sess_hist.append({"role": "assistant", "content": answer})
+            session_store["history"] = sess_hist[-10:]
+        except Exception as hist_err:
+            print(f"[{LOG_NAME}] Session history save error: {hist_err}")
 
         return ChatResponse(
             answer=answer,
