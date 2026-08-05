@@ -888,20 +888,36 @@ class RAGService:
                     # Dynamically search for schedule data in ve_va_gio_mo_cua category instead of hardcoded UUID
                     schedule_res = self.supabase.table("knowledge_articles").select("content").eq("category", "ve_va_gio_mo_cua").execute()
                     if schedule_res.data:
-                        import json
+                        import json, re
                         for row in schedule_res.data:
                             raw_content = row.get("content", "")
+                            if not raw_content:
+                                continue
+                            
+                            # 1. Regex search for JSON block { "schedules": [...] }
+                            json_match = re.search(r"\{[\s\S]*\"schedules\"[\s\S]*\}", raw_content)
+                            if json_match:
+                                try:
+                                    parsed = json.loads(json_match.group(0))
+                                    if isinstance(parsed, dict) and "schedules" in parsed:
+                                        schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
+                                        break
+                                except Exception:
+                                    pass
+                            
+                            # 2. Try direct json parse
                             try:
                                 parsed = json.loads(raw_content)
                                 if isinstance(parsed, dict) and "schedules" in parsed:
                                     schedules_json_str = json.dumps(parsed["schedules"], ensure_ascii=False, indent=2)
                                     break
-                                elif isinstance(parsed, list):
-                                    # It might be a direct list of schedule items
-                                    schedules_json_str = json.dumps(parsed, ensure_ascii=False, indent=2)
-                                    break
                             except Exception:
-                                continue
+                                pass
+
+                            # 3. Fallback to markdown content containing schedules
+                            if "vân sơn" in raw_content.lower() and "chùa hang" in raw_content.lower() and ("giờ" in raw_content.lower() or "lịch" in raw_content.lower()):
+                                schedules_json_str = raw_content
+                                break
                     RAGService._cached_schedules = schedules_json_str
                     RAGService._cached_schedules_at = now
                 except Exception as e:
