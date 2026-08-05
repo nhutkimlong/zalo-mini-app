@@ -22,7 +22,8 @@ app = FastAPI(
     description="Backend API và RAG Chatbot Service phục vụ du khách Web PWA và Admin Dashboard.",
     version="1.0.0",
     docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None
 )
 
 from app.core.logger import logger
