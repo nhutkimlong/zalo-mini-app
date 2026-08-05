@@ -84,15 +84,19 @@ class TelegramNotifierService:
 
     async def notify_admin_feedback(self, report_data: Dict[str, Any], is_update: bool = False):
         """
-        Gửi thông báo cảnh báo trực tiếp kèm ảnh hiện trường tới Telegram Admin.
+        Gửi thông báo cảnh báo trực tiếp kèm ảnh hiện trường tới Telegram Admin (chỉ gửi 1 tin duy nhất khi tạo mới).
         """
+        ticket_id = str(report_data.get("id", "KHONG_MA")).upper()
+        short_id = ticket_id[:8]
+
+        if is_update:
+            print(f"[TelegramNotifier] Skipping notification for update on ticket #{short_id} (Data saved in Supabase for Admin Dashboard).")
+            return True
+
         admin_target = settings.TELEGRAM_ADMIN_CHAT_ID or self.admin_chat_id
         if not admin_target:
             print("[TelegramNotifier] 💡 Chưa có TELEGRAM_ADMIN_CHAT_ID.")
             return False
-
-        ticket_id = str(report_data.get("id", "KHONG_MA")).upper()
-        short_id = ticket_id[:8]
         
         report_type_key = report_data.get("report_type", "khac")
         report_type_str = REPORT_TYPE_LABELS.get(report_type_key, "Phản ánh du lịch")

@@ -60,10 +60,14 @@ class ZaloNotifierService:
 
     async def notify_admin_feedback(self, report_data: Dict[str, Any], is_update: bool = False):
         """
-        Gửi thông báo cảnh báo trực tiếp tới Zalo Admin khi có phản ánh mới từ khách hàng.
+        Gửi thông báo cảnh báo trực tiếp tới Zalo Admin khi có phản ánh mới từ khách hàng (chỉ gửi 1 tin đầu tiên).
         """
         ticket_id = str(report_data.get("id", "KHONG_MA")).upper()
         short_id = ticket_id[:8]
+
+        if is_update:
+            print(f"[ZaloNotifier] Skipping notification for update on ticket #{short_id} (Data saved in Supabase for Admin Dashboard).")
+            return True
         
         report_type_key = report_data.get("report_type", "khac")
         report_type_str = REPORT_TYPE_LABELS.get(report_type_key, "Phản ánh du lịch")
