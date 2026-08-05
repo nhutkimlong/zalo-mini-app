@@ -105,14 +105,19 @@ class TelegramNotifierService:
 
         action_title = "🚨 <b>[CẢNH BÁO PHẢN ÁNH MỚI]</b>" if not is_update else "🔄 <b>[CẬP NHẬT PHẢN ÁNH]</b>"
 
+        import html
+        reporter_name_esc = html.escape(str(reporter_name))
+        phone_esc = html.escape(str(phone))
+        content_esc = html.escape(str(content))
+
         alert_msg = (
             f"{action_title}\n"
             f"--------------------------------------------------\n"
             f"🆔 <b>Mã phiếu:</b> #{short_id}\n"
             f"📂 <b>Loại phản ánh:</b> {report_type_str}\n"
-            f"👤 <b>Người báo:</b> {reporter_name}\n"
-            f"📱 <b>SĐT liên hệ:</b> {phone}\n"
-            f"📝 <b>Nội dung phản ánh:</b>\n<i>\"{content}\"</i>\n"
+            f"👤 <b>Người báo:</b> {reporter_name_esc}\n"
+            f"📱 <b>SĐT liên hệ:</b> {phone_esc}\n"
+            f"📝 <b>Nội dung phản ánh:</b>\n<i>\"{content_esc}\"</i>\n"
         )
 
         if image_url:
@@ -129,6 +134,9 @@ class TelegramNotifierService:
             photo_sent = await self.send_photo(admin_target, image_url, alert_msg)
             if photo_sent:
                 return True
+
+        # Fallback to standard text message if no photo or photo send failed
+        return await self.send_message(admin_target, alert_msg)
 
 telegram_notifier = TelegramNotifierService()
 
