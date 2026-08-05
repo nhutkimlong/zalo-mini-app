@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     ADMIN_ZALO_CHAT_ID: str = "0961563915"
 
     TELEGRAM_BOT_TOKEN: str = ""
-    TELEGRAM_ADMIN_CHAT_ID: str = ""
+    TELEGRAM_ADMIN_CHAT_ID: str = "1862573607"
 
     # ─── Beeknoee AI (Primary provider) ──────────────────────────────────────
     BEEKNOEE_BASE_URL: str = "https://platform-api.beeknoee.com/v1"
