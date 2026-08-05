@@ -1172,7 +1172,18 @@ class RAGService:
                         "user_id": str(user_id) if user_id else None
                     }).execute()
                     if res_fb.data:
-                        feedback_id = str(res_fb.data[0].get("id"))
+                        created_fb = res_fb.data[0]
+                        feedback_id = str(created_fb.get("id"))
+                        try:
+                            from app.services.telegram_notifier import telegram_notifier
+                            try:
+                                loop = asyncio.get_running_loop()
+                                loop.create_task(telegram_notifier.notify_admin_feedback(created_fb, is_update=False))
+                            except RuntimeError:
+                                asyncio.run(telegram_notifier.notify_admin_feedback(created_fb, is_update=False))
+                        except Exception as notify_err:
+                            print(f"[{LOG_NAME}] Telegram notify error on chatbot feedback: {notify_err}")
+
                 except Exception as fe:
                     print(f"[{LOG_NAME}] Auto feedback insert failed: {fe}")
 
