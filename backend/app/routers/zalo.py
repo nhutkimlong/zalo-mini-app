@@ -273,6 +273,16 @@ async def download_and_upload_zalo_image(image_url: str, db) -> str:
     return image_url # Fallback to original URL
 
 
+async def keep_typing(bot_token: str, recipient_id: str, stop_event: asyncio.Event):
+    """Periodically send 'typing' chat action every 4 seconds until processing completes."""
+    while not stop_event.is_set():
+        await send_zalo_chat_action(bot_token, recipient_id, "typing")
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=4.0)
+        except asyncio.TimeoutError:
+            pass
+
+
 async def process_zalo_message(sender_id: str, message_text: str, image_url: Optional[str] = None):
     """Asynchronous worker to process query with RAG service and reply to Zalo user."""
     bot_token = settings.ZALO_BOT_TOKEN
@@ -280,122 +290,129 @@ async def process_zalo_message(sender_id: str, message_text: str, image_url: Opt
         print("[ZaloBot] WARNING: ZALO_BOT_TOKEN is not configured.")
         return
 
-    # Send typing action to let the user know the bot is processing/typing
-    await send_zalo_chat_action(bot_token, sender_id, "typing")
+    # Start continuous typing indicator loop in background
+    stop_typing_event = asyncio.Event()
+    typing_task = asyncio.create_task(keep_typing(bot_token, sender_id, stop_typing_event))
 
-    # Fetch active history and session state
-    history = await get_zalo_conversation_history(sender_id)
-    
-    async with zalo_sessions_lock:
-        session_state = zalo_sessions.get(sender_id, {}).get("state", "normal")
-
-    # If the user was asked to provide a fallback image for their complaint
-    if session_state == "awaiting_feedback_image":
-        if image_url:
-            try:
-                from supabase import create_client
-                db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
-                
-                # Upload Zalo CDN link to our Supabase Storage
-                final_image_url = await download_and_upload_zalo_image(image_url, db)
-                
-                last_feedback_id = None
-                async with zalo_sessions_lock:
-                    if sender_id in zalo_sessions:
-                        last_feedback_id = zalo_sessions[sender_id].get("last_feedback_id")
-                        zalo_sessions[sender_id]["state"] = "normal"
-                        
-                if last_feedback_id:
-                    # Update existing report with image
-                    db.table("feedback_reports").update({"image_url": final_image_url}).eq("id", last_feedback_id).execute()
-                else:
-                    # Insert new if we somehow lost the ID
-                    payload = {
-                        "report_type": "khac",
-                        "content": message_text.strip() if message_text else "Khách hàng gửi hình ảnh đính kèm.",
-                        "reporter_name": "Khách qua Zalo",
-                        "image_url": final_image_url
-                    }
-                    db.table("feedback_reports").insert(payload).execute()
-                
-                answer = "Cảm ơn bạn! Hình ảnh minh chứng của bạn đã được cập nhật vào báo cáo."
-                await add_zalo_message(sender_id, "user", "Đã gửi hình ảnh minh chứng")
-                await add_zalo_message(sender_id, "assistant", answer)
-                await send_zalo_message(bot_token, sender_id, answer)
-                return
-                
-            except Exception as e:
-                print(f"[ZaloBot] Error saving feedback image: {e}")
-                answer = "Xin lỗi, đã xảy ra lỗi khi tải hình ảnh. Vui lòng thử lại sau."
-                await send_zalo_message(bot_token, sender_id, answer)
-                return
-        else:
-            # User ignored the image request and sent normal text, exit state and process normally
-            async with zalo_sessions_lock:
-                if sender_id in zalo_sessions:
-                    zalo_sessions[sender_id]["state"] = "normal"
-
-    # Normal RAG processing (or initial complaint)
-    loop = asyncio.get_running_loop()
     try:
-        # If user only sent an image but not in feedback state
-        if not message_text and image_url:
-            answer = "Bạn vừa gửi một hình ảnh. Hiện tại mình chỉ hỗ trợ trả lời qua tin nhắn văn bản. Bạn cần hỏi thông tin gì về Núi Bà Đen ạ?"
-            chat_response = None
-        else:
-            chat_response = await loop.run_in_executor(
-                None,
-                lambda: rag_service.ask(
-                    question=message_text,
-                    channel="zalo_bot",
-                    language="auto",
-                    conversation_history=history
-                )
-            )
-            answer = chat_response.answer
-            
-            # Check if LLM decided it's a feedback intent
-            if getattr(chat_response, "type", None) == "feedback_request":
-                # Save the initial complaint immediately
+        # Fetch active history and session state
+        history = await get_zalo_conversation_history(sender_id)
+        
+        async with zalo_sessions_lock:
+            session_state = zalo_sessions.get(sender_id, {}).get("state", "normal")
+
+        # If the user was asked to provide a fallback image for their complaint
+        if session_state == "awaiting_feedback_image":
+            if image_url:
                 try:
                     from supabase import create_client
                     db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
                     
-                    final_image_url = None
-                    if image_url:
-                        final_image_url = await download_and_upload_zalo_image(image_url, db)
+                    # Upload Zalo CDN link to our Supabase Storage
+                    final_image_url = await download_and_upload_zalo_image(image_url, db)
                     
-                    payload = {
-                        "report_type": "khac",
-                        "content": message_text,
-                        "reporter_name": "Khách qua Zalo",
-                        "image_url": final_image_url  # Populated if they sent text + image together
-                    }
-                    response = db.table("feedback_reports").insert(payload).execute()
-                    
-                    if not final_image_url:
-                        # Case 1: They complained but NO image sent yet -> Ask for image
-                        feedback_id = response.data[0]["id"] if response.data else None
-                        async with zalo_sessions_lock:
-                            if sender_id in zalo_sessions:
-                                zalo_sessions[sender_id]["state"] = "awaiting_feedback_image"
-                                zalo_sessions[sender_id]["last_feedback_id"] = feedback_id
-                        answer += "\n\n*(Sự cố của bạn đã được ghi nhận. Nếu có hình ảnh minh chứng, vui lòng gửi tại đây để BQL xử lý tốt hơn nhé)*"
+                    last_feedback_id = None
+                    async with zalo_sessions_lock:
+                        if sender_id in zalo_sessions:
+                            last_feedback_id = zalo_sessions[sender_id].get("last_feedback_id")
+                            zalo_sessions[sender_id]["state"] = "normal"
+                            
+                    if last_feedback_id:
+                        # Update existing report with image
+                        db.table("feedback_reports").update({"image_url": final_image_url}).eq("id", last_feedback_id).execute()
                     else:
-                        # Case 2: They complained AND sent an image together
-                        answer += "\n\n*(Sự cố và hình ảnh đính kèm của bạn đã được hệ thống ghi nhận thành công)*"
-
+                        # Insert new if we somehow lost the ID
+                        payload = {
+                            "report_type": "khac",
+                            "content": message_text.strip() if message_text else "Khách hàng gửi hình ảnh đính kèm.",
+                            "reporter_name": "Khách qua Zalo",
+                            "image_url": final_image_url
+                        }
+                        db.table("feedback_reports").insert(payload).execute()
+                    
+                    answer = "Cảm ơn bạn! Hình ảnh minh chứng của bạn đã được cập nhật vào báo cáo."
+                    await add_zalo_message(sender_id, "user", "Đã gửi hình ảnh minh chứng")
+                    await add_zalo_message(sender_id, "assistant", answer)
+                    await send_zalo_message(bot_token, sender_id, answer)
+                    return
+                    
                 except Exception as e:
-                    print(f"[ZaloBot] Error saving initial feedback: {e}")
+                    print(f"[ZaloBot] Error saving feedback image: {e}")
+                    answer = "Xin lỗi, đã xảy ra lỗi khi tải hình ảnh. Vui lòng thử lại sau."
+                    await send_zalo_message(bot_token, sender_id, answer)
+                    return
+            else:
+                # User ignored the image request and sent normal text, exit state and process normally
+                async with zalo_sessions_lock:
+                    if sender_id in zalo_sessions:
+                        zalo_sessions[sender_id]["state"] = "normal"
 
-    except Exception as e:
-        print(f"[ZaloBot] RAG pipeline error: {e}")
-        answer = "Xin lỗi, hệ thống đang gặp sự cố nhỏ. Vui lòng thử lại sau giây lát ạ!"
+        # Normal RAG processing (or initial complaint)
+        loop = asyncio.get_running_loop()
+        try:
+            # If user only sent an image but not in feedback state
+            if not message_text and image_url:
+                answer = "Bạn vừa gửi một hình ảnh. Hiện tại mình chỉ hỗ trợ trả lời qua tin nhắn văn bản. Bạn cần hỏi thông tin gì về Núi Bà Đen ạ?"
+                chat_response = None
+            else:
+                chat_response = await loop.run_in_executor(
+                    None,
+                    lambda: rag_service.ask(
+                        question=message_text,
+                        channel="zalo_bot",
+                        language="auto",
+                        conversation_history=history
+                    )
+                )
+                answer = chat_response.answer
+                
+                # Check if LLM decided it's a feedback intent
+                if getattr(chat_response, "type", None) == "feedback_request":
+                    # Save the initial complaint immediately
+                    try:
+                        from supabase import create_client
+                        db = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                        
+                        final_image_url = None
+                        if image_url:
+                            final_image_url = await download_and_upload_zalo_image(image_url, db)
+                        
+                        payload = {
+                            "report_type": "khac",
+                            "content": message_text,
+                            "reporter_name": "Khách qua Zalo",
+                            "image_url": final_image_url  # Populated if they sent text + image together
+                        }
+                        response = db.table("feedback_reports").insert(payload).execute()
+                        
+                        if not final_image_url:
+                            # Case 1: They complained but NO image sent yet -> Ask for image
+                            feedback_id = response.data[0]["id"] if response.data else None
+                            async with zalo_sessions_lock:
+                                if sender_id in zalo_sessions:
+                                    zalo_sessions[sender_id]["state"] = "awaiting_feedback_image"
+                                    zalo_sessions[sender_id]["last_feedback_id"] = feedback_id
+                            answer += "\n\n*(Sự cố của bạn đã được ghi nhận. Nếu có hình ảnh minh chứng, vui lòng gửi tại đây để BQL xử lý tốt hơn nhé)*"
+                        else:
+                            # Case 2: They complained AND sent an image together
+                            answer += "\n\n*(Sự cố và hình ảnh đính kèm của bạn đã được hệ thống ghi nhận thành công)*"
 
-    # Save to conversation history
-    if message_text:
-        await add_zalo_message(sender_id, "user", message_text)
-    await add_zalo_message(sender_id, "assistant", answer)
+                    except Exception as e:
+                        print(f"[ZaloBot] Error saving initial feedback: {e}")
+
+        except Exception as e:
+            print(f"[ZaloBot] RAG pipeline error: {e}")
+            answer = "Xin lỗi, hệ thống đang gặp sự cố nhỏ. Vui lòng thử lại sau giây lát ạ!"
+
+        # Save to conversation history
+        if message_text:
+            await add_zalo_message(sender_id, "user", message_text)
+        await add_zalo_message(sender_id, "assistant", answer)
+
+    finally:
+        # Stop background typing loop
+        stop_typing_event.set()
+        await typing_task
 
     # Outgoing sendMessage call
     await send_zalo_message(bot_token, sender_id, answer)
