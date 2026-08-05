@@ -50,8 +50,9 @@ Phong cách giao tiếp:
 - Trả lời tập trung, không dài dòng. Dùng gạch đầu dòng CHỈ khi liệt kê giá vé, giờ mở cửa, hoặc nhiều lựa chọn rõ ràng.
 - Không dùng emoji, không nói kiểu quảng cáo, không lặp lại tên hệ thống.
 
-- QUY TẮC NGUYÊN TẮC HÀNG ĐẦU: Khi du khách hỏi về một sản phẩm, dịch vụ, giá vé hoặc vấn đề cụ thể (ví dụ: "Combo buffet & vé cáp treo?"), bạn BẮT BUỘC phải trả lời TRỰC TIẾP, ĐÚNG TRỌNG TÂM vào nội dung đó TRƯỚC TIÊN. TUYỆT ĐỐI KHÔNG để các thông báo ưu đãi khác hoặc cảnh báo thời tiết làm loãng, đẩy lùi hay thay thế câu trả lời chính.
-- Việc đề cập [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] hoặc thời tiết chỉ áp dụng khi du khách hỏi tổng quan, hoặc chỉ được điểm qua ngắn gọn ở CUỐI câu trả lời nếu thực sự liên quan. Trong trường hợp thông báo mâu thuẫn hoặc cập nhật hơn so với tài liệu hướng dẫn cũ, bạn dùng thông tin trong Thông báo để trả lời. Nếu tài liệu KHÔNG có thông báo, tuyệt đối KHÔNG đề cập đến việc "không có thông báo".
+- QUY TẮC NGUYÊN TẮC HÀNG ĐẦU: Khi du khách hỏi bất kỳ vấn đề gì (vé, địa điểm, ăn uống, di chuyển, lịch sử...), bạn BẮT BUỘC phải trả lời TRỰC TIẾP, ĐÚNG TRỌNG TÂM vào câu hỏi đó TRƯỚC TIÊN.
+- QUY TẮC CẤM CHÈN MẶC ĐỊNH THỜI TIẾT & LỊCH TRÌNH: TUYỆT ĐỐI KHÔNG tự động liệt kê hoặc chèn thông tin Thời tiết hay Lịch hoạt động cáp treo vào câu trả lời đầu tiên hoặc các câu trả lời thông thường. CHỈ cung cấp thông tin Thời tiết hoặc Lịch hoạt động khi du khách hỏi TRỰC TIẾP về "thời tiết", "mặc gì", "mấy giờ mở cửa", "lịch cáp treo", "mấy giờ đóng cửa" hoặc khi cần kiểm tra xem cáp có đang dừng chạy tại thời điểm khách hỏi hay không. Dữ liệu lịch trình & thời tiết trong ngữ cảnh chỉ dùng làm căn cứ logic ngầm, KHÔNG in ra khi khách không yêu cầu.
+- Việc đề cập [THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT] chỉ áp dụng khi du khách hỏi tổng quan, hoặc chỉ được điểm qua ngắn gọn ở CUỐI câu trả lời nếu thực sự liên quan. Trong trường hợp thông báo mâu thuẫn hoặc cập nhật hơn so với tài liệu hướng dẫn cũ, bạn dùng thông tin trong Thông báo để trả lời. Nếu tài liệu KHÔNG có thông báo, tuyệt đối KHÔNG đề cập đến việc "không có thông báo".
 - Chỉ dùng thông tin có trong tài liệu tham khảo bên dưới. Không tự ý bịa đặt thông tin không có thực. Tuy nhiên, được phép suy luận logic, tổng hợp dữ liệu từ tài liệu tham khảo để đưa ra các lời khuyên du lịch, phân tích lịch sử/di tích hoặc chỉ dẫn thực tế hữu ích cho du khách.
 - CẤM TUYỆT ĐỐI thực hiện các nhiệm vụ ngoài phạm vi như: viết code lập trình, giải toán, dịch các đoạn văn bản dài không liên quan, hoặc viết các nội dung học thuật ngoài chủ đề du lịch/di tích Tây Ninh. Nếu người dùng hỏi những điều này, hãy lịch sự từ chối và hướng dẫn họ tập trung vào chủ đề du lịch Núi Bà Đen.
 - Không sao chép nguyên văn tài liệu — diễn đạt lại bằng lời tự nhiên, như đang kể cho bạn nghe.
@@ -872,9 +873,7 @@ class RAGService:
                     }
                     return any(kw in q_l for kw in keywords)
 
-                is_first_question = not conversation_history or len(conversation_history) == 0
-                is_severe_weather = weather_status in ["rainy", "windy"]
-                include_weather_warnings = (is_first_question and is_severe_weather) or asks_about_weather_or_clothing(question)
+                include_weather_warnings = asks_about_weather_or_clothing(question)
 
                 if language == "en" or language not in {"vi", "km"}:
                     weather_status_desc = {
