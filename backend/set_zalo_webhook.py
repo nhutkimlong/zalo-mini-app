@@ -47,6 +47,6 @@ if __name__ == "__main__":
                     
     if not bot_token:
         # Fallback default
-        bot_token = "446149642099893122:yCXcmeCPhGfqWLlujqVXGRsiIFtokgYCLqktTbjVTUoUYZulVAQyZDrrfxoeCkXy"
+        bot_token = "446149642099893122:MnSSVTaXNruoFSWEmvIzKcNxNokvwgssudiLIAhsMrstESLsfPhJFQCYGoKfpSMk"
         
     set_webhook(bot_token, webhook_url, secret_token)
