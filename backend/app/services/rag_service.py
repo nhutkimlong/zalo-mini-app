@@ -267,6 +267,7 @@ class RAGService:
 
     def __init__(self):
         self.supabase: Optional[Client] = None
+        self._session_cache: Dict[str, Dict[str, Any]] = {}
         if settings.SUPABASE_URL and settings.SUPABASE_KEY:
             self.supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
             print(f"[{LOG_NAME}] Supabase connected.")
@@ -610,17 +611,29 @@ class RAGService:
         self,
         question: str,
         user_id: UUID = None,
+        session_id: Optional[str] = None,
         channel: str = "mini_app",
         language: str = "vi",
         conversation_history: Optional[List[Dict[str, Any]]] = None,
         active_feedback_id: Optional[str] = None,
     ) -> ChatResponse:
         """
-        CrawBot Q&A pipeline:
-        1. Retrieve context from Supabase (vector → keyword)
-        2. Generate answer via Beeknoee LLM with fallback chain
-        3. Log conversation to Supabase chat_logs
+        CrawBot Q&A pipeline with Session Management:
+        1. Manage Chat Session ID & Context memory
+        2. Retrieve context from Supabase (vector → keyword)
+        3. Generate answer via Beeknoee LLM with fallback chain
+        4. Log conversation to Supabase chat_logs
         """
+        import uuid
+        if not hasattr(self, "_session_cache"):
+            self._session_cache = {}
+
+        if not session_id or not str(session_id).strip():
+            session_id = f"sess_{uuid.uuid4().hex[:12]}"
+
+        session_store = self._session_cache.setdefault(session_id, {"active_feedback_id": None})
+        active_feedback_id = active_feedback_id or session_store.get("active_feedback_id")
+
         # Auto-append to existing active feedback ticket if user continues typing follow-up details in chat
         if active_feedback_id and self.supabase:
             try:
@@ -638,18 +651,21 @@ class RAGService:
                         confidence_score=1.0,
                         sources=[],
                         type="chat",
-                        feedback_id=active_feedback_id
+                        feedback_id=active_feedback_id,
+                        session_id=session_id
                     )
 
                 # --- TRƯỜNG HỢP 2: Khách kết thúc / Cảm ơn -> Reset trạng thái active_feedback ---
                 completion_keywords = ["cảm ơn", "cam on", "thanks", "thank", "dược rồi", "được rồi", "hết rồi", "ok", "dạ vâng", "da vang", "dạ cảm ơn", "ok rồi"]
                 if any(lower_q == kw or lower_q.startswith(kw) for kw in completion_keywords) and len(lower_q) < 35:
+                    session_store["active_feedback_id"] = None
                     return ChatResponse(
                         answer=f"Dạ không có gì ạ! Ban Quản lý KDLQG Núi Bà Đen chúc bạn có một chuyến tham quan vui vẻ và trọn vẹn! Phiếu phản ánh **#{short_ticket_id}** của bạn đã được ghi nhận thành công.",
                         confidence_score=1.0,
                         sources=[],
                         type="chat",
-                        feedback_id=None  # Clear feedback_id to end active feedback session
+                        feedback_id=None,  # Clear feedback_id to end active feedback session
+                        session_id=session_id
                     )
 
                 # --- TRƯỜNG HỢP 3: Đổi chủ đề ngắt mạch (General Tourism Question Context Switching) ---
@@ -709,7 +725,8 @@ class RAGService:
                             confidence_score=1.0,
                             sources=[],
                             type="chat",
-                            feedback_id=active_feedback_id
+                            feedback_id=active_feedback_id,
+                            session_id=session_id
                         )
             except Exception as active_err:
                 print(f"[{LOG_NAME}] Active feedback append error: {active_err}")
@@ -1230,13 +1247,17 @@ class RAGService:
             except Exception as e:
                 print(f"[{LOG_NAME}] Log failed: {e}")
 
+        if feedback_id:
+            session_store["active_feedback_id"] = feedback_id
+
         return ChatResponse(
             answer=answer,
             confidence_score=float(confidence_score),
             sources=sources,
             type=response_type,
             category=feedback_category,
-            feedback_id=feedback_id
+            feedback_id=feedback_id,
+            session_id=session_id
         )
 
 

@@ -77,6 +77,7 @@ def ask_ai_assistant(
         response = rag_service.ask(
             question=payload.question,
             user_id=user_id_to_log,
+            session_id=payload.session_id,
             channel=payload.channel,
             language=payload.language,
             conversation_history=payload.conversation_history,

@@ -8,7 +8,7 @@ export const apiService = {
     /**
      * Sends message to the AI RAG Chatbot API
      */
-    async sendMessage(userHistory, newMessage, language = 'auto', activeFeedbackId = null) {
+    async sendMessage(userHistory, newMessage, language = 'auto', activeFeedbackId = null, sessionId = null) {
         // Map history to backend format
         const formattedHistory = userHistory.map(m => ({
             role: m.role === 'model' ? 'assistant' : 'user',
@@ -21,6 +21,9 @@ export const apiService = {
             language: language,
             conversation_history: formattedHistory
         };
+        if (sessionId) {
+            payload.session_id = sessionId;
+        }
         if (activeFeedbackId) {
             payload.active_feedback_id = activeFeedbackId;
         }

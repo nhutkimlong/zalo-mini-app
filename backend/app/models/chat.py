@@ -11,6 +11,7 @@ class UserInfo(BaseModel):
 class ChatRequest(BaseModel):
     question: str = Field(..., description="Câu hỏi từ khách du lịch")
     user_id: Optional[UUID] = Field(None, description="ID của người dùng nếu có")
+    session_id: Optional[str] = Field(None, description="Mã phiên trò chuyện duy nhất (Session ID)")
     channel: str = Field("web", description="Kênh gửi câu hỏi ('web')")
     language: str = Field("vi", description="Ngôn ngữ phản hồi ('vi' hoặc 'en')")
     conversation_history: List[dict] = Field(default_factory=list, description="Lịch sử hội thoại gần nhất")
@@ -31,6 +32,7 @@ class ChatResponse(BaseModel):
     type: str = Field("chat", description="Loại phản hồi (chat, feedback_request)")
     category: Optional[str] = Field(None, description="Phân loại phản ánh tự động")
     feedback_id: Optional[str] = Field(None, description="Mã phiếu phản ánh tự động tạo")
+    session_id: Optional[str] = Field(None, description="Mã phiên trò chuyện duy nhất (Session ID)")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

@@ -5,6 +5,11 @@ let messages = [];
 let isLoading = false;
 let currentLang = 'vi';
 let activeFeedbackId = null;
+let sessionId = sessionStorage.getItem('ai_guide_session_id');
+if (!sessionId) {
+    sessionId = 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+    sessionStorage.setItem('ai_guide_session_id', sessionId);
+}
 
 const FLAGS_SVG = {
     vi: `<svg viewBox="0 0 30 20" class="w-full h-full rounded-sm overflow-hidden"><rect width="30" height="20" fill="#da251d"/><polygon points="15,4 16.2,8.8 21.2,8.8 17.2,11.8 18.7,16.6 15,13.6 11.3,16.6 12.8,11.8 8.8,8.8 13.8,8.8" fill="#ffff00"/></svg>`,
@@ -257,11 +262,15 @@ async function handleSend() {
     const loadingEl = addMessage('model', '', true);
     
     try {
-        const replyData = await apiService.sendMessage(messages, text, currentLang, activeFeedbackId);
+        const replyData = await apiService.sendMessage(messages, text, currentLang, activeFeedbackId, sessionId);
         loadingEl.remove();
         const replyText = replyData.answer || replyData; // Fallback in case of string
         addMessage('model', replyText);
         
+        if (replyData && replyData.session_id) {
+            sessionId = replyData.session_id;
+            sessionStorage.setItem('ai_guide_session_id', sessionId);
+        }
         if ('feedback_id' in replyData) {
             activeFeedbackId = replyData.feedback_id;
         }
@@ -502,6 +511,9 @@ resetChatBtn.onclick = () => {
     const trans = TRANSLATIONS[lang] || TRANSLATIONS.vi;
     if (confirm(trans.resetConfirm)) {
         messages = [];
+        activeFeedbackId = null;
+        sessionId = 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+        sessionStorage.setItem('ai_guide_session_id', sessionId);
         msgContainer.innerHTML = `
             <div class="px-4 pt-4 pb-2 space-y-5 max-w-2xl mx-auto w-full">
                 <!-- Welcome Message -->
