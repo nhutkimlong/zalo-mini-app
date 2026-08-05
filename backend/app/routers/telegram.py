@@ -7,50 +7,32 @@ router = APIRouter(prefix="/api/telegram", tags=["Telegram Bot"])
 
 async def process_telegram_chat(chat_id: int, user_text: str):
     """
-    Process incoming Telegram message via RAG AI Assistant and reply to user.
+    Process incoming Telegram message strictly for Admin control and status.
     """
     bot_token = settings.TELEGRAM_BOT_TOKEN
     if not bot_token:
         return
 
-    # Check if command /start
-    if user_text.strip().lower() == "/start":
-        # Save Admin Chat ID if not set
-        if not settings.TELEGRAM_ADMIN_CHAT_ID:
-            settings.TELEGRAM_ADMIN_CHAT_ID = str(chat_id)
+    # Update admin chat id in runtime
+    settings.TELEGRAM_ADMIN_CHAT_ID = str(chat_id)
 
-        welcome_msg = (
-            "<b>Chào mừng bạn đến với Trợ lý Du lịch Núi Bà Đen!</b>\n\n"
-            "Mình là Hướng dẫn viên AI 4.0. Bạn có thể hỏi mình thông tin về giá vé cáp treo, giờ mở cửa, các tuyến tham quan, ẩm thực và kinh nghiệm du lịch tại Núi Bà Đen Tây Ninh.\n\n"
-            "<i>Hãy nhập câu hỏi của bạn bên dưới nhé!</i>"
-        )
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        try:
-            httpx.post(url, json={"chat_id": chat_id, "text": welcome_msg, "parse_mode": "HTML"}, timeout=10.0)
-        except Exception as e:
-            print(f"[TelegramRouter] Error sending start message: {e}")
-        return
-
-    # Call RAG AI Service
-    try:
-        response = rag_service.ask(
-            question=user_text,
-            channel="telegram_bot",
-            language="vi"
-        )
-        answer_text = response.answer
-    except Exception as e:
-        answer_text = f"Dạ hệ thống đang gặp sự cố nhỏ: {e}"
+    status_msg = (
+        f"🤖 <b>[KÊNH ĐIỀU HÀNH ADMIN DU LỊCH NÚI BÀ ĐEN]</b>\n"
+        f"--------------------------------------------------\n"
+        f"👋 <b>Xin chào Admin!</b>\n\n"
+        f"✅ <b>Trạng thái kênh:</b> Đang sẵn sàng nhận cảnh báo 24/7\n"
+        f"🆔 <b>Telegram Chat ID của bạn:</b> <code>{chat_id}</code>\n"
+        f"🖥️ <b>Máy chủ Backend:</b> Online 🟢\n"
+        f"--------------------------------------------------\n"
+        f"<i>Tất cả thông báo phản ánh/sự cố từ du khách sẽ tự động đẩy về đây ngay lập tức.</i>"
+    )
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     try:
-        httpx.post(url, json={"chat_id": chat_id, "text": answer_text, "parse_mode": "HTML"}, timeout=15.0)
-    except Exception:
-        # Fallback without HTML parsing if string contains HTML tags
-        try:
-            httpx.post(url, json={"chat_id": chat_id, "text": answer_text}, timeout=15.0)
-        except Exception as e:
-            print(f"[TelegramRouter] Error replying: {e}")
+        httpx.post(url, json={"chat_id": chat_id, "text": status_msg, "parse_mode": "HTML"}, timeout=10.0)
+    except Exception as e:
+        print(f"[TelegramRouter] Error sending admin status: {e}")
+
 
 @router.post("/webhook")
 async def telegram_webhook(request: Request, background_tasks: BackgroundTasks):
