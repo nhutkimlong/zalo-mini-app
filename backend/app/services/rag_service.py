@@ -653,11 +653,25 @@ class RAGService:
                     )
 
                 # --- TRƯỜNG HỢP 3: Đổi chủ đề ngắt mạch (General Tourism Question Context Switching) ---
-                tourism_inquiry_keywords = ["giá vé", "mấy giờ", "mở cửa", "mãng cầu", "muối tôm", "đặc sản", "ăn ở đâu", "cáp treo", "chùa hang", "đỉnh núi", "di tích", "lịch trình", "tượng phật"]
-                complaint_detail_keywords = ["dơ", "bẩn", "chèo kéo", "ép giá", "chặt chém", "lối đi", "bãi xe", "nhà vệ sinh", "bị", "tại", "sđt", "03", "05", "07", "08", "09"]
+                tourism_inquiry_keywords = [
+                    # Vé, giờ mở cửa & Tuyến cáp
+                    "giá vé", "vé", "mấy giờ", "mở cửa", "đóng cửa", "cáp treo", "chùa hang", "đỉnh núi", "máng trượt", "lịch trình", "tâm an", "vân sơn", "combo",
+                    # Ẩm thực & Đặc sản
+                    "mãng cầu", "muối tôm", "đặc sản", "ăn ở đâu", "buffet", "tiệc tối", "hoàng hôn",
+                    # Di tích, Lịch sử, Truyền thuyết & Văn hóa
+                    "di tích", "tượng phật", "chùa bà", "linh sơn", "thánh mẫu", "bà đen", "truyền thuyết", "sự tích", "điển tích", "lịch sử", "thuyết minh", "ngọc ấn", "tượng ngọc", "ông đá", "pháp bảo", "hội xuân", "lễ vía", "dâng lễ", "cúng",
+                    # Dịch vụ, Hạ tầng & Hướng dẫn
+                    "thời tiết", "mặc gì", "trang phục", "đi thế nào", "đường đi", "di chuyển", "khách sạn", "lưu trú", "nghỉ ngơi", "xe điện", "bãi xe", "gửi đồ", "hành lý", "cứu hộ", "y tế", "atm", "xe lăn", "sạc pin", "trekking", "leo núi", "chụp ảnh", "cưới", "khuyến cáo", "quy định",
+                    # Từ nghi vấn & Cụm từ hỏi
+                    "là gì", "như thế nào", "thế nào", "tại sao", "vì sao", "ở đâu", "mấy", "bao nhiêu", "ai", "gì", "được không", "hỏi", "cho hỏi", "kể", "giới thiệu", "tìm", "chỉ", "có", "sao", "review", "cho mình", "bạn ơi", "hãy"
+                ]
+                complaint_detail_keywords = [
+                    "dơ", "bẩn", "chèo kéo", "ép giá", "chặt chém", "lối đi", "bị hỏng", "bị hư", "bị dơ", "bị bẩn", "rác", "xử lý giúp", "gửi thêm", "phản ánh thêm", "thái độ"
+                ]
                 
-                is_general_qa = any(kw in lower_q for kw in tourism_inquiry_keywords)
-                has_complaint_context = any(kw in lower_q for kw in complaint_detail_keywords)
+                has_phone_number = bool(re.search(r"(?:0|\+84)[35789](?:[\s.-]?\d){8}\b", question))
+                is_general_qa = any(kw in lower_q for kw in tourism_inquiry_keywords) or lower_q.endswith("?") or lower_q.startswith(("hỏi", "cho hỏi", "kể", "truyền thuyết", "sự tích", "bà đen", "chùa"))
+                has_complaint_context = (any(kw in lower_q for kw in complaint_detail_keywords) or has_phone_number) and not any(k in lower_q for k in ["truyền thuyết", "sự tích", "giá vé", "mấy giờ", "mở cửa", "ở đâu"])
 
                 if is_general_qa and not has_complaint_context:
                     # Do NOT append to feedback report! Pass through to normal RAG search

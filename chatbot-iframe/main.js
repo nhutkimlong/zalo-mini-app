@@ -382,27 +382,23 @@ function renderFeedbackForm(userPrompt = '', categoryHint = null, feedbackId = n
             }
 
             if (isAppendMode) {
-                const res = await apiService.appendFeedback(feedbackId, {
+                await apiService.appendFeedback(feedbackId, {
                     additional_content: content,
                     phone: phone,
                     image_url: imageUrl,
                     report_type: type,
                     reporter_name: "Khách qua Chatbot"
                 });
-                if (res && (res.id || res.feedback_id)) {
-                    activeFeedbackId = res.id || res.feedback_id;
-                }
+                activeFeedbackId = null;
             } else {
-                const res = await apiService.submitFeedback({
+                await apiService.submitFeedback({
                     report_type: type,
                     content: content,
                     phone: phone,
                     image_url: imageUrl,
                     reporter_name: "Khách qua Chatbot"
                 });
-                if (res && (res.id || res.feedback_id)) {
-                    activeFeedbackId = res.id || res.feedback_id;
-                }
+                activeFeedbackId = null;
             }
             
             form.innerHTML = `

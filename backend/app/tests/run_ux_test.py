@@ -62,6 +62,12 @@ def run_tests():
     assert "mãng cầu" in res3.answer.lower() or "mang cau" in res3.answer.lower()
     print("-> PASSED: AI tra loi dung cau hoi du lich moi!")
 
+    # --- KỊCH BẢN 3B: Đổi chủ đề ngắt mạch hỏi truyền thuyết ("truyền thuyết linh sơn thánh mẫu") ---
+    res3b = service.ask(question="truyền thuyết linh sơn thánh mẫu", active_feedback_id=active_id)
+    print("\n[SCENARIO 3B] Doi chu de ngat mach sang hoi truyen thiet ('truyền thuyết linh sơn thánh mẫu')")
+    assert "Cảm ơn bạn! Thông tin bổ sung vừa gõ" not in res3b.answer
+    print("-> PASSED: AI khong bi mac ket trong phieu phan anh va da chuyen sang tra loi truyen thiet!")
+
     # --- KỊCH BẢN 4: Cung cấp SĐT có khoảng trắng/dấu chấm ("SĐT của tôi là 0912.345.678") ---
     res4 = service.ask(question="Ở bãi xe số 2 SĐT của tôi là 0912.345.678", active_feedback_id=active_id)
     print("\n[SCENARIO 4] SDT dinh dang 0912.345.678")
