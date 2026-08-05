@@ -412,7 +412,17 @@ async def zalo_webhook(
     Verifies secret token, extracts text message/image, schedules processing in background, and returns 200 OK immediately.
     """
     expected_secret = settings.ZALO_WEBHOOK_SECRET_TOKEN
-    if expected_secret and x_bot_api_secret_token != expected_secret:
+    
+    # 1. Flexible Header Check for Secret Token (supports multiple Zalo header aliases)
+    received_secret = (
+        request.headers.get("x-bot-api-secret-token") or
+        request.headers.get("x-zalo-secret-token") or
+        request.headers.get("secret-token") or
+        x_bot_api_secret_token
+    )
+    
+    if expected_secret and received_secret != expected_secret:
+        print(f"[ZaloBot] Webhook 401: Secret mismatch! Received: '{received_secret}', Expected: '{expected_secret}'")
         raise HTTPException(status_code=401, detail="Unauthorized request secret mismatch")
 
     try:
@@ -427,17 +437,32 @@ async def zalo_webhook(
         event_data = payload["result"]
         event_name = event_data.get("event_name")
     
-    # Process all events that might be user messages
-    sender_id = event_data.get("sender", {}).get("id")
-    if not sender_id:
-        sender_id = event_data.get("message", {}).get("chat", {}).get("id")
-        
-    message_text = event_data.get("message", {}).get("text", "")
-    
-    # Check for Zalo OA image attachments or Telegram photos
+    # 2. Robust Sender ID Extraction across Zalo Bot API / Zalo OA / Telegram payload formats
+    sender_id = (
+        event_data.get("sender", {}).get("id") or
+        event_data.get("from", {}).get("id") or
+        event_data.get("message", {}).get("from", {}).get("id") or
+        event_data.get("message", {}).get("chat", {}).get("id") or
+        event_data.get("user_id_by_app") or
+        event_data.get("user_id") or
+        event_data.get("chat_id")
+    )
+    if sender_id is not None:
+        sender_id = str(sender_id)
+
+    # 3. Robust Message Text Extraction
+    message_text = (
+        event_data.get("message", {}).get("text") or
+        event_data.get("text") or
+        event_data.get("message", {}).get("caption") or
+        event_data.get("caption") or
+        ""
+    ).strip()
+
+    # 4. Check for Zalo OA image attachments or Telegram photos
     image_url = None
     
-    # 1. Zalo OA Format
+    # Zalo OA Format
     attachments = event_data.get("message", {}).get("attachments", [])
     if isinstance(attachments, list):
         for att in attachments:
@@ -445,13 +470,11 @@ async def zalo_webhook(
                 image_url = att.get("payload", {}).get("url")
                 break
                 
-    # 2. Extract from root payload if it's placed differently
     if not image_url and event_data.get("message", {}).get("photo"):
         photos = event_data.get("message", {}).get("photo")
         if isinstance(photos, list) and len(photos) > 0:
             image_url = f"telegram_photo_id:{photos[-1].get('file_id')}"
             
-    # 3. Aggressive generic search for any URL if event indicates image
     if not image_url and event_name in ("user_send_image", "message.image.received"):
         import json
         dumped = json.dumps(event_data)
@@ -462,7 +485,10 @@ async def zalo_webhook(
             image_url = "image_received_but_no_url_found"
 
     if sender_id and (message_text or image_url):
-        # Execute processing asynchronously in FastAPI background tasks to return 200 OK immediately
+        print(f"[ZaloBot] Scheduling background processing for sender {sender_id}: text='{message_text}', image='{image_url}'")
         background_tasks.add_task(process_zalo_message, sender_id, message_text, image_url)
+    else:
+        print(f"[ZaloBot] WARNING: Webhook payload skipped (sender_id='{sender_id}', text='{message_text}', image='{image_url}'). Payload: {payload}")
 
     return {"status": "success"}
+
