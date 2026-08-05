@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DEBUG: bool = False
     ENVIRONMENT: str = "production"
+    ENABLE_DOCS: bool = False
 
     # Supabase
     SUPABASE_URL: str = ""

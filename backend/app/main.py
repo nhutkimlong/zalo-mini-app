@@ -17,13 +17,14 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.routers import chat, feedback, places, announcements, knowledge, upload, translation, tts, itineraries, settings as settings_router, auth, users, user_data, tourism, badges, zalo
 
+is_docs_enabled = getattr(settings, "ENABLE_DOCS", False)
 app = FastAPI(
     title="Chinh phục Núi Bà Đen",
     description="Backend API và RAG Chatbot Service phục vụ du khách Web PWA và Admin Dashboard.",
     version="1.0.0",
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
-    openapi_url="/openapi.json" if settings.DEBUG else None
+    docs_url="/docs" if is_docs_enabled else None,
+    redoc_url="/redoc" if is_docs_enabled else None,
+    openapi_url="/openapi.json" if is_docs_enabled else None
 )
 
 from app.core.logger import logger
@@ -84,7 +85,7 @@ def read_root():
     return {
         "app": "Chinh phục Núi Bà Đen",
         "status": "online",
-        "api_documentation": "/docs" if settings.DEBUG else "hidden"
+        "api_documentation": "/docs" if is_docs_enabled else "hidden"
     }
 
 @app.get("/health")
