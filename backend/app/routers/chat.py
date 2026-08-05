@@ -79,7 +79,8 @@ def ask_ai_assistant(
             user_id=user_id_to_log,
             channel=payload.channel,
             language=payload.language,
-            conversation_history=payload.conversation_history
+            conversation_history=payload.conversation_history,
+            active_feedback_id=payload.active_feedback_id
         )
         # Store successful responses in FAQ cache
         if response and response.confidence_score > 0.3:

@@ -18,6 +18,13 @@ class FeedbackUpdate(BaseModel):
     assigned_unit: Optional[str] = Field(None, description="Đơn vị phụ trách xử lý")
     internal_note: Optional[str] = Field(None, description="Ghi chú nội bộ của cán bộ")
 
+class FeedbackAppend(BaseModel):
+    additional_content: Optional[str] = Field(None, description="Nội dung bổ sung vào phản ánh")
+    phone: Optional[str] = Field(None, description="Số điện thoại")
+    reporter_name: Optional[str] = Field(None, description="Tên người phản ánh")
+    image_url: Optional[str] = Field(None, description="Đường dẫn ảnh đính kèm bổ sung")
+    report_type: Optional[str] = Field(None, description="Cập nhật phân loại phản ánh")
+
 class FeedbackResponse(BaseModel):
     id: UUID
     reporter_name: Optional[str] = None

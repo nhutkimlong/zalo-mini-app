@@ -612,6 +612,7 @@ class RAGService:
         channel: str = "mini_app",
         language: str = "vi",
         conversation_history: Optional[List[Dict[str, Any]]] = None,
+        active_feedback_id: Optional[str] = None,
     ) -> ChatResponse:
         """
         CrawBot Q&A pipeline:
@@ -619,6 +620,31 @@ class RAGService:
         2. Generate answer via Beeknoee LLM with fallback chain
         3. Log conversation to Supabase chat_logs
         """
+        # Auto-append to existing active feedback ticket if user continues typing follow-up details in chat
+        if active_feedback_id and self.supabase:
+            try:
+                res_exist = self.supabase.table("feedback_reports").select("*").eq("id", str(active_feedback_id)).execute()
+                if res_exist.data:
+                    existing_row = res_exist.data[0]
+                    existing_content = existing_row.get("content", "")
+                    new_content = f"{existing_content}\n[Bổ sung qua Chat]: {question}"
+                    update_payload = {"content": new_content}
+                    
+                    phone_match = re.search(r"0[35789]\d{8}\b", question)
+                    if phone_match:
+                        update_payload["phone"] = phone_match.group(0)
+                        
+                    self.supabase.table("feedback_reports").update(update_payload).eq("id", str(active_feedback_id)).execute()
+                    
+                    return ChatResponse(
+                        answer="Cảm ơn bạn! Thông tin bổ sung vừa gõ đã được tự động cập nhật vào Phiếu phản ánh gửi Ban Quản Lý. Bạn có cần hỗ trợ thêm thông tin gì khác không ạ?",
+                        confidence_score=1.0,
+                        sources=[],
+                        type="chat",
+                        feedback_id=active_feedback_id
+                    )
+            except Exception as active_err:
+                print(f"[{LOG_NAME}] Active feedback append error: {active_err}")
         # Auto-detect language of the question
         detected_info = self._detect_language(question)
         detected_code = detected_info["code"]
@@ -1024,7 +1050,7 @@ class RAGService:
 
                 feedback_instruction = (
                     "\n\n[FEEDBACK & COMPLAINT HANDLING]\n"
-                    "- If the visitor is expressing dissatisfaction, complaining, reporting an issue, or providing feedback (e.g., poor service, lost items, bad attitude, suggestions), you MUST prepend exactly the tag `[FEEDBACK_REQUEST]` at the very beginning of your response.\n"
+                    "- If the visitor is expressing dissatisfaction, complaining, reporting an issue, or providing feedback (e.g., poor service, solicitation, price gouging, bad attitude, suggestions), you MUST prepend a tag at the very beginning of your response: `[FEEDBACK_REQUEST:category]` where category is one of: cheo_keo, gia_ca, ve_sinh, thai_do, an_ninh, ha_tang, gop_y, khac.\n"
                     "- After the tag, respond politely, apologize for the inconvenience, and ask them to provide more details so you can forward it to the Management Board."
                 )
                 prompt += feedback_instruction
@@ -1073,9 +1099,27 @@ class RAGService:
                 answer = chunks[0]["text"] if chunks else self._no_info_response(language)
 
         response_type = "chat"
-        if answer.startswith("[FEEDBACK_REQUEST]"):
+        feedback_category = None
+        feedback_id = None
+        if "[FEEDBACK_REQUEST" in answer:
             response_type = "feedback_request"
-            answer = answer.replace("[FEEDBACK_REQUEST]", "").strip()
+            match_cat = re.search(r"\[FEEDBACK_REQUEST(?::([a-z_]+))?\]", answer)
+            if match_cat and match_cat.group(1):
+                feedback_category = match_cat.group(1)
+            answer = re.sub(r"\[FEEDBACK_REQUEST(?::[a-z_]+)?\]", "", answer).strip()
+
+            if self.supabase:
+                try:
+                    res_fb = self.supabase.table("feedback_reports").insert({
+                        "content": question,
+                        "report_type": feedback_category or "khac",
+                        "status": "new",
+                        "user_id": str(user_id) if user_id else None
+                    }).execute()
+                    if res_fb.data:
+                        feedback_id = str(res_fb.data[0].get("id"))
+                except Exception as fe:
+                    print(f"[{LOG_NAME}] Auto feedback insert failed: {fe}")
 
         # Log to Supabase
         if self.supabase:
@@ -1100,7 +1144,9 @@ class RAGService:
             answer=answer,
             confidence_score=float(confidence_score),
             sources=sources,
-            type=response_type
+            type=response_type,
+            category=feedback_category,
+            feedback_id=feedback_id
         )
 
 

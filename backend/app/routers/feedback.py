@@ -6,7 +6,7 @@ from uuid import UUID
 from datetime import datetime
 from supabase import Client, create_client
 from app.core.config import settings
-from app.models.feedback import FeedbackResponse, FeedbackCreate, FeedbackUpdate, FeedbackStats
+from app.models.feedback import FeedbackResponse, FeedbackCreate, FeedbackUpdate, FeedbackStats, FeedbackAppend
 
 router = APIRouter(prefix="/api/feedback", tags=["Feedback"])
 
@@ -87,6 +87,46 @@ def update_feedback_status(feedback_id: UUID, update: FeedbackUpdate, db: Client
         if response.data:
             return response.data[0]
         raise HTTPException(status_code=404, detail="Không tìm thấy phản ánh để cập nhật")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{feedback_id}/append", response_model=FeedbackResponse)
+def append_feedback(
+    feedback_id: UUID,
+    append_data: FeedbackAppend,
+    db: Client = Depends(get_db)
+):
+    try:
+        res = db.table("feedback_reports").select("*").eq("id", str(feedback_id)).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phản ánh để bổ sung")
+            
+        existing = res.data[0]
+        update_payload = {}
+        
+        if append_data.additional_content:
+            existing_content = existing.get("content", "")
+            if append_data.additional_content != existing_content:
+                update_payload["content"] = f"{existing_content}\n[Bổ sung]: {append_data.additional_content}"
+        
+        if append_data.phone:
+            update_payload["phone"] = append_data.phone
+        if append_data.reporter_name:
+            update_payload["reporter_name"] = append_data.reporter_name
+        if append_data.image_url:
+            update_payload["image_url"] = append_data.image_url
+        if append_data.report_type:
+            update_payload["report_type"] = append_data.report_type
+            
+        if not update_payload:
+            return existing
+
+        response = db.table("feedback_reports").update(update_payload).eq("id", str(feedback_id)).execute()
+        if response.data:
+            return response.data[0]
+        raise HTTPException(status_code=400, detail="Cập nhật thông tin phản ánh thất bại")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

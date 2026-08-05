@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     language: str = Field("vi", description="Ngôn ngữ phản hồi ('vi' hoặc 'en')")
     conversation_history: List[dict] = Field(default_factory=list, description="Lịch sử hội thoại gần nhất")
     user_info: Optional[UserInfo] = Field(None, description="Thông tin chi tiết người dùng")
+    active_feedback_id: Optional[str] = Field(None, description="ID phiếu phản ánh đang mở để tự động bổ sung qua chat")
 
 
 class SourceCitation(BaseModel):
@@ -28,6 +29,8 @@ class ChatResponse(BaseModel):
     confidence_score: float = Field(..., description="Mức độ tự tin của câu trả lời")
     sources: List[SourceCitation] = Field(default_factory=list, description="Nguồn bài viết tham khảo trong kho tri thức")
     type: str = Field("chat", description="Loại phản hồi (chat, feedback_request)")
+    category: Optional[str] = Field(None, description="Phân loại phản ánh tự động")
+    feedback_id: Optional[str] = Field(None, description="Mã phiếu phản ánh tự động tạo")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
