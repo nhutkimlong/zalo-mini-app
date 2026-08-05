@@ -127,7 +127,20 @@ class TelegramNotifierService:
             if photo_sent:
                 return True
 
-        # Fallback to standard text message
-        return await self.send_message(admin_target, alert_msg)
-
 telegram_notifier = TelegramNotifierService()
+
+def send_admin_feedback_bg(report_data: Dict[str, Any], is_update: bool = False):
+    """
+    Fire-and-forget background thread notifier so main HTTP request never blocks or 504 timeouts.
+    """
+    def _worker():
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(telegram_notifier.notify_admin_feedback(report_data, is_update=is_update))
+            loop.close()
+        except Exception as e:
+            print(f"[TelegramNotifier] Background worker error: {e}")
+
+    threading.Thread(target=_worker, daemon=True).start()
+

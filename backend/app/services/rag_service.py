@@ -681,14 +681,11 @@ class RAGService:
                         upd_res = self.supabase.table("feedback_reports").update(update_payload).eq("id", str(active_feedback_id)).execute()
                         if upd_res.data:
                             try:
-                                from app.services.zalo_notifier import zalo_notifier
-                                try:
-                                    loop = asyncio.get_running_loop()
-                                    loop.create_task(zalo_notifier.notify_admin_feedback(upd_res.data[0], is_update=True))
-                                except RuntimeError:
-                                    asyncio.run(zalo_notifier.notify_admin_feedback(upd_res.data[0], is_update=True))
+                                from app.services.telegram_notifier import send_admin_feedback_bg
+                                send_admin_feedback_bg(upd_res.data[0], is_update=True)
                             except Exception as notify_err:
-                                print(f"[{LOG_NAME}] Zalo notification error: {notify_err}")
+                                print(f"[{LOG_NAME}] Telegram notification error: {notify_err}")
+
                         
                         return ChatResponse(
                             answer=f"✅ Cảm ơn bạn! Thông tin bổ sung vừa gõ đã được cập nhật vào **Phiếu phản ánh #{short_ticket_id}** gửi Ban Quản Lý.\n\n"
@@ -1175,14 +1172,11 @@ class RAGService:
                         created_fb = res_fb.data[0]
                         feedback_id = str(created_fb.get("id"))
                         try:
-                            from app.services.telegram_notifier import telegram_notifier
-                            try:
-                                loop = asyncio.get_running_loop()
-                                loop.create_task(telegram_notifier.notify_admin_feedback(created_fb, is_update=False))
-                            except RuntimeError:
-                                asyncio.run(telegram_notifier.notify_admin_feedback(created_fb, is_update=False))
+                            from app.services.telegram_notifier import send_admin_feedback_bg
+                            send_admin_feedback_bg(created_fb, is_update=False)
                         except Exception as notify_err:
                             print(f"[{LOG_NAME}] Telegram notify error on chatbot feedback: {notify_err}")
+
 
                 except Exception as fe:
                     print(f"[{LOG_NAME}] Auto feedback insert failed: {fe}")
