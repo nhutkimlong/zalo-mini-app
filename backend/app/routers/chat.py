@@ -1,3 +1,5 @@
+import re
+import json
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional, List, Dict
 from uuid import UUID
@@ -275,8 +277,6 @@ def generate_itinerary_endpoint(
         )
         
         # Parse JSON from LLM response
-        import json
-        import re
         json_match = re.search(r"\{[\s\S]*\}", raw_answer)
         if json_match:
             content = json.loads(json_match.group(0))

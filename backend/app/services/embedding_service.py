@@ -5,6 +5,7 @@ Fallback chain: gemini-embedding-001 → gemini-embedding-2 → text-embedding-3
 All models served via Beeknoee (https://platform-api.beeknoee.com/v1).
 """
 import re
+import json
 import numpy as np
 from typing import List, Optional
 from uuid import UUID
@@ -272,9 +273,6 @@ class EmbeddingService:
             clean_content = content
             trimmed = content.strip()
             
-            import json
-            import re
-
             json_str = None
             if trimmed.startswith("[") or trimmed.startswith("{"):
                 json_str = trimmed
