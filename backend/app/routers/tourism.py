@@ -5,6 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from supabase import Client
 from app.core.auth_deps import get_db_client, get_current_user, get_optional_user
+from app.core.weather import get_current_weather
 
 router = APIRouter(prefix="/api/tourism", tags=["Tourism Digitalization"])
 
@@ -38,7 +39,6 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 @router.get("/realtime")
 def get_realtime_status(db: Client = Depends(get_db_client)):
     try:
-        from app.core.weather import get_current_weather
         weather_info = get_current_weather(db)
         return {
             "weather_auto": weather_info["weather_auto"],

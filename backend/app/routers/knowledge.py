@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from uuid import UUID
@@ -43,7 +44,6 @@ def sync_and_reindex_ve_va_gio_mo_cua(source_id: str, content: str, db: Client):
     if not (trimmed.startswith("[") or trimmed.startswith("{")):
         return
         
-    import json
     try:
         source_data = json.loads(trimmed)
         if not isinstance(source_data, dict):

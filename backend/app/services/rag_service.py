@@ -5,16 +5,25 @@ All via Beeknoee (https://platform-api.beeknoee.com/v1)
 """
 import re
 import json
+import time
+import uuid
+import html
 import asyncio
 import unicodedata
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Tuple, Optional
 from uuid import UUID
 from openai import OpenAI
 from supabase import Client, create_client
+from langdetect import detect
 from app.core.config import settings
+from app.core.weather import get_current_weather
 from app.services.embedding_service import embedding_service
 from app.models.chat import SourceCitation, ChatResponse
 from app.services.moderation_service import moderation_service
+from app.services.calculator_service import calculator_service
+from app.services.telegram_notifier import send_admin_feedback_bg
+from app.services.zalo_notifier import send_admin_zalo_feedback_bg
 
 # ─── CrawBot Identity ─────────────────────────────────────────────────────────
 CRAWBOT_NAME = "Hướng dẫn viên 4.0"
@@ -282,7 +291,6 @@ class RAGService:
 
     def _get_dynamic_settings(self) -> Dict[str, Any]:
         """Fetch model and pricing settings from database system_settings table, with local config fallback."""
-        import time
         now = time.time()
         if RAGService._cached_settings and (now - RAGService._cached_at < 30):
             return RAGService._cached_settings
@@ -490,7 +498,6 @@ class RAGService:
         }
 
         try:
-            from langdetect import detect
             code = detect(cleaned_question)
             if code:
                 code = code.strip().lower()
@@ -626,7 +633,6 @@ class RAGService:
         3. Generate answer via Beeknoee LLM with fallback chain
         4. Log conversation to Supabase chat_logs
         """
-        import uuid
         if not hasattr(self, "_session_cache"):
             self._session_cache = {}
 
@@ -717,8 +723,6 @@ class RAGService:
                         upd_res = self.supabase.table("feedback_reports").update(update_payload).eq("id", str(active_feedback_id)).execute()
                         if upd_res.data:
                             try:
-                                from app.services.telegram_notifier import send_admin_feedback_bg
-                                from app.services.zalo_notifier import send_admin_zalo_feedback_bg
                                 send_admin_feedback_bg(upd_res.data[0], is_update=True)
                                 send_admin_zalo_feedback_bg(upd_res.data[0], is_update=True)
                             except Exception as notify_err:
@@ -849,7 +853,6 @@ class RAGService:
 
         # Fetch active announcements to dynamically feed to chatbot context
         announcements_str = ""
-        import time
         now = time.time()
         
         # Fetch announcements for all questions in the conversation to maintain up-to-date context
@@ -927,7 +930,6 @@ class RAGService:
 
             # 2. Weather Cache (delegated to get_current_weather helper with caching)
             try:
-                from app.core.weather import get_current_weather
                 weather_info = get_current_weather(self.supabase)
                 weather_status = weather_info["weather_status"]
                 weather_temp = weather_info["weather_temp"]
@@ -976,7 +978,6 @@ class RAGService:
 
             if self.llm_client:
                 # Get local current date and time (Vietnam GMT+7)
-                from datetime import datetime, timezone, timedelta
                 vn_tz = timezone(timedelta(hours=7))
                 now_vn = datetime.now(vn_tz)
                 
@@ -1117,7 +1118,6 @@ class RAGService:
                     context_parts.append("[THÔNG BÁO QUAN TRỌNG & CẢNH BÁO MỚI NHẤT ĐANG DIỄN RA TẠI DI TÍCH NÚI BÀ ĐEN]\n" + announcements_str)
 
                 # Inject Smart Calculator math if quantities & pricing matched
-                from app.services.calculator_service import calculator_service
                 calc_result = calculator_service.calculate_totals(question)
                 if calc_result:
                     context_parts.append(calc_result)
@@ -1240,8 +1240,6 @@ class RAGService:
                             created_fb = res_fb.data[0]
                             feedback_id = str(created_fb.get("id"))
                             try:
-                                from app.services.telegram_notifier import send_admin_feedback_bg
-                                from app.services.zalo_notifier import send_admin_zalo_feedback_bg
                                 send_admin_feedback_bg(created_fb, is_update=False)
                                 send_admin_zalo_feedback_bg(created_fb, is_update=False)
                             except Exception as notify_err:

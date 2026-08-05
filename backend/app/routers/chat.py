@@ -1,13 +1,15 @@
 import re
 import json
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional, List, Dict
 from uuid import UUID
 from pydantic import BaseModel
 from supabase import Client, create_client
 from app.core.config import settings
+from app.core.weather import get_current_weather
 from app.models.chat import ChatRequest, ChatResponse
-from app.services.rag_service import rag_service
+from app.services.rag_service import rag_service, _call_llm
 from app.core.auth_deps import get_optional_user
 
 class ItineraryRequest(BaseModel):
@@ -153,7 +155,6 @@ def generate_itinerary_endpoint(
     try:
         schedule_res = db.table("knowledge_articles").select("content").eq("id", "a1c3d359-fe2c-42da-9d19-d94dfcedb022").execute()
         if schedule_res.data:
-            import json
             raw_content = schedule_res.data[0].get("content", "")
             try:
                 parsed = json.loads(raw_content)
@@ -173,7 +174,6 @@ def generate_itinerary_endpoint(
     weather_status = "sunny"
     weather_temp = "30"
     try:
-        from app.core.weather import get_current_weather
         weather_info = get_current_weather(db)
         weather_status = weather_info["weather_status"]
         weather_temp = weather_info["weather_temp"]
@@ -188,7 +188,6 @@ def generate_itinerary_endpoint(
     }.get(weather_status, weather_status)
 
     # Get local current date and time (Vietnam GMT+7)
-    from datetime import datetime, timezone, timedelta
     vn_tz = timezone(timedelta(hours=7))
     now_vn = datetime.now(vn_tz)
     weekdays = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
@@ -265,7 +264,6 @@ def generate_itinerary_endpoint(
 
     try:
         dyn_config = rag_service._get_dynamic_settings()
-        from app.services.rag_service import _call_llm
         raw_answer, _ = _call_llm(
             client=client,
             system_prompt=system_prompt,

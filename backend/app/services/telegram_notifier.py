@@ -1,4 +1,5 @@
 import httpx
+import html
 import asyncio
 import threading
 from datetime import datetime
@@ -109,7 +110,6 @@ class TelegramNotifierService:
 
         action_title = "🚨 <b>[CẢNH BÁO PHẢN ÁNH MỚI]</b>" if not is_update else "🔄 <b>[CẬP NHẬT PHẢN ÁNH]</b>"
 
-        import html
         reporter_name_esc = html.escape(str(reporter_name))
         phone_esc = html.escape(str(phone))
         content_esc = html.escape(str(content))

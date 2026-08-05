@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
@@ -24,7 +25,6 @@ def translate_text(req: TranslationRequest):
     if not settings.BEEKNOEE_API_KEY or not settings.BEEKNOEE_BASE_URL or not settings.BEEKNOEE_LLM_MODEL:
         raise HTTPException(status_code=503, detail="Chưa cấu hình dịch AI Beeknoee")
 
-    import json
     is_json = False
     try:
         # Check if input is a valid JSON string

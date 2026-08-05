@@ -2,6 +2,7 @@ import httpx
 from typing import Optional
 from fastapi import APIRouter, Request, Header, HTTPException, BackgroundTasks
 from app.core.config import settings
+from app.services.zalo_notifier import zalo_notifier
 
 router = APIRouter(prefix="/api/zalo", tags=["Zalo Admin Bot Integration"])
 
@@ -34,8 +35,6 @@ async def process_zalo_admin_message(sender_id: str, message_text: str):
     """
     Xử lý tin nhắn từ Zalo: Lưu Chat ID của Admin và gửi phản hồi thông báo trạng thái.
     """
-    from app.services.zalo_notifier import zalo_notifier
-    
     # 1. Lưu Zalo Chat ID của Admin
     settings.ADMIN_ZALO_CHAT_ID = sender_id
     zalo_notifier.admin_chat_id = sender_id

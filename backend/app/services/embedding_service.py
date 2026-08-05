@@ -6,10 +6,12 @@ All models served via Beeknoee (https://platform-api.beeknoee.com/v1).
 """
 import re
 import json
+import time
 import numpy as np
 from typing import List, Optional
 from uuid import UUID
 from openai import OpenAI
+from supabase import create_client
 from app.core.config import settings
 
 # ─── Fallback Model Chain ────────────────────────────────────────────────────
@@ -40,7 +42,6 @@ class EmbeddingService:
         # Supabase for indexing
         self.supabase = None
         if settings.SUPABASE_URL and settings.SUPABASE_KEY:
-            from supabase import create_client
             self.supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
     def _init_client(self):
@@ -57,7 +58,6 @@ class EmbeddingService:
 
     def _get_dynamic_settings(self) -> dict:
         """Fetch primary embedding settings from database system_settings table, with local config fallback."""
-        import time
         now = time.time()
         if self._cached_settings and (now - self._cached_at < 30):
             return self._cached_settings
