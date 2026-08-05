@@ -262,7 +262,7 @@ async function handleSend() {
         const replyText = replyData.answer || replyData; // Fallback in case of string
         addMessage('model', replyText);
         
-        if (replyData.feedback_id) {
+        if ('feedback_id' in replyData) {
             activeFeedbackId = replyData.feedback_id;
         }
 
@@ -382,21 +382,27 @@ function renderFeedbackForm(userPrompt = '', categoryHint = null, feedbackId = n
             }
 
             if (isAppendMode) {
-                await apiService.appendFeedback(feedbackId, {
+                const res = await apiService.appendFeedback(feedbackId, {
                     additional_content: content,
                     phone: phone,
                     image_url: imageUrl,
                     report_type: type,
                     reporter_name: "Khách qua Chatbot"
                 });
+                if (res && (res.id || res.feedback_id)) {
+                    activeFeedbackId = res.id || res.feedback_id;
+                }
             } else {
-                await apiService.submitFeedback({
+                const res = await apiService.submitFeedback({
                     report_type: type,
                     content: content,
                     phone: phone,
                     image_url: imageUrl,
                     reporter_name: "Khách qua Chatbot"
                 });
+                if (res && (res.id || res.feedback_id)) {
+                    activeFeedbackId = res.id || res.feedback_id;
+                }
             }
             
             form.innerHTML = `

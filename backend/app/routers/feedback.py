@@ -1,6 +1,6 @@
 import uuid
 from urllib.parse import unquote
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
@@ -58,10 +58,13 @@ def get_feedback_stats(db: Client = Depends(get_db)):
     )
 
 from app.core.auth_deps import get_optional_user
+from app.services.zalo_notifier import zalo_notifier
+from app.services.telegram_notifier import telegram_notifier
 
 @router.post("/", response_model=FeedbackResponse)
 def submit_feedback(
     report: FeedbackCreate, 
+    background_tasks: BackgroundTasks,
     db: Client = Depends(get_db),
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
@@ -74,10 +77,16 @@ def submit_feedback(
     try:
         response = db.table("feedback_reports").insert(payload).execute()
         if response.data:
-            return response.data[0]
+            created_row = response.data[0]
+            # Tự động gửi tin nhắn Telegram thông báo tới Admin (Zalo tạm ngưng do sự cố server Zalo)
+            background_tasks.add_task(telegram_notifier.notify_admin_feedback, created_row, is_update=False)
+            # background_tasks.add_task(zalo_notifier.notify_admin_feedback, created_row, is_update=False)
+            return created_row
+
         raise HTTPException(status_code=400, detail="Không thể lưu phản ánh của quý khách")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.put("/{feedback_id}", response_model=FeedbackResponse)
 def update_feedback_status(feedback_id: UUID, update: FeedbackUpdate, db: Client = Depends(get_db)):
@@ -94,6 +103,7 @@ def update_feedback_status(feedback_id: UUID, update: FeedbackUpdate, db: Client
 def append_feedback(
     feedback_id: UUID,
     append_data: FeedbackAppend,
+    background_tasks: BackgroundTasks,
     db: Client = Depends(get_db)
 ):
     try:
@@ -117,6 +127,14 @@ def append_feedback(
             update_payload["image_url"] = append_data.image_url
         if append_data.report_type:
             update_payload["report_type"] = append_data.report_type
+            
+        if update_payload:
+            upd_res = db.table("feedback_reports").update(update_payload).eq("id", str(feedback_id)).execute()
+            if upd_res.data:
+                updated_row = upd_res.data[0]
+                background_tasks.add_task(zalo_notifier.notify_admin_feedback, updated_row, is_update=True)
+                return updated_row
+        return existing
             
         if not update_payload:
             return existing

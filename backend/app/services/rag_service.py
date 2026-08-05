@@ -4,6 +4,7 @@ LLM: Single model via BEEKNOEE_LLM_MODEL in .env
 All via Beeknoee (https://platform-api.beeknoee.com/v1)
 """
 import re
+import asyncio
 import unicodedata
 from typing import List, Dict, Any, Tuple, Optional
 from uuid import UUID
@@ -623,26 +624,80 @@ class RAGService:
         # Auto-append to existing active feedback ticket if user continues typing follow-up details in chat
         if active_feedback_id and self.supabase:
             try:
-                res_exist = self.supabase.table("feedback_reports").select("*").eq("id", str(active_feedback_id)).execute()
-                if res_exist.data:
-                    existing_row = res_exist.data[0]
-                    existing_content = existing_row.get("content", "")
-                    new_content = f"{existing_content}\n[Bổ sung qua Chat]: {question}"
-                    update_payload = {"content": new_content}
-                    
-                    phone_match = re.search(r"0[35789]\d{8}\b", question)
-                    if phone_match:
-                        update_payload["phone"] = phone_match.group(0)
-                        
-                    self.supabase.table("feedback_reports").update(update_payload).eq("id", str(active_feedback_id)).execute()
-                    
+                lower_q = question.lower().strip()
+                short_ticket_id = str(active_feedback_id)[:8].upper()
+
+                # --- TRƯỜNG HỢP 1: Hỏi về thời gian / tiến độ giải quyết (SLA Query) ---
+                sla_keywords = ["chừng nào", "khi nào", "bao lâu", "mấy giờ", "giải quyết", "tiến độ", "xử lý", "bao giờ", "khi nao", "chung nao", "xong chưa", "mấy phút"]
+                if any(kw in lower_q for kw in sla_keywords):
                     return ChatResponse(
-                        answer="Cảm ơn bạn! Thông tin bổ sung vừa gõ đã được tự động cập nhật vào Phiếu phản ánh gửi Ban Quản Lý. Bạn có cần hỗ trợ thêm thông tin gì khác không ạ?",
+                        answer=f"⏱️ **Phiếu phản ánh #{short_ticket_id} của bạn đang được Ban Quản lý tiếp nhận:**\n\n"
+                               f"- **Đối với sự cố trật tự / vệ sinh tại chỗ:** Lực lượng chức năng Ban Quản lý sẽ có mặt kiểm tra và xử lý trong **15 - 30 phút**.\n"
+                               f"- **Đối với góp ý / khiếu nại dịch vụ hạ tầng:** Ban Quản lý xử lý và phản hồi trong vòng **24 giờ**.\n\n"
+                               f"Nếu cần hỗ trợ gấp ngay tại hiện trường, bạn có thể gọi Hotline Trật tự: `0276.3823.378` hoặc Hotline Dịch vụ: `0276.3823.757` nhé!",
                         confidence_score=1.0,
                         sources=[],
                         type="chat",
                         feedback_id=active_feedback_id
                     )
+
+                # --- TRƯỜNG HỢP 2: Khách kết thúc / Cảm ơn -> Reset trạng thái active_feedback ---
+                completion_keywords = ["cảm ơn", "cam on", "thanks", "thank", "dược rồi", "được rồi", "hết rồi", "ok", "dạ vâng", "da vang", "dạ cảm ơn", "ok rồi"]
+                if any(lower_q == kw or lower_q.startswith(kw) for kw in completion_keywords) and len(lower_q) < 35:
+                    return ChatResponse(
+                        answer=f"Dạ không có gì ạ! Ban Quản lý KDLQG Núi Bà Đen chúc bạn có một chuyến tham quan vui vẻ và trọn vẹn! Phiếu phản ánh **#{short_ticket_id}** của bạn đã được ghi nhận thành công.",
+                        confidence_score=1.0,
+                        sources=[],
+                        type="chat",
+                        feedback_id=None  # Clear feedback_id to end active feedback session
+                    )
+
+                # --- TRƯỜNG HỢP 3: Đổi chủ đề ngắt mạch (General Tourism Question Context Switching) ---
+                tourism_inquiry_keywords = ["giá vé", "mấy giờ", "mở cửa", "mãng cầu", "muối tôm", "đặc sản", "ăn ở đâu", "cáp treo", "chùa hang", "đỉnh núi", "di tích", "lịch trình", "tượng phật"]
+                complaint_detail_keywords = ["dơ", "bẩn", "chèo kéo", "ép giá", "chặt chém", "lối đi", "bãi xe", "nhà vệ sinh", "bị", "tại", "sđt", "03", "05", "07", "08", "09"]
+                
+                is_general_qa = any(kw in lower_q for kw in tourism_inquiry_keywords)
+                has_complaint_context = any(kw in lower_q for kw in complaint_detail_keywords)
+
+                if is_general_qa and not has_complaint_context:
+                    # Do NOT append to feedback report! Pass through to normal RAG search
+                    print(f"[{LOG_NAME}] User switched context to general QA while active_feedback_id exists. Bypassing append.")
+                    pass  # Fall through to standard RAG pipeline below
+                else:
+                    # --- TRƯỜNG HỢP 4: Cung cấp thông tin bổ sung liên tục (Continuous Info Appending) ---
+                    res_exist = self.supabase.table("feedback_reports").select("*").eq("id", str(active_feedback_id)).execute()
+                    if res_exist.data:
+                        existing_row = res_exist.data[0]
+                        existing_content = existing_row.get("content", "")
+                        new_content = f"{existing_content}\n[Bổ sung qua Chat]: {question}"
+                        update_payload = {"content": new_content}
+                        
+                        # Regex thông minh bắt mọi định dạng SĐT: 0912345678, 0912 345 678, 0912.345.678, +84912345678
+                        phone_match = re.search(r"(?:0|\+84)[35789](?:[\s.-]?\d){8}\b", question)
+                        if phone_match:
+                            clean_phone = re.sub(r"[^\d+]", "", phone_match.group(0))
+                            update_payload["phone"] = clean_phone
+                            
+                        upd_res = self.supabase.table("feedback_reports").update(update_payload).eq("id", str(active_feedback_id)).execute()
+                        if upd_res.data:
+                            try:
+                                from app.services.zalo_notifier import zalo_notifier
+                                try:
+                                    loop = asyncio.get_running_loop()
+                                    loop.create_task(zalo_notifier.notify_admin_feedback(upd_res.data[0], is_update=True))
+                                except RuntimeError:
+                                    asyncio.run(zalo_notifier.notify_admin_feedback(upd_res.data[0], is_update=True))
+                            except Exception as notify_err:
+                                print(f"[{LOG_NAME}] Zalo notification error: {notify_err}")
+                        
+                        return ChatResponse(
+                            answer=f"✅ Cảm ơn bạn! Thông tin bổ sung vừa gõ đã được cập nhật vào **Phiếu phản ánh #{short_ticket_id}** gửi Ban Quản Lý.\n\n"
+                                   f"Lực lượng chức năng sẽ kiểm tra và xử lý trong vòng **15 - 30 phút**. Bạn có cần hỗ trợ thêm thông tin gì khác không ạ?",
+                            confidence_score=1.0,
+                            sources=[],
+                            type="chat",
+                            feedback_id=active_feedback_id
+                        )
             except Exception as active_err:
                 print(f"[{LOG_NAME}] Active feedback append error: {active_err}")
         # Auto-detect language of the question

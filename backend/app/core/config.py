@@ -16,9 +16,14 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str = ""
     ADMIN_PASSWORD: str = "admin123"
 
-    # Zalo Bot
+    # Zalo & Telegram Bot Notification Target
     ZALO_BOT_TOKEN: str = ""
     ZALO_WEBHOOK_SECRET_TOKEN: str = ""
+    ADMIN_ZALO_PHONE: str = "0961563915"
+    ADMIN_ZALO_CHAT_ID: str = "0961563915"
+
+    TELEGRAM_BOT_TOKEN: str = "8555966098:AAFI6B-rPExR0LESg7Kicmtbcs4dvaljr-U"
+    TELEGRAM_ADMIN_CHAT_ID: str = ""
 
     # ─── Beeknoee AI (Primary provider) ──────────────────────────────────────
     BEEKNOEE_BASE_URL: str = "https://platform-api.beeknoee.com/v1"
