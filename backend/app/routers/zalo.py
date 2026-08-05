@@ -439,10 +439,10 @@ async def zalo_webhook(
     
     # 2. Robust Sender ID Extraction across Zalo Bot API / Zalo OA / Telegram payload formats
     sender_id = (
-        event_data.get("sender", {}).get("id") or
-        event_data.get("from", {}).get("id") or
-        event_data.get("message", {}).get("from", {}).get("id") or
         event_data.get("message", {}).get("chat", {}).get("id") or
+        event_data.get("message", {}).get("from", {}).get("id") or
+        event_data.get("from", {}).get("id") or
+        event_data.get("sender", {}).get("id") or
         event_data.get("user_id_by_app") or
         event_data.get("user_id") or
         event_data.get("chat_id")
@@ -450,7 +450,7 @@ async def zalo_webhook(
     if sender_id is not None:
         sender_id = str(sender_id)
 
-    # 3. Robust Message Text Extraction
+    # 3. Robust Message Text Extraction (handles text, caption, sticker, and unsupported events)
     message_text = (
         event_data.get("message", {}).get("text") or
         event_data.get("text") or
@@ -459,36 +459,40 @@ async def zalo_webhook(
         ""
     ).strip()
 
-    # 4. Check for Zalo OA image attachments or Telegram photos
+    if not message_text and event_name == "message.sticker.received":
+        message_text = "[Sticker]"
+    elif not message_text and event_name == "message.unsupported.received":
+        message_text = "[Unsupported Message]"
+
+    # 4. Check for Image URLs (Zalo Bot API 'photo' field / Zalo OA attachments / URLs)
     image_url = None
     
-    # Zalo OA Format
-    attachments = event_data.get("message", {}).get("attachments", [])
-    if isinstance(attachments, list):
-        for att in attachments:
-            if att.get("type") == "image":
-                image_url = att.get("payload", {}).get("url")
-                break
-                
-    if not image_url and event_data.get("message", {}).get("photo"):
-        photos = event_data.get("message", {}).get("photo")
-        if isinstance(photos, list) and len(photos) > 0:
-            image_url = f"telegram_photo_id:{photos[-1].get('file_id')}"
+    photo_val = event_data.get("message", {}).get("photo") or event_data.get("photo")
+    if isinstance(photo_val, str) and photo_val.startswith("http"):
+        image_url = photo_val
+    elif isinstance(photo_val, list) and len(photo_val) > 0:
+        image_url = photo_val[-1].get("url") or f"photo_id:{photo_val[-1].get('file_id')}"
+
+    if not image_url:
+        attachments = event_data.get("message", {}).get("attachments", [])
+        if isinstance(attachments, list):
+            for att in attachments:
+                if att.get("type") == "image":
+                    image_url = att.get("payload", {}).get("url")
+                    break
             
-    if not image_url and event_name in ("user_send_image", "message.image.received"):
+    if not image_url and event_name in ("message.image.received", "user_send_image"):
         import json
         dumped = json.dumps(event_data)
         urls = re.findall(r'https?://[^\s"]+', dumped)
         if urls:
             image_url = urls[0]
-        else:
-            image_url = "image_received_but_no_url_found"
 
     if sender_id and (message_text or image_url):
-        print(f"[ZaloBot] Scheduling background processing for sender {sender_id}: text='{message_text}', image='{image_url}'")
+        print(f"[ZaloBot] Scheduling background processing for sender {sender_id}: text='{message_text}', image='{image_url}', event='{event_name}'")
         background_tasks.add_task(process_zalo_message, sender_id, message_text, image_url)
     else:
         print(f"[ZaloBot] WARNING: Webhook payload skipped (sender_id='{sender_id}', text='{message_text}', image='{image_url}'). Payload: {payload}")
 
-    return {"status": "success"}
+    return {"ok": True, "message": "Success"}
 
