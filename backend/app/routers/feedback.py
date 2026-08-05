@@ -132,8 +132,9 @@ def append_feedback(
             upd_res = db.table("feedback_reports").update(update_payload).eq("id", str(feedback_id)).execute()
             if upd_res.data:
                 updated_row = upd_res.data[0]
-                background_tasks.add_task(zalo_notifier.notify_admin_feedback, updated_row, is_update=True)
+                background_tasks.add_task(telegram_notifier.notify_admin_feedback, updated_row, is_update=True)
                 return updated_row
+
         return existing
             
         if not update_payload:

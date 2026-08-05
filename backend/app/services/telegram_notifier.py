@@ -19,9 +19,39 @@ class TelegramNotifierService:
         self.bot_token = settings.TELEGRAM_BOT_TOKEN
         self.admin_chat_id = settings.TELEGRAM_ADMIN_CHAT_ID
 
+    async def send_photo(self, recipient_id: str, photo_url: str, caption_text: str) -> bool:
+        """
+        Sends Telegram photo with caption via Telegram Bot API:
+        https://api.telegram.org/bot<TOKEN>/sendPhoto
+        """
+        bot_token = settings.TELEGRAM_BOT_TOKEN or self.bot_token
+        if not bot_token:
+            return False
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+        payload = {
+            "chat_id": str(recipient_id),
+            "photo": photo_url,
+            "caption": caption_text,
+            "parse_mode": "HTML"
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(url, json=payload, timeout=12.0)
+                data = res.json()
+                if data.get("ok"):
+                    print(f"[TelegramNotifier] SUCCESS: Sent Telegram Photo to Chat ID {recipient_id}")
+                    return True
+                else:
+                    print(f"[TelegramNotifier] WARNING: sendPhoto API error: {data.get('description')}")
+        except Exception as e:
+            print(f"[TelegramNotifier] ERROR sending Telegram Photo: {e}")
+
+        return False
+
     async def send_message(self, recipient_id: str, message_text: str) -> bool:
         """
-        Sends Telegram message via Telegram Bot API:
+        Sends Telegram text message via Telegram Bot API:
         https://api.telegram.org/bot<TOKEN>/sendMessage
         """
         bot_token = settings.TELEGRAM_BOT_TOKEN or self.bot_token
@@ -47,16 +77,15 @@ class TelegramNotifierService:
         except Exception as e:
             print(f"[TelegramNotifier] ERROR sending Telegram API to {recipient_id}: {e}")
 
-
         return False
 
     async def notify_admin_feedback(self, report_data: Dict[str, Any], is_update: bool = False):
         """
-        Gửi thông báo cảnh báo trực tiếp tới Telegram Admin khi có phản ánh mới từ khách hàng.
+        Gửi thông báo cảnh báo trực tiếp kèm ảnh hiện trường tới Telegram Admin.
         """
         admin_target = settings.TELEGRAM_ADMIN_CHAT_ID or self.admin_chat_id
         if not admin_target:
-            print("[TelegramNotifier] 💡 Chưa có TELEGRAM_ADMIN_CHAT_ID. Mở Telegram nhắn '/start' cho @nhutkimlongbot để kết nối.")
+            print("[TelegramNotifier] 💡 Chưa có TELEGRAM_ADMIN_CHAT_ID.")
             return False
 
         ticket_id = str(report_data.get("id", "KHONG_MA")).upper()
@@ -84,7 +113,7 @@ class TelegramNotifierService:
         )
 
         if image_url:
-            alert_msg += f"📸 <b>Ảnh đính kèm:</b> {image_url}\n"
+            alert_msg += f"📸 <b>Ảnh đính kèm:</b> <a href=\"{image_url}\">Xem ảnh gốc</a>\n"
 
         alert_msg += (
             f"⏱️ <b>Thời gian:</b> {created_time}\n"
@@ -92,6 +121,13 @@ class TelegramNotifierService:
             f"👉 Đề nghị Cán bộ trực ca kiểm tra và xử lý!"
         )
 
+        # If there is an image URL, try sending as Photo message first
+        if image_url:
+            photo_sent = await self.send_photo(admin_target, image_url, alert_msg)
+            if photo_sent:
+                return True
+
+        # Fallback to standard text message
         return await self.send_message(admin_target, alert_msg)
 
 telegram_notifier = TelegramNotifierService()
