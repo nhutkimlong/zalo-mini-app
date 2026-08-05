@@ -4,6 +4,7 @@ LLM: Single model via BEEKNOEE_LLM_MODEL in .env
 All via Beeknoee (https://platform-api.beeknoee.com/v1)
 """
 import re
+import json
 import asyncio
 import unicodedata
 from typing import List, Dict, Any, Tuple, Optional
@@ -888,7 +889,6 @@ class RAGService:
                     # Dynamically search for schedule data in ve_va_gio_mo_cua category instead of hardcoded UUID
                     schedule_res = self.supabase.table("knowledge_articles").select("content").eq("category", "ve_va_gio_mo_cua").execute()
                     if schedule_res.data:
-                        import json, re
                         for row in schedule_res.data:
                             raw_content = row.get("content", "")
                             if not raw_content:
