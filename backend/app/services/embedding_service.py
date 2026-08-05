@@ -4,6 +4,7 @@ Fallback chain: gemini-embedding-001 → gemini-embedding-2 → text-embedding-3
 
 All models served via Beeknoee (https://platform-api.beeknoee.com/v1).
 """
+import re
 import numpy as np
 from typing import List, Optional
 from uuid import UUID
@@ -177,45 +178,87 @@ class EmbeddingService:
             return embedding[:target_dim]
         return embedding + [0.0] * (target_dim - len(embedding))
 
-    def split_text(self, text: str, chunk_size: int = 600, overlap: int = 120) -> List[str]:
-        """Split document into overlapping chunks for indexing."""
-        if not text:
+    def smart_split_text(self, title: str, content: str, category: str = "khac", max_chunk_size: int = 1000) -> List[str]:
+        """
+        Structure-Aware Markdown Chunker (Cắt thông minh không mất dữ liệu):
+        1. Parses document by Markdown headers (H1, H2, H3).
+        2. Keeps tables, price lists, and bullet lists atomic (never cut in half).
+        3. Prepends Context Header [Tài liệu: Title | Mục: Header] to EVERY chunk to prevent context loss.
+        """
+        if not content or not content.strip():
             return []
 
-        paragraphs = text.split("\n\n")
-        chunks: List[str] = []
-        current = ""
+        # Split content by Markdown headers (# , ## , ### )
+        lines = content.strip().split("\n")
+        
+        sections = []
+        current_header = title
+        current_section_lines = []
 
-        for para in paragraphs:
-            para = para.strip()
-            if not para:
+        for line in lines:
+            if re.match(r"^#{1,3}\s+", line.strip()):
+                if current_section_lines:
+                    sections.append((current_header, "\n".join(current_section_lines).strip()))
+                    current_section_lines = []
+                current_header = re.sub(r"^#{1,3}\s+", "", line.strip())
+            else:
+                current_section_lines.append(line)
+        
+        if current_section_lines:
+            sections.append((current_header, "\n".join(current_section_lines).strip()))
+
+        chunks = []
+
+        # For each section, combine blocks up to max_chunk_size, keeping tables & lists atomic
+        for sec_header, sec_text in sections:
+            if not sec_text:
                 continue
 
-            if len(para) > chunk_size:
-                sentences = para.replace(". ", ".\n").split("\n")
-                for sentence in sentences:
-                    sentence = sentence.strip()
-                    if len(current) + len(sentence) + 1 <= chunk_size:
-                        current += (" " if current else "") + sentence
-                    else:
-                        if current:
-                            chunks.append(current)
-                        words = current.split()
-                        overlap_words = words[-max(1, overlap // 8):] if words else []
-                        current = " ".join(overlap_words) + (" " if overlap_words else "") + sentence
-            else:
-                if len(current) + len(para) + 2 <= chunk_size:
-                    current += ("\n\n" if current else "") + para
-                else:
-                    if current:
-                        chunks.append(current)
-                    words = current.split()
-                    overlap_words = words[-max(1, overlap // 8):] if words else []
-                    current = " ".join(overlap_words) + ("\n\n" if overlap_words else "") + para
+            blocks = [b.strip() for b in sec_text.split("\n\n") if b.strip()]
+            current_chunk_blocks = []
+            current_len = 0
+            
+            context_prefix = f"[Tài liệu: {title} | Mục: {sec_header}]\n"
 
-        if current:
-            chunks.append(current)
+            for block in blocks:
+                # If adding this block exceeds max_chunk_size and we already have content
+                if current_len + len(block) > max_chunk_size and current_chunk_blocks:
+                    chunk_body = "\n\n".join(current_chunk_blocks)
+                    chunks.append(f"{context_prefix}{chunk_body}")
+                    current_chunk_blocks = []
+                    current_len = 0
+
+                # If a single block itself is huge (e.g. text > max_chunk_size), split safely at sentence boundaries
+                if len(block) > max_chunk_size:
+                    sentences = re.split(r"(?<=[.!?])\s+", block)
+                    sub_chunk = ""
+                    for s in sentences:
+                        if len(sub_chunk) + len(s) + 1 <= max_chunk_size:
+                            sub_chunk += (" " if sub_chunk else "") + s
+                        else:
+                            if sub_chunk:
+                                chunks.append(f"{context_prefix}{sub_chunk}")
+                            sub_chunk = s
+                    if sub_chunk:
+                        current_chunk_blocks.append(sub_chunk)
+                        current_len += len(sub_chunk)
+                else:
+                    current_chunk_blocks.append(block)
+                    current_len += len(block)
+
+            if current_chunk_blocks:
+                chunk_body = "\n\n".join(current_chunk_blocks)
+                chunks.append(f"{context_prefix}{chunk_body}")
+
+        # Fallback if no chunks generated
+        if not chunks:
+            chunks = [f"[Tài liệu: {title}]\n{content.strip()}"]
+
         return chunks
+
+    def split_text(self, text: str, chunk_size: int = 600, overlap: int = 120) -> List[str]:
+        """Legacy alias for backward compatibility."""
+        return self.smart_split_text("Tài liệu du lịch", text, max_chunk_size=chunk_size)
 
     def index_article(self, article_id: UUID, title: str, content: str, category: str) -> bool:
         """Index article: chunk → embed → store in Supabase knowledge_chunks."""
@@ -323,7 +366,7 @@ class EmbeddingService:
                     print(f"[Embedding] JSON format parser failed for '{title}': {e}")
                     clean_content = content
 
-            chunks = self.split_text(f"Tiêu đề: {title}\n\nNội dung: {clean_content}")
+            chunks = self.smart_split_text(title=title, content=clean_content, category=category)
             chunks_to_insert = []
             for i, chunk_text in enumerate(chunks):
                 # Gọi generate_embedding với log_statistics=False để tránh ghi rác logs khi reindex
