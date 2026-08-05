@@ -31,27 +31,25 @@ export interface OperatingScheduleSection {
   items: OperatingScheduleItem[];
 }
 
-// 0. Parse Dynamic Tickets and Sections - NO HARDCODED DEFAULTS, data must come from DB
+// 0. Parse Dynamic Tickets and Sections - Supports both JSON and Markdown
 const parseTickets = (articles: any[], lang: string): TicketSection[] => {
   if (!articles || articles.length === 0) return [];
 
-  // 1. Prioritize article with "giá vé" / "ticket" / "price" / "សំបុត្រ" in the title
   let priceArticle = articles.find(art => {
     const title = (art.title || "").toLowerCase();
     const titleKm = (art.title_km || "").toLowerCase();
     return (
       title.includes("giá vé") || title.includes("gia ve") ||
+      title.includes("bảng giá") || title.includes("bang gia") ||
       title.includes("ticket") || title.includes("price") ||
       titleKm.includes("សំបុត្រ") || titleKm.includes("តម្លៃ")
     );
   });
 
-  // 2. Fallback to content matching if no title matches
   if (!priceArticle) {
     priceArticle = articles.find(art => {
       const content = (art.content || "").toLowerCase();
-      const contentKm = (art.content_km || "").toLowerCase();
-      return content.includes("tuyến cáp") || content.includes("giá vé") || content.includes("gia ve") || contentKm.includes("កាប៊ីន") || contentKm.includes("សំបុត្រ");
+      return content.includes("tuyến cáp") || content.includes("giá vé") || content.includes("vân sơn") || content.includes("chùa hang");
     });
   }
 
@@ -64,10 +62,12 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
 
   if (!content) return [];
 
-  // Primary path: JSON format (set by Admin visual builder)
-  if (content.startsWith("[") || content.startsWith("{")) {
+  // Primary path: JSON format (raw JSON or markdown code block)
+  const jsonMatch = content.match(/\{[\s\S]*"tickets"[\s\S]*\}/);
+  if (jsonMatch || content.startsWith("[") || content.startsWith("{")) {
     try {
-      const parsed = JSON.parse(content);
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      const parsed = JSON.parse(jsonStr);
       const ticketSections = Array.isArray(parsed) ? parsed : parsed.tickets;
 
       if (Array.isArray(ticketSections) && ticketSections.length > 0) {
@@ -90,11 +90,11 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
         }));
       }
     } catch (e) {
-      console.warn("[parseTickets] JSON parse failed, trying plain-text fallback", e);
+      console.warn("[parseTickets] JSON parse failed, using markdown fallback", e);
     }
   }
 
-  // Fallback path: plain-text parsing (legacy format)
+  // Fallback path: Markdown headers (## 1. Tuyến cáp...) and bullet lists (- Name: Price)
   const lines = content.split("\n");
   const sections: TicketSection[] = [];
   let currentSection: TicketSection | null = null;
@@ -103,30 +103,12 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    const sectionMatch =
-      trimmed.match(/^\[(.*?)\]/) ||
-      trimmed.match(/^(?:\d+\.|\*)\s*(.*?)(?::|$)/);
-
-    if (
-      sectionMatch &&
-      (trimmed.startsWith("[") ||
-        trimmed.toLowerCase().includes("tuyến") ||
-        trimmed.toLowerCase().includes("combo") ||
-        trimmed.toLowerCase().includes("ខ្សែ") ||
-        trimmed.toLowerCase().includes("សំបុត្រ"))
-    ) {
-      let title = sectionMatch[1].trim();
-      const lowerTitle = title.toLowerCase();
-
-      if (lowerTitle.includes("vân sơn") || lowerTitle.includes("van son")) {
-        title = lang === "km" ? "ខ្សែរថយន្តកាប៊ីន Vân Sơn (ឡើងលើកំពូលភ្នំ)" : lang === "en" ? "Van Son Cable Route (To the Peak)" : "Tuyến cáp Vân Sơn (Lên Đỉnh núi)";
-      } else if (lowerTitle.includes("chùa hang") || lowerTitle.includes("chua hang")) {
-        title = lang === "km" ? "ខ្សែរថយន្តកាប៊ីន Chùa Hang (ឡើងវត្តលោកយាយ)" : lang === "en" ? "Chua Hang Cable Route (To Ba Temple)" : "Tuyến cáp Chùa Hang (Lên Chùa Bà)";
-      } else if (lowerTitle.includes("combo")) {
-        title = lang === "km" ? "សំបុត្ររួម Combo" : lang === "en" ? "Combo All Lines" : "Vé Combo Cáp Treo";
+    if (trimmed.startsWith("#")) {
+      const titleText = trimmed.replace(/^#{1,6}\s*/, "").replace(/^\d+\.\s*/, "").trim();
+      if (titleText && !titleText.toLowerCase().includes("bảng giá vé") && !titleText.toLowerCase().includes("thông tin giá")) {
+        currentSection = { title: titleText, items: [] };
+        sections.push(currentSection);
       }
-      currentSection = { title, items: [] };
-      sections.push(currentSection);
       continue;
     }
 
@@ -140,11 +122,11 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
         let price = pricePart;
         let priceOneway: string | undefined;
 
-        const onewayRegex = /(?:một chiều|one-way|មួយផ្លូវ)\s*[:\-]?\s*(\d{1,3}(?:\.\d{3})+|\d{5,6})/i;
+        const onewayRegex = /(?:vé 1 chiều|một chiều|one-way|<ctrl42>1 chiều)\s*[:\-]?\s*(\d{1,3}(?:\.\d{3})+|\d{5,6})/i;
         const onewayMatch = pricePart.match(onewayRegex);
         if (onewayMatch) {
           priceOneway = onewayMatch[1] + (lang === "km" ? " រៀល" : " VNĐ");
-          price = pricePart.split(/một chiều/i)[0].split(/one-way/i)[0].split(/មួយផ្លូវ/i)[0].trim();
+          price = pricePart.split(/vé 1 chiều/i)[0].split(/một chiều/i)[0].split(/one-way/i)[0].trim();
         }
 
         const priceMatch = price.match(/(\d{1,3}(?:\.\d{3})+|\d{5,6})/);
@@ -168,55 +150,21 @@ const parseTickets = (articles: any[], lang: string): TicketSection[] => {
   return sections;
 };
 
-// 2. Extract Operating Hours
+// 2. Extract Operating Hours (Supports both JSON and Markdown)
 const parseOperatingSchedules = (articles: any[], lang: string): OperatingScheduleSection[] => {
   if (!articles || articles.length === 0) return [];
 
-  // 1. Prioritize article with "giờ" / "lịch" / "schedule" / "operating" / "hour" / "ម៉ោង" in the title
   let article = articles.find((art: any) => {
     const title = (art.title || "").toLowerCase();
     const titleKm = (art.title_km || "").toLowerCase();
-    const content = (lang === "km" && art.content_km) 
-      ? art.content_km.trim() 
-      : (lang === "en" && art.content_en) 
-        ? art.content_en.trim() 
-        : art.content ? art.content.trim() : "";
-        
-    if (!content.startsWith("{")) return false;
-    
-    const hasKeywords = 
+    const content = art.content || "";
+    return (
       title.includes("giờ") || title.includes("gio") || 
       title.includes("lịch") || title.includes("lich") || 
       title.includes("schedule") || title.includes("operating") || title.includes("hour") ||
-      titleKm.includes("ម៉ោង") || titleKm.includes("ប្រតិបត្តិការ");
-      
-    if (!hasKeywords) return false;
-    
-    try {
-      const parsed = JSON.parse(content);
-      return Array.isArray(parsed.schedules);
-    } catch {
-      return false;
-    }
+      titleKm.includes("ម៉ោង") || content.includes("Vân Sơn") || content.includes("Chùa Hang")
+    );
   });
-
-  // 2. Fallback to any JSON article with schedules if no title matches
-  if (!article) {
-    article = articles.find((art: any) => {
-      const content = (lang === "km" && art.content_km) 
-        ? art.content_km.trim() 
-        : (lang === "en" && art.content_en) 
-          ? art.content_en.trim() 
-          : art.content ? art.content.trim() : "";
-      if (!content.startsWith("{")) return false;
-      try {
-        const parsed = JSON.parse(content);
-        return Array.isArray(parsed.schedules);
-      } catch {
-        return false;
-      }
-    });
-  }
 
   if (!article) return [];
   const content = (lang === "km" && article.content_km) 
@@ -227,24 +175,65 @@ const parseOperatingSchedules = (articles: any[], lang: string): OperatingSchedu
 
   if (!content) return [];
 
-  try {
-    const parsed = JSON.parse(content);
-    if (!Array.isArray(parsed.schedules)) return [];
-
-    return parsed.schedules
-      .map((section: any) => ({
-        title: (lang === "km" && section.titleKm) ? section.titleKm : (lang === "en" && section.titleEn) ? section.titleEn : (section.title || ""),
-        items: (section.items || []).map((item: any) => ({
-          label: (lang === "km" && item.labelKm) ? item.labelKm : (lang === "en" && item.labelEn) ? item.labelEn : (item.label || ""),
-          hours: (lang === "km" && item.hoursKm) ? item.hoursKm : (lang === "en" && item.hoursEn) ? item.hoursEn : (item.hours || ""),
-          note: (lang === "km" && item.noteKm) ? item.noteKm : (lang === "en" && item.noteEn) ? item.noteEn : (item.note || "")
-        })).filter((item: OperatingScheduleItem) => item.label || item.hours || item.note)
-      }))
-      .filter((section: OperatingScheduleSection) => section.title || section.items.length > 0);
-  } catch (e) {
-    console.warn("[parseOperatingSchedules] JSON parse failed", e);
-    return [];
+  // Primary path: JSON parsing
+  const jsonMatch = content.match(/\{[\s\S]*"schedules"[\s\S]*\}/);
+  if (jsonMatch || content.startsWith("{")) {
+    try {
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed.schedules)) {
+        return parsed.schedules
+          .map((section: any) => ({
+            title: (lang === "km" && section.titleKm) ? section.titleKm : (lang === "en" && section.titleEn) ? section.titleEn : (section.title || ""),
+            items: (section.items || []).map((item: any) => ({
+              label: (lang === "km" && item.labelKm) ? item.labelKm : (lang === "en" && item.labelEn) ? item.labelEn : (item.label || ""),
+              hours: (lang === "km" && item.hoursKm) ? item.hoursKm : (lang === "en" && item.hoursEn) ? item.hoursEn : (item.hours || ""),
+              note: (lang === "km" && item.noteKm) ? item.noteKm : (lang === "en" && item.noteEn) ? item.noteEn : (item.note || "")
+            })).filter((item: OperatingScheduleItem) => item.label || item.hours || item.note)
+          }))
+          .filter((section: OperatingScheduleSection) => section.title || section.items.length > 0);
+      }
+    } catch (e) {
+      console.warn("[parseOperatingSchedules] JSON parse failed, using markdown fallback", e);
+    }
   }
+
+  // Fallback path: Markdown parsing (## 1. Tuyến cáp...)
+  const lines = content.split("\n");
+  const sections: OperatingScheduleSection[] = [];
+  let currentSec: OperatingScheduleSection | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (trimmed.startsWith("#")) {
+      const hTitle = trimmed.replace(/^#{1,6}\s*/, "").replace(/^\d+\.\s*/, "").trim();
+      if (hTitle && !hTitle.toLowerCase().includes("lịch và giờ vận hành") && !hTitle.toLowerCase().includes("thông tin giờ")) {
+        currentSec = { title: hTitle, items: [] };
+        sections.push(currentSec);
+      }
+      continue;
+    }
+
+    if (trimmed.startsWith("-") || trimmed.startsWith("*")) {
+      const cleanLine = trimmed.replace(/^[-*]\s*/, "");
+      const parts = cleanLine.split(":");
+      if (parts.length >= 2) {
+        const label = parts[0].trim();
+        const hours = parts.slice(1).join(":").trim();
+        if (label && hours) {
+          if (!currentSec) {
+            currentSec = { title: "Lịch vận hành tuyến cáp", items: [] };
+            sections.push(currentSec);
+          }
+          currentSec.items.push({ label, hours });
+        }
+      }
+    }
+  }
+
+  return sections;
 };
 
 // 2. Parse plain-text content from DB into structured list items
