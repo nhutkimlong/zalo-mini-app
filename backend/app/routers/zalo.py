@@ -2,13 +2,30 @@ import asyncio
 import time
 import re
 from typing import Dict, List, Any, Optional, Tuple
+from collections import defaultdict
 import httpx
 from fastapi import APIRouter, Request, Header, HTTPException, BackgroundTasks
 
 from app.core.config import settings
 from app.services.rag_service import rag_service
+from app.services.moderation_service import moderation_service
 
 router = APIRouter(prefix="/api/zalo", tags=["Zalo Bot Integration"])
+
+# Rate limiter: max 12 requests per 60 seconds per sender_id
+rate_limit_records = defaultdict(list)
+RATE_LIMIT_MAX_REQUESTS = 12
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+def is_rate_limited(sender_id: str) -> bool:
+    """Check if a sender_id has exceeded rate limit (max 12 requests / 60s)."""
+    now = time.time()
+    timestamps = [t for t in rate_limit_records[sender_id] if now - t < RATE_LIMIT_WINDOW_SECONDS]
+    rate_limit_records[sender_id] = timestamps
+    if len(timestamps) >= RATE_LIMIT_MAX_REQUESTS:
+        return True
+    rate_limit_records[sender_id].append(now)
+    return False
 
 # In-memory session manager to track multi-turn conversation history for Zalo users
 # Structure: { sender_id: {"last_active": timestamp, "messages": [{"role": "user"/"assistant", "content": "..."}]}}
@@ -506,6 +523,21 @@ async def zalo_webhook(
             image_url = urls[0]
 
     if sender_id and (message_text or image_url):
+        # Security Guard 1: Rate Limiter Check (Max 12 requests / 60s per user)
+        if is_rate_limited(sender_id):
+            print(f"[ZaloBot] Rate limit triggered for sender {sender_id}")
+            warning_msg = "Bạn đang gửi tin nhắn quá nhanh. Vui lòng đợi khoảng 1 phút trước khi gửi câu hỏi tiếp theo nhé!"
+            background_tasks.add_task(send_zalo_message, settings.ZALO_BOT_TOKEN, sender_id, warning_msg)
+            return {"ok": True, "message": "Rate limited"}
+
+        # Security Guard 2: Moderation & Prompt Injection Filter
+        if message_text and not message_text.startswith("["):
+            is_valid, rejection_reason = moderation_service.validate_message(message_text)
+            if not is_valid:
+                print(f"[ZaloBot] Moderation check blocked sender {sender_id}: {rejection_reason}")
+                background_tasks.add_task(send_zalo_message, settings.ZALO_BOT_TOKEN, sender_id, rejection_reason)
+                return {"ok": True, "message": "Moderation blocked"}
+
         print(f"[ZaloBot] Scheduling background processing for sender {sender_id}: text='{message_text}', image='{image_url}', event='{event_name}'")
         background_tasks.add_task(process_zalo_message, sender_id, message_text, image_url)
     else:
