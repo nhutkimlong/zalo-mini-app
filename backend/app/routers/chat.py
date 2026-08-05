@@ -23,6 +23,7 @@ def get_db():
 
 from app.core.rate_limiter import rate_limiter
 from app.services.cache_service import cache_service
+from app.services.moderation_service import moderation_service
 from fastapi import Request
 
 @router.post("/", response_model=ChatResponse)
@@ -33,7 +34,7 @@ def ask_ai_assistant(
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
     """
-    RAG Assistant Chat endpoint with Rate Limiting & FAQ Caching.
+    RAG Assistant Chat endpoint with Rate Limiting, Moderation & FAQ Caching.
     Retrieves knowledge context and responds with sources.
     """
     if not payload.question or not payload.question.strip():
@@ -46,6 +47,16 @@ def ask_ai_assistant(
         raise HTTPException(
             status_code=429, 
             detail="Quý khách đã gửi quá nhiều câu hỏi trong thời gian ngắn. Vui lòng đợi 1 phút để tiếp tục trò chuyện."
+        )
+
+    # Moderation & Prompt Injection Filter
+    is_valid, rejection_reason = moderation_service.validate_message(payload.question)
+    if not is_valid:
+        return ChatResponse(
+            answer=rejection_reason,
+            confidence_score=0.0,
+            sources=[],
+            type="chat"
         )
 
     # FAQ Caching Check (< 5ms response)
